@@ -1,8 +1,8 @@
-import { useReducer, useCallback, useState } from "react";
+import { useReducer, useCallback, useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 import { INITIAL_STATE } from "./constants/data";
-import { cerrarSesion } from "./services/api";
+import { cerrarSesion, getUsuarios, getAdmins } from "./services/api";
 
 import "./styles/panel.css";
 
@@ -83,6 +83,49 @@ export default function App() {
 
   const [state, dispatch]             = useReducer(reducer, INITIAL_STATE);
   const { toasts, showToast, remove } = useToast();
+
+  // ── Cargar usuarios y admins al iniciar (o recargar) si hay sesión admin ──
+  useEffect(() => {
+    if (!user || user.rolSeleccionado === "encargado") return;
+
+    // Cargar usuarios normales
+    getUsuarios()
+      .then(data => {
+        const lista = (data.usuarios ?? data ?? []).map(u => ({
+          id:       u.idUsuario,
+          nombre:   u.nombre,
+          email:    u.correo,
+          telefono: u.telefono ?? "",
+          rol:      "Usuario",
+          zona:     "",
+          pts:      0,
+          activo:   u.idEstadoUsuario === 1,
+          av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
+          fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
+        }));
+        dispatch({ type: "SET_USUARIOS", payload: lista });
+      })
+      .catch(() => {});
+
+    // Cargar admins
+    getAdmins()
+      .then(data => {
+        const lista = (data.admins ?? data.administradores ?? []).map(u => ({
+          id:       u.idAdmin ?? u.idUsuario,
+          nombre:   u.nombre,
+          email:    u.correo,
+          telefono: u.telefono ?? "",
+          rol:      "Admin",
+          zona:     "",
+          pts:      0,
+          activo:   u.idEstadoUsuario === 1,
+          av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
+          fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
+        }));
+        dispatch({ type: "SET_ADMINS", payload: lista });
+      })
+      .catch(() => {});
+  }, [user]);
 
   const handleLogin = (usuarioData) => {
     sessionStorage.setItem("user", JSON.stringify(usuarioData));

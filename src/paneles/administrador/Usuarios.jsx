@@ -19,12 +19,23 @@ export default function Usuarios({ state, dispatch, showToast }) {
   useEffect(() => {
     getUsuarios()
       .then(data => {
-        dispatch({ type: "SET_USUARIOS", payload: data.usuarios ?? data });
+        const lista = (data.usuarios ?? data ?? []).map(u => ({
+          id:       u.idUsuario,
+          nombre:   u.nombre,
+          email:    u.correo,
+          telefono: u.telefono ?? "",
+          rol:      "Usuario",
+          zona:     "",
+          pts:      0,
+          activo:   u.idEstadoUsuario === 1,
+          av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
+          fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
+        }));
+        dispatch({ type: "SET_USUARIOS", payload: lista });
       })
       .catch(() => {
         showToast("No se pudieron cargar los usuarios del servidor", "error");
       })
-      .catch(() => showToast("No se pudieron cargar los usuarios", "error"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -47,7 +58,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     try {
-      const { registrarse } = await import("../services/api");
+      const { registrarse } = await import("../../services/api");
       const resp = await registrarse({
         nombre:   form.nombre.trim(),
         correo:   form.email.trim(),
@@ -180,7 +191,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
             {/* Header */}
             <div className="panel-modal-head">
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                {/* Avatar preview */}
                 <div style={{
                   width: 38, height: 38, borderRadius: "50%",
                   background: "var(--verde-claro)", border: "1px solid var(--gris-borde)",
@@ -194,58 +204,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
                   <div style={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--negro)" }}>
                     <i className="bi bi-recycle" style={{ color: "var(--verde)", marginRight: 6 }}></i>
                     Nuevo usuario
-                  </div>
-                </div>
-
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-secondary">Nombre completo *</label>
-                    <input
-                      value={form.nombre} onChange={e => set("nombre", e.target.value)}
-                      placeholder="Ej: Carlos Ruiz"
-                      className={`form-control form-control-sm bg-light ${errors.nombre ? "is-invalid" : ""}`}
-                    />
-                    {errors.nombre && <div className="invalid-feedback">{errors.nombre}</div>}
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-secondary">Correo electrónico *</label>
-                    <input
-                      type="email" value={form.email} onChange={e => set("email", e.target.value)}
-                      placeholder="correo@ejemplo.com"
-                      className={`form-control form-control-sm bg-light ${errors.email ? "is-invalid" : ""}`}
-                    />
-                    {errors.email && <div className="invalid-feedback">{errors.email}</div>}
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold small text-secondary">Teléfono *</label>
-                    <input
-                      value={form.telefono}
-                      onChange={e => set("telefono", e.target.value.replace(/\D/g, "").slice(0, 10))}
-                      placeholder="Ej: 3001234567"
-                      maxLength={10}
-                      className={`form-control form-control-sm bg-light ${errors.telefono ? "is-invalid" : ""}`}
-                    />
-                    {errors.telefono && <div className="invalid-feedback">{errors.telefono}</div>}
-                  </div>
-
-                  <div className="col-12">
-                    <div className="alert alert-success small fw-semibold mb-0">
-                      <i className="bi bi-info-circle me-1"></i> {rolDesc["Usuario"]}
-                    </div>
-                  </div>
-                  <div className="col-12">
-                    <div className="d-flex align-items-center justify-content-between p-3 rounded bg-light border">
-                      <div>
-                        <div className="fw-bold small">Estado inicial</div>
-                        <div className="text-muted small">El usuario podra acceder de inmediato si esta activo</div>
-                      </div>
-                      <div className="d-flex align-items-center gap-2">
-                        <span className={`small fw-semibold ${form.activo ? "text-success" : "text-secondary"}`}>
-                          {form.activo ? "Activo" : "Inactivo"}
-                        </span>
-                        <Toggle checked={form.activo} onChange={v => set("activo", v)} />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -301,7 +259,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
                   />
                 </div>
 
-                {/* Info rol — ocupa columna completa */}
                 <div className="full">
                   <div style={{
                     background: "var(--verde-claro)",
@@ -317,7 +274,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
                   </div>
                 </div>
 
-                {/* Toggle estado — ocupa columna completa */}
                 <div className="full">
                   <div style={{
                     display: "flex", alignItems: "center", justifyContent: "space-between",

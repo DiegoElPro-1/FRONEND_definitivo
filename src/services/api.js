@@ -3,14 +3,14 @@
 // ============================================================
 const BASE_URL = 'http://localhost:3333';
 
-// Token en memoria (se asigna tras login o registro)
-let _token = localStorage.getItem("token") || null;
-export function setToken(t)  { _token = t; localStorage.setItem("token", t); }
-export function getToken()   { return _token; }
-export function clearToken() { _token = null; localStorage.removeItem("token"); }
+export function setToken(t)  { localStorage.setItem("token", t); }
+export function getToken()   { return localStorage.getItem("token"); }
+export function clearToken() { localStorage.removeItem("token"); }
+
 async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  if (_token) headers['Authorization'] = `Bearer ${_token}`;
+  const token = localStorage.getItem("token");
+  if (token) headers['Authorization'] = `Bearer ${token}`;
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
@@ -50,7 +50,9 @@ export async function registrarse(datos) {
     method: 'POST',
     body: JSON.stringify(datos),
   });
-  if (data.token) setToken(data.token);
+  // No guardamos el token aquí: si un admin registra un usuario,
+  // no debe reemplazar su propio token de sesión.
+  // if (data.token) setToken(data.token);
   return data;
 }
 
@@ -191,6 +193,7 @@ export async function actualizarEstadoEntrega(id, idEstadoEntrega) {
     body: JSON.stringify({ idEstadoEntrega }),
   });
 }
+
 // ── Estados de materiales ───────────────────────────────────
 export async function getEstadosMateriales() {
   return request('/api/admin/estados-materiales');
@@ -228,7 +231,6 @@ export async function crearClasificacion(datos) {
     body: JSON.stringify(datos),
   });
 }
-
 
 // ============================================================
 // ADMIN  →  /api/admin  (requiere token + rol admin)
