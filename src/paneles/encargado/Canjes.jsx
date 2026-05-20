@@ -5,6 +5,7 @@ import {
   getCanjesEncargado,
   registrarCanjeEncargado,
   getRecompensas,
+  actualizarEstadoCanjeEncargado,
 } from "../../services/api";
 
 function Av({ text, size = 36, bg = "#ffc107", color = "#000" }) {
@@ -20,12 +21,12 @@ function Av({ text, size = 36, bg = "#ffc107", color = "#000" }) {
 
 function BadgeCanje({ estado }) {
   const map = {
-    Completado: { bg: "#198754", text: "white", icon: "bi-check-circle-fill" },
-    completado: { bg: "#198754", text: "white", icon: "bi-check-circle-fill" },
-    Pendiente:  { bg: "#ffc107", text: "#000",  icon: "bi-clock-fill"        },
-    pendiente:  { bg: "#ffc107", text: "#000",  icon: "bi-clock-fill"        },
-    Cancelado:  { bg: "#dc3545", text: "white", icon: "bi-x-circle-fill"     },
-    cancelado:  { bg: "#dc3545", text: "white", icon: "bi-x-circle-fill"     },
+    Canjeado:  { bg: "#198754", text: "white", icon: "bi-check-circle-fill" },
+    canjeado:  { bg: "#198754", text: "white", icon: "bi-check-circle-fill" },
+    Pendiente: { bg: "#ffc107", text: "#000",  icon: "bi-clock-fill"        },
+    pendiente: { bg: "#ffc107", text: "#000",  icon: "bi-clock-fill"        },
+    Vencido:   { bg: "#dc3545", text: "white", icon: "bi-x-circle-fill"     },
+    vencido:   { bg: "#dc3545", text: "white", icon: "bi-x-circle-fill"     },
   };
   const s = map[estado] || map.Pendiente;
   return (
@@ -47,12 +48,14 @@ function getIniciales(nombre = "") {
   return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
 }
 
-// ✅ Helper para obtener puntos de recompensa (backend devuelve puntosRequeridos)
+function capitalizar(str = "") {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 function getPtsRecompensa(r) {
   return r?.puntosRequeridos ?? r?.puntosNecesarios ?? r?.pts ?? 0;
 }
 
-// ✅ Helper para obtener puntos de usuario (backend devuelve puntosDisponibles)
 function getPtsUsuario(u) {
   return u?.puntosDisponibles ?? u?.puntos ?? u?.pts ?? 0;
 }
@@ -125,6 +128,22 @@ export default function Canjes() {
     setErrorMsg("");
   };
 
+  // ── Cambiar estado canje — guarda en backend ─────────────────────────
+  const handleCambiarEstadoCanje = async (id, nuevoEstado) => {
+    const idEstado = nuevoEstado === "Canjeado" ? 2 : 1;
+    try {
+      await actualizarEstadoCanjeEncargado(id, idEstado);
+      setHistorial(prev =>
+        prev.map(h => {
+          const hId = h.idCanje ?? h.id;
+          return hId === id ? { ...h, estadoCanje: { nombre: nuevoEstado } } : h;
+        })
+      );
+    } catch (err) {
+      alert("Error al actualizar el estado: " + err.message);
+    }
+  };
+
   const handleCanjear = async () => {
     if (!usuarioSel || !recompSel) return;
 
@@ -151,7 +170,7 @@ export default function Canjes() {
         pts:        ptsRecomp,
         fecha:      new Date().toISOString().split("T")[0],
         codigo:     resultado?.canje?.codigoCanje ?? resultado?.codigo ?? generarCodigo(),
-        estado:     resultado?.estado ?? "Completado",
+        estado:     resultado?.estado ?? "Canjeado",
       };
 
       setComprobante(nuevo);
@@ -192,7 +211,6 @@ export default function Canjes() {
       {tab === "canjear" && (
         <div className="row g-4">
           <div className="col-lg-7">
-            {/* Buscar usuario */}
             <div className="card border border-2 border-dark rounded-3 shadow-sm mb-3">
               <div className="card-body p-3">
                 <div className="fw-black text-dark mb-1" style={{ fontSize: 15 }}>
@@ -281,7 +299,6 @@ export default function Canjes() {
               </div>
             </div>
 
-            {/* Recompensas */}
             <div className="card border border-2 border-dark rounded-3 shadow-sm">
               <div className="card-body p-3">
                 <div className="fw-black text-dark mb-3" style={{ fontSize: 15 }}>
@@ -349,7 +366,6 @@ export default function Canjes() {
             </div>
           </div>
 
-          {/* Resumen */}
           <div className="col-lg-5">
             <div className="card border border-2 border-dark rounded-3 shadow-sm" style={{ position: "sticky", top: 20 }}>
               <div className="card-body p-3">
@@ -470,19 +486,21 @@ export default function Canjes() {
                       <th className="fw-black">Código</th>
                       <th className="fw-black">Fecha</th>
                       <th className="fw-black text-center">Estado</th>
+                      <th className="fw-black text-center">Acción</th>
                     </tr>
                   </thead>
                   <tbody>
                     {historial.map(h => {
+                      const hId      = h.idCanje ?? h.id;
                       const usuario    = h.usuario?.nombre ?? h.usuario ?? "—";
                       const recompensa = h.recompensa?.nombre ?? h.recompensa ?? "—";
                       const pts        = h.puntosUsados ?? h.pts ?? 0;
                       const fecha      = (h.fechaCanje ?? h.createdAt ?? h.fecha ?? "").split("T")[0];
-                      const codigo     = h.codigoCanje ?? h.codigo ?? `ECO-${h.idCanje ?? h.id}`;
-                      const estado     = h.estadoCanje?.nombre ?? h.estado ?? "Pendiente";
+                      const codigo     = h.codigoCanje ?? h.codigo ?? `ECO-${hId}`;
+                      const estado     = capitalizar(h.estadoCanje?.nombre ?? h.estado ?? "Pendiente");
 
                       return (
-                        <tr key={h.idCanje ?? h.id}>
+                        <tr key={hId}>
                           <td className="fw-bold">{usuario}</td>
                           <td>{recompensa}</td>
                           <td className="text-center fw-black text-warning">
@@ -497,6 +515,18 @@ export default function Canjes() {
                           </td>
                           <td className="text-secondary">{fecha}</td>
                           <td className="text-center"><BadgeCanje estado={estado} /></td>
+                          <td className="text-center">
+                            <button
+                              onClick={() => handleCambiarEstadoCanje(hId, estado === "Canjeado" ? "Pendiente" : "Canjeado")}
+                              className={`btn btn-sm border-2 border-dark fw-bold ${
+                                estado === "Canjeado" ? "btn-outline-dark" : "btn-success"
+                              }`}
+                              style={{ fontSize: 11 }}
+                              title={estado === "Canjeado" ? "Marcar Pendiente" : "Marcar Canjeado"}
+                            >
+                              <i className={`bi ${estado === "Canjeado" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
+                            </button>
+                          </td>
                         </tr>
                       );
                     })}

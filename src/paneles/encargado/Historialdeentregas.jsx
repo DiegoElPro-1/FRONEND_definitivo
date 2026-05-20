@@ -6,6 +6,7 @@ import {
   getEntregasEncargado,
   getEntregaEncargado,
   getMaterialesEncargado,
+  actualizarEstadoEntregaEncargado,
 } from "../../services/api";
 
 const MAT_ICON = {
@@ -16,13 +17,16 @@ const MAT_ICON = {
   "Papel":          "bi-file-earmark",
 };
 
-const ESTADOS = ["Todos", "Pendiente", "Validada", "Rechazada"];
+const ESTADOS = ["Todos", "Pendiente", "Completada", "Cancelada"];
 
 function getIniciales(nombre = "") {
   return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
 }
 
-// ✅ CORREGIDO: normaliza usando "detalles" (como devuelve el backend)
+function capitalizar(str = "") {
+  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+}
+
 function normalizar(e) {
   const nombre   = e.usuario?.nombre   ?? e.nombre   ?? "—";
 
@@ -43,10 +47,8 @@ function normalizar(e) {
                 ?? e.puntos
                 ?? 0;
 
-  // ✅ CORREGIDO: el backend devuelve "fechaEntrega", no solo "createdAt"
   const fecha    = (e.fechaEntrega ?? e.createdAt ?? e.fecha ?? "").split("T")[0];
-
-  const estado   = e.estadoEntrega?.nombre ?? e.estado ?? "Pendiente";
+  const estado   = capitalizar(e.estadoEntrega?.nombre ?? e.estado ?? "Pendiente");
   const obs      = e.observacion ?? e.obs ?? "";
 
   return {
@@ -63,7 +65,6 @@ function normalizar(e) {
   };
 }
 
-// ── Modal corregir puntos ─────────────────────────────────────────────────────
 function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
   const [nuevosPts, setNuevosPts] = useState(entrega.pts);
   const [motivo,    setMotivo]    = useState("");
@@ -143,7 +144,6 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
   );
 }
 
-// ── Modal editar entrega ──────────────────────────────────────────────────────
 function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
   const [peso,     setPeso]     = useState(entrega.peso);
   const [material, setMaterial] = useState(entrega.material);
@@ -231,9 +231,8 @@ function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
   );
 }
 
-// ── Detalle entrega ───────────────────────────────────────────────────────────
 function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onEditar, loadingDetalle }) {
-  const siguienteEstado = entrega.estado === "Validada" ? "Pendiente" : "Validada";
+  const siguienteEstado = entrega.estado === "Completada" ? "Pendiente" : "Completada";
   const [obsEdit,     setObsEdit]     = useState(entrega.obs || "");
   const [obsSaved,    setObsSaved]    = useState(entrega.obs || "");
   const [editandoObs, setEditandoObs] = useState(false);
@@ -257,7 +256,6 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
       </button>
 
       <div className="row g-3">
-        {/* Info reciclador */}
         <div className="col-md-6">
           <div className="card border border-2 border-dark rounded-3 shadow-sm h-100">
             <div className="card-body p-4">
@@ -289,17 +287,16 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
               <button
                 onClick={() => onCambiarEstado(entrega.id, siguienteEstado)}
                 className={`btn border-2 border-dark fw-bold w-100 d-flex align-items-center justify-content-center gap-2 ${
-                  entrega.estado === "Validada" ? "btn-outline-dark" : "btn-success"
+                  entrega.estado === "Completada" ? "btn-outline-dark" : "btn-success"
                 }`}
               >
-                <i className={`bi ${entrega.estado === "Validada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
-                {entrega.estado === "Validada" ? "Marcar como Pendiente" : "Marcar como Validada"}
+                <i className={`bi ${entrega.estado === "Completada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
+                {entrega.estado === "Completada" ? "Marcar como Pendiente" : "Marcar como Completada"}
               </button>
             </div>
           </div>
         </div>
 
-        {/* Puntos */}
         <div className="col-md-6">
           <div className="card border border-2 border-dark rounded-3 shadow-sm h-100">
             <div className="card-body p-4 d-flex flex-column align-items-center justify-content-center text-center">
@@ -324,7 +321,6 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
           </div>
         </div>
 
-        {/* Observaciones */}
         <div className="col-12">
           <div className="card border border-2 border-dark rounded-3 shadow-sm">
             <div className="card-body p-4">
@@ -385,7 +381,6 @@ export default function HistorialdeEntregas() {
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [error,          setError]          = useState("");
 
-  // ── Cargar entregas ──────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -407,10 +402,16 @@ export default function HistorialdeEntregas() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Cambiar estado (solo en memoria) ────────────────────────────────
-  const handleCambiarEstado = (id, nuevoEstado) => {
-    setEntregas(prev => prev.map(e => e.id === id ? { ...e, estado: nuevoEstado } : e));
-    setSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
+  // ── Cambiar estado — guarda en el backend ───────────────────────────
+  const handleCambiarEstado = async (id, nuevoEstado) => {
+    const idEstado = nuevoEstado === "Completada" ? 2 : 1;
+    try {
+      await actualizarEstadoEntregaEncargado(id, idEstado);
+      setEntregas(prev => prev.map(e => e.id === id ? { ...e, estado: nuevoEstado } : e));
+      setSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
+    } catch (err) {
+      alert("Error al actualizar el estado: " + err.message);
+    }
   };
 
   const handleCorregirPts = (id, nuevosPts) => {
@@ -423,7 +424,6 @@ export default function HistorialdeEntregas() {
     setSeleccionado(prev => prev ? { ...prev, ...cambios } : prev);
   };
 
-  // ── Ver detalle ──────────────────────────────────────────────────────
   const verDetalle = async (e) => {
     setSeleccionado(e);
     setLoadingDetalle(true);
@@ -437,7 +437,6 @@ export default function HistorialdeEntregas() {
     }
   };
 
-  // ── Vista detalle ────────────────────────────────────────────────────
   if (seleccionado) {
     const entregaActual = entregas.find(e => e.id === seleccionado.id) || seleccionado;
     return (
@@ -469,7 +468,6 @@ export default function HistorialdeEntregas() {
     );
   }
 
-  // ── Lista de materiales únicos para el filtro ────────────────────────
   const materialesUnicos = ["Todos", ...new Set(entregas.map(e => e.material).filter(m => m && m !== "—"))];
 
   const filtradas = entregas.filter(e => {
@@ -493,7 +491,6 @@ export default function HistorialdeEntregas() {
       )}
 
       <div>
-        {/* Error */}
         {error && (
           <div className="alert alert-danger border border-2 border-dark d-flex align-items-center gap-2 mb-3">
             <i className="bi bi-exclamation-triangle-fill" />
@@ -501,7 +498,6 @@ export default function HistorialdeEntregas() {
           </div>
         )}
 
-        {/* Búsqueda y filtros */}
         <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
           <div className="input-group" style={{ maxWidth: 260 }}>
             <span className="input-group-text border-2 border-dark bg-white">
@@ -540,7 +536,6 @@ export default function HistorialdeEntregas() {
           </span>
         </div>
 
-        {/* Resumen rápido */}
         <div className="row g-2 mb-3">
           <div className="col-4">
             <div className="card border border-2 border-dark rounded-3 text-center py-2 bg-white shadow-sm">
@@ -562,7 +557,6 @@ export default function HistorialdeEntregas() {
           </div>
         </div>
 
-        {/* Tabla */}
         <div className="card border border-2 border-dark rounded-3 shadow-sm overflow-hidden">
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
@@ -617,14 +611,14 @@ export default function HistorialdeEntregas() {
                             <i className="bi bi-eye" /> Ver
                           </button>
                           <button
-                            onClick={() => handleCambiarEstado(e.id, e.estado === "Validada" ? "Pendiente" : "Validada")}
+                            onClick={() => handleCambiarEstado(e.id, e.estado === "Completada" ? "Pendiente" : "Completada")}
                             className={`btn btn-sm border-2 border-dark fw-bold d-flex align-items-center gap-1 ${
-                              e.estado === "Validada" ? "btn-outline-dark" : "btn-success"
+                              e.estado === "Completada" ? "btn-outline-dark" : "btn-success"
                             }`}
                             style={{ fontSize: 11 }}
-                            title={e.estado === "Validada" ? "Marcar Pendiente" : "Marcar Validada"}
+                            title={e.estado === "Completada" ? "Marcar Pendiente" : "Marcar Completada"}
                           >
-                            <i className={`bi ${e.estado === "Validada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
+                            <i className={`bi ${e.estado === "Completada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
                           </button>
                           <button
                             onClick={() => setModalPts(e)}

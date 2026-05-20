@@ -259,29 +259,22 @@ export async function actualizarEstadoEntregaAdmin(id, idEstadoEntrega) {
 // ENCARGADO  →  /api/encargado
 // ============================================================
 
-/** GET /api/encargado/usuarios?q=nombre */
 export async function buscarUsuariosEncargado(q = '') {
   return request(`/api/encargado/usuarios?q=${encodeURIComponent(q)}`);
 }
 
-/** GET /api/encargado/materiales */
 export async function getMaterialesEncargado() {
   return request('/api/encargado/materiales');
 }
 
-/** GET /api/encargado/entregas */
 export async function getEntregasEncargado() {
   return request('/api/encargado/entregas');
 }
 
-/** GET /api/encargado/entregas/:id */
 export async function getEntregaEncargado(id) {
   return request(`/api/encargado/entregas/${id}`);
 }
 
-/** POST /api/encargado/entregas
- *  body: { idUsuario, idPunto?, idEstadoEntrega?, observacion?, materiales: [{ idMaterial, peso, puntosGenerados }] }
- */
 export async function registrarEntregaEncargado(datos) {
   return request('/api/encargado/entregas', {
     method: 'POST',
@@ -289,19 +282,14 @@ export async function registrarEntregaEncargado(datos) {
   });
 }
 
-/** GET /api/encargado/canjes */
 export async function getCanjesEncargado() {
   return request('/api/encargado/canjes');
 }
 
-/** GET /api/encargado/canjes/:id */
 export async function getCanjeEncargado(id) {
   return request(`/api/encargado/canjes/${id}`);
 }
 
-/** POST /api/encargado/canjes
- *  body: { idUsuario, idRecompensa, idEstadoCanje? }
- */
 export async function registrarCanjeEncargado(datos) {
   return request('/api/encargado/canjes', {
     method: 'POST',
@@ -309,10 +297,17 @@ export async function registrarCanjeEncargado(datos) {
   });
 }
 
-/** PUT /api/encargado/canjes/:id/estado */
 export async function actualizarEstadoCanjeEncargado(id, idEstadoCanje) {
   return request(`/api/encargado/canjes/${id}/estado`, {
     method: 'PUT',
     body: JSON.stringify({ idEstadoCanje }),
+  });
+}
+
+// ← FUNCIÓN NUEVA AGREGADA
+export async function actualizarEstadoEntregaEncargado(id, idEstadoEntrega) {
+  return request(`/api/encargado/entregas/${id}/estado`, {
+    method: 'PUT',
+    body: JSON.stringify({ idEstadoEntrega }),
   });
 }
