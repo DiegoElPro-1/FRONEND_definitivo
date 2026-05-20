@@ -1,5 +1,6 @@
 // src/components/VistaDashboard.jsx
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -57,8 +58,12 @@ const TOP_RECICLADORES = [
   { pos: 3, nombre: "Elena Santacruz",  av: "ES", entregas: 9,  bg: "#000",    color: "#ffc107" },
 ];
 
+const ENCARGADO = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
+
 // ── Componente ───────────────────────────────────────────────────────────────
 export default function VistaDashboard() {
+  const navigate = useNavigate();
+
   const [selectedDay,  setSelectedDay]  = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [entregas,     setEntregas]     = useState(ENTREGAS_INICIALES);
@@ -87,6 +92,33 @@ export default function VistaDashboard() {
 
   return (
     <div>
+
+      {/* ── Tarjeta de bienvenida con acceso al perfil ── */}
+      <div
+        className="card border border-2 border-dark rounded-3 shadow-sm mb-4 px-4 py-3 d-flex flex-row align-items-center justify-content-between"
+        style={{ background: "#fff" }}
+      >
+        <div className="d-flex align-items-center gap-3">
+          <Av text={ENCARGADO.av} size={52} bg="#ffc107" color="#000" />
+          <div>
+            <div className="fw-black text-dark" style={{ fontSize: 17 }}>
+              Bienvenido, {ENCARGADO.nombre} 👋
+            </div>
+            <div className="text-secondary fw-semibold" style={{ fontSize: 12 }}>
+              {ENCARGADO.punto} · Encargado de punto
+            </div>
+          </div>
+        </div>
+        <button
+          className="btn btn-dark fw-bold d-flex align-items-center gap-2"
+          style={{ fontSize: 13 }}
+          onClick={() => navigate("/encargado/perfil")}
+        >
+          <i className="bi bi-person-circle" />
+          Mi perfil
+        </button>
+      </div>
+
       {/* Stats */}
       <div className="row g-3 mb-4">
         <div className="col-6 col-xl-3">

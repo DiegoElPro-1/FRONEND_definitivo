@@ -7,6 +7,7 @@ import Canjes            from "./Canjes";
 import PanelControl      from "./PanelControl";
 import Reportes          from "./Reportes";
 import Av                from "./Av";
+import PerfilEncargado   from "./PerfilEncargado";
 
 const ENCARGADO = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
 
@@ -17,6 +18,7 @@ const NAV = [
   { key: "historial",  path: "historial",  icon: "bi-clock-history",       label: "Historial entregas" },
   { key: "canjes",     path: "canjes",     icon: "bi-gift-fill",           label: "Canjes"             },
   { key: "reportes",   path: "reportes",   icon: "bi-bar-chart-line-fill", label: "Reportes"           },
+  { key: "perfil",     path: "perfil",     icon: "bi-person-circle",       label: "Mi perfil"          },
 ];
 
 export default function PanelEncargado({ onLogout }) {
@@ -69,6 +71,7 @@ export default function PanelEncargado({ onLogout }) {
           <Route path="historial" element={<HistorialEntregas />} />
           <Route path="canjes"    element={<Canjes />} />
           <Route path="reportes"  element={<Reportes />} />
+          <Route path="perfil"    element={<PerfilEncargado />} />
           <Route path="*"         element={<Navigate to="dashboard" replace />} />
         </Routes>
       </main>
