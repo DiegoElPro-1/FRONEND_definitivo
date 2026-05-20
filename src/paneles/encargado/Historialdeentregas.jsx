@@ -1,33 +1,67 @@
 // src/paneles/encargado/HistorialdeEntregas.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Badge from "./Badge";
 import Av    from "./Av";
+import {
+  getEntregasEncargado,
+  getEntregaEncargado,
+  getMaterialesEncargado,
+} from "../../services/api";
 
 const MAT_ICON = {
   "Plástico (PET)": "bi-bag",
+  "Plástico":       "bi-bag",
   "Cartón":         "bi-box-seam",
   "Vidrio":         "bi-cup-straw",
   "Papel":          "bi-file-earmark",
 };
 
-const ENTREGAS_INICIALES = [
-  { id: 1,  nombre: "Diego Tamayo",     av: "DT", material: "Cartón",         peso: 4.2, pts: 130, fecha: "2026-05-05", estado: "Validada",  obs: "" },
-  { id: 2,  nombre: "Carlos Jaramillo", av: "CJ", material: "Plástico (PET)", peso: 2.1, pts: 63,  fecha: "2026-05-05", estado: "Pendiente", obs: "" },
-  { id: 3,  nombre: "Elena Santacruz",  av: "ES", material: "Papel",          peso: 1.8, pts: 78,  fecha: "2026-05-05", estado: "Validada",  obs: "" },
-  { id: 4,  nombre: "Luisa Perdomo",    av: "LP", material: "Vidrio",         peso: 0.9, pts: 36,  fecha: "2026-05-08", estado: "Pendiente", obs: "" },
-  { id: 5,  nombre: "Andrés Torres",    av: "AT", material: "Cartón",         peso: 3.5, pts: 95,  fecha: "2026-05-08", estado: "Pendiente", obs: "" },
-  { id: 6,  nombre: "Diego Tamayo",     av: "DT", material: "Vidrio",         peso: 2.0, pts: 50,  fecha: "2026-05-11", estado: "Pendiente", obs: "" },
-  { id: 7,  nombre: "Sofía Muñoz",      av: "SM", material: "Papel",          peso: 1.2, pts: 18,  fecha: "2026-05-11", estado: "Pendiente", obs: "" },
-  { id: 8,  nombre: "Carlos Jaramillo", av: "CJ", material: "Plástico (PET)", peso: 0.5, pts: 30,  fecha: "2026-05-11", estado: "Rechazada", obs: "" },
-  { id: 9,  nombre: "Elena Santacruz",  av: "ES", material: "Cartón",         peso: 5.1, pts: 148, fecha: "2026-05-14", estado: "Pendiente", obs: "" },
-  { id: 10, nombre: "Luisa Perdomo",    av: "LP", material: "Plástico (PET)", peso: 2.8, pts: 84,  fecha: "2026-05-14", estado: "Pendiente", obs: "" },
-  { id: 11, nombre: "Andrés Torres",    av: "AT", material: "Papel",          peso: 3.3, pts: 118, fecha: "2026-05-19", estado: "Pendiente", obs: "" },
-  { id: 12, nombre: "Sofía Muñoz",      av: "SM", material: "Cartón",         peso: 2.5, pts: 50,  fecha: "2026-05-22", estado: "Pendiente", obs: "" },
-  { id: 13, nombre: "Diego Tamayo",     av: "DT", material: "Plástico (PET)", peso: 3.0, pts: 75,  fecha: "2026-05-22", estado: "Pendiente", obs: "" },
-];
+const ESTADOS = ["Todos", "Pendiente", "Validada", "Rechazada"];
 
-const MATERIALES = ["Todos", "Papel", "Cartón", "Vidrio", "Plástico (PET)"];
-const ESTADOS    = ["Todos", "Pendiente", "Validada", "Rechazada"];
+function getIniciales(nombre = "") {
+  return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
+}
+
+// ✅ CORREGIDO: normaliza usando "detalles" (como devuelve el backend)
+function normalizar(e) {
+  const nombre   = e.usuario?.nombre   ?? e.nombre   ?? "—";
+
+  const material = e.detalles?.[0]?.material?.nombre
+                ?? e.materiales?.[0]?.material?.nombre
+                ?? e.material?.nombre
+                ?? e.material
+                ?? "—";
+
+  const peso     = e.detalles?.[0]?.peso
+                ?? e.materiales?.[0]?.peso
+                ?? e.peso
+                ?? 0;
+
+  const pts      = e.detalles?.[0]?.puntosGenerados
+                ?? e.materiales?.[0]?.puntosGenerados
+                ?? e.pts
+                ?? e.puntos
+                ?? 0;
+
+  // ✅ CORREGIDO: el backend devuelve "fechaEntrega", no solo "createdAt"
+  const fecha    = (e.fechaEntrega ?? e.createdAt ?? e.fecha ?? "").split("T")[0];
+
+  const estado   = e.estadoEntrega?.nombre ?? e.estado ?? "Pendiente";
+  const obs      = e.observacion ?? e.obs ?? "";
+
+  return {
+    id:       e.idEntrega ?? e.id,
+    nombre,
+    av:       getIniciales(nombre),
+    material,
+    peso:     Number(peso),
+    pts:      Number(pts),
+    fecha,
+    estado,
+    obs,
+    _raw:     e,
+  };
+}
 
 // ── Modal corregir puntos ─────────────────────────────────────────────────────
 function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
@@ -54,8 +88,7 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
         <div className="card-body p-4">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <div className="fw-black text-dark" style={{ fontSize: 16 }}>
-              <i className="bi bi-arrow-repeat text-warning me-2" />
-              Corregir puntos
+              <i className="bi bi-arrow-repeat text-warning me-2" />Corregir puntos
             </div>
             <button onClick={onCerrar} className="btn btn-sm btn-outline-dark border-2 rounded-2 p-0" style={{ width: 28, height: 28 }}>
               <i className="bi bi-x" />
@@ -71,19 +104,14 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
           </div>
 
           <div className="mb-3">
-            <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
-              Puntos actuales
-            </label>
+            <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Puntos actuales</label>
             <div className="fw-black text-warning" style={{ fontSize: 28 }}>{entrega.pts} pts</div>
           </div>
 
           <div className="mb-3">
-            <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
-              Nuevos puntos
-            </label>
+            <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Nuevos puntos</label>
             <input
-              type="number"
-              min="0"
+              type="number" min="0"
               className="form-control border-2 border-dark fw-bold"
               style={{ fontSize: 18 }}
               value={nuevosPts}
@@ -92,9 +120,7 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
           </div>
 
           <div className="mb-4">
-            <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
-              Motivo de corrección
-            </label>
+            <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Motivo de corrección</label>
             <textarea
               className="form-control border-2 border-dark"
               rows={2}
@@ -106,10 +132,8 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
           </div>
 
           <div className="d-flex gap-2">
-            <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">
-              Cancelar
-            </button>
-            <button onClick={guardar} className="btn btn-warning border border-2 border-dark fw-bold flex-fill">
+            <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">Cancelar</button>
+            <button onClick={guardar}  className="btn btn-warning border border-2 border-dark fw-bold flex-fill">
               <i className="bi bi-check-circle-fill me-1" /> Guardar
             </button>
           </div>
@@ -120,20 +144,20 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
 }
 
 // ── Modal editar entrega ──────────────────────────────────────────────────────
-function ModalEditar({ entrega, onGuardar, onCerrar }) {
+function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
   const [peso,     setPeso]     = useState(entrega.peso);
   const [material, setMaterial] = useState(entrega.material);
   const [fecha,    setFecha]    = useState(entrega.fecha);
 
   const guardar = () => {
     if (!peso || isNaN(peso) || Number(peso) <= 0) return;
-    onGuardar(entrega.id, {
-      peso:     Number(peso),
-      material,
-      fecha,
-    });
+    onGuardar(entrega.id, { peso: Number(peso), material, fecha });
     onCerrar();
   };
+
+  const listaMateriales = materiales.length > 0
+    ? materiales.map(m => m.nombre ?? m)
+    : ["Papel", "Cartón", "Vidrio", "Plástico"];
 
   return (
     <div
@@ -149,8 +173,7 @@ function ModalEditar({ entrega, onGuardar, onCerrar }) {
         <div className="card-body p-4">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <div className="fw-black text-dark" style={{ fontSize: 16 }}>
-              <i className="bi bi-pencil-square text-success me-2" />
-              Editar entrega
+              <i className="bi bi-pencil-square text-success me-2" />Editar entrega
             </div>
             <button onClick={onCerrar} className="btn btn-sm btn-outline-dark border-2 rounded-2 p-0" style={{ width: 28, height: 28 }}>
               <i className="bi bi-x" />
@@ -170,18 +193,14 @@ function ModalEditar({ entrega, onGuardar, onCerrar }) {
               onChange={e => setMaterial(e.target.value)}
               style={{ fontSize: 13 }}
             >
-              {["Papel", "Cartón", "Vidrio", "Plástico (PET)"].map(m => (
-                <option key={m}>{m}</option>
-              ))}
+              {listaMateriales.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
 
           <div className="mb-3">
             <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Peso (kg)</label>
             <input
-              type="number"
-              min="0"
-              step="0.1"
+              type="number" min="0" step="0.1"
               className="form-control border-2 border-dark fw-bold"
               style={{ fontSize: 16 }}
               value={peso}
@@ -201,10 +220,8 @@ function ModalEditar({ entrega, onGuardar, onCerrar }) {
           </div>
 
           <div className="d-flex gap-2">
-            <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">
-              Cancelar
-            </button>
-            <button onClick={guardar} className="btn btn-success border border-2 border-dark fw-bold flex-fill">
+            <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">Cancelar</button>
+            <button onClick={guardar}  className="btn btn-success border border-2 border-dark fw-bold flex-fill">
               <i className="bi bi-check-circle-fill me-1" /> Guardar cambios
             </button>
           </div>
@@ -215,11 +232,20 @@ function ModalEditar({ entrega, onGuardar, onCerrar }) {
 }
 
 // ── Detalle entrega ───────────────────────────────────────────────────────────
-function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onEditar }) {
+function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onEditar, loadingDetalle }) {
   const siguienteEstado = entrega.estado === "Validada" ? "Pendiente" : "Validada";
-  const [obsEdit, setObsEdit] = useState(entrega.obs || "");
-  const [obsSaved, setObsSaved] = useState(entrega.obs || "");
+  const [obsEdit,     setObsEdit]     = useState(entrega.obs || "");
+  const [obsSaved,    setObsSaved]    = useState(entrega.obs || "");
   const [editandoObs, setEditandoObs] = useState(false);
+
+  if (loadingDetalle) {
+    return (
+      <div className="text-center py-5">
+        <span className="spinner-border text-warning" />
+        <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando detalle...</div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -260,7 +286,6 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
                 ))}
               </div>
 
-              {/* Botón cambiar estado */}
               <button
                 onClick={() => onCambiarEstado(entrega.id, siguienteEstado)}
                 className={`btn border-2 border-dark fw-bold w-100 d-flex align-items-center justify-content-center gap-2 ${
@@ -288,16 +313,10 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
               <div className="fw-black text-warning" style={{ fontSize: 56 }}>{entrega.pts}</div>
               <div className="text-secondary" style={{ fontSize: 12 }}>puntos</div>
               <div className="mt-4 d-flex gap-2 w-100">
-                <button
-                  onClick={() => onEditar(entrega)}
-                  className="btn btn-outline-dark border-2 fw-bold flex-fill btn-sm"
-                >
+                <button onClick={() => onEditar(entrega)} className="btn btn-outline-dark border-2 fw-bold flex-fill btn-sm">
                   <i className="bi bi-pencil me-1" /> Editar
                 </button>
-                <button
-                  onClick={() => onCorregirPts(entrega)}
-                  className="btn btn-warning border border-2 border-dark fw-bold flex-fill btn-sm"
-                >
+                <button onClick={() => onCorregirPts(entrega)} className="btn btn-warning border border-2 border-dark fw-bold flex-fill btn-sm">
                   <i className="bi bi-arrow-repeat me-1" /> Corregir pts
                 </button>
               </div>
@@ -310,9 +329,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
           <div className="card border border-2 border-dark rounded-3 shadow-sm">
             <div className="card-body p-4">
               <div className="d-flex align-items-center justify-content-between mb-2">
-                <div className="fw-bold text-secondary text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>
-                  Observaciones
-                </div>
+                <div className="fw-bold text-secondary text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>Observaciones</div>
                 <button
                   onClick={() => setEditandoObs(o => !o)}
                   className="btn btn-sm btn-outline-dark border-2 fw-bold"
@@ -353,35 +370,74 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
   );
 }
 
-// ── Historial principal ───────────────────────────────────────────────────────
+// ── Componente principal ──────────────────────────────────────────────────────
 export default function HistorialdeEntregas() {
-  const [entregas,     setEntregas]     = useState(ENTREGAS_INICIALES);
+  const [entregas,     setEntregas]     = useState([]);
+  const [materiales,   setMateriales]   = useState([]);
   const [seleccionado, setSeleccionado] = useState(null);
   const [filtroMat,    setFiltroMat]    = useState("Todos");
   const [filtroEst,    setFiltroEst]    = useState("Todos");
   const [busqueda,     setBusqueda]     = useState("");
-  const [modalPts,     setModalPts]     = useState(null); // entrega a corregir pts
-  const [modalEditar,  setModalEditar]  = useState(null); // entrega a editar
+  const [modalPts,     setModalPts]     = useState(null);
+  const [modalEditar,  setModalEditar]  = useState(null);
 
-  // Cambiar estado de una entrega
+  const [loading,        setLoading]        = useState(true);
+  const [loadingDetalle, setLoadingDetalle] = useState(false);
+  const [error,          setError]          = useState("");
+
+  // ── Cargar entregas ──────────────────────────────────────────────────
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      getEntregasEncargado(),
+      getMaterialesEncargado(),
+    ])
+      .then(([dataEntregas, dataMateriales]) => {
+        const listaE = Array.isArray(dataEntregas)
+          ? dataEntregas
+          : (dataEntregas.entregas ?? []);
+        const listaM = Array.isArray(dataMateriales)
+          ? dataMateriales
+          : (dataMateriales.materiales ?? []);
+
+        setEntregas(listaE.map(normalizar));
+        setMateriales(listaM);
+      })
+      .catch(e => setError(e.message || "Error al cargar las entregas"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  // ── Cambiar estado (solo en memoria) ────────────────────────────────
   const handleCambiarEstado = (id, nuevoEstado) => {
     setEntregas(prev => prev.map(e => e.id === id ? { ...e, estado: nuevoEstado } : e));
     setSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
   };
 
-  // Corregir puntos
   const handleCorregirPts = (id, nuevosPts) => {
     setEntregas(prev => prev.map(e => e.id === id ? { ...e, pts: nuevosPts } : e));
     setSeleccionado(prev => prev ? { ...prev, pts: nuevosPts } : prev);
   };
 
-  // Editar entrega (peso, material, fecha)
   const handleEditar = (id, cambios) => {
     setEntregas(prev => prev.map(e => e.id === id ? { ...e, ...cambios } : e));
     setSeleccionado(prev => prev ? { ...prev, ...cambios } : prev);
   };
 
-  // Vista detalle
+  // ── Ver detalle ──────────────────────────────────────────────────────
+  const verDetalle = async (e) => {
+    setSeleccionado(e);
+    setLoadingDetalle(true);
+    try {
+      const detalle = await getEntregaEncargado(e.id);
+      setSeleccionado(normalizar(detalle));
+    } catch {
+      // Si falla dejamos los datos que ya teníamos
+    } finally {
+      setLoadingDetalle(false);
+    }
+  };
+
+  // ── Vista detalle ────────────────────────────────────────────────────
   if (seleccionado) {
     const entregaActual = entregas.find(e => e.id === seleccionado.id) || seleccionado;
     return (
@@ -396,12 +452,14 @@ export default function HistorialdeEntregas() {
         {modalEditar && (
           <ModalEditar
             entrega={modalEditar}
+            materiales={materiales}
             onGuardar={handleEditar}
             onCerrar={() => setModalEditar(null)}
           />
         )}
         <DetalleEntrega
           entrega={entregaActual}
+          loadingDetalle={loadingDetalle}
           onVolver={() => setSeleccionado(null)}
           onCambiarEstado={handleCambiarEstado}
           onCorregirPts={e => setModalPts(e)}
@@ -410,6 +468,9 @@ export default function HistorialdeEntregas() {
       </>
     );
   }
+
+  // ── Lista de materiales únicos para el filtro ────────────────────────
+  const materialesUnicos = ["Todos", ...new Set(entregas.map(e => e.material).filter(m => m && m !== "—"))];
 
   const filtradas = entregas.filter(e => {
     const matchMat = filtroMat === "Todos" || e.material === filtroMat;
@@ -432,6 +493,14 @@ export default function HistorialdeEntregas() {
       )}
 
       <div>
+        {/* Error */}
+        {error && (
+          <div className="alert alert-danger border border-2 border-dark d-flex align-items-center gap-2 mb-3">
+            <i className="bi bi-exclamation-triangle-fill" />
+            <span style={{ fontSize: 13 }}>{error}</span>
+          </div>
+        )}
+
         {/* Búsqueda y filtros */}
         <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
           <div className="input-group" style={{ maxWidth: 260 }}>
@@ -454,7 +523,7 @@ export default function HistorialdeEntregas() {
             value={filtroMat}
             onChange={e => setFiltroMat(e.target.value)}
           >
-            {MATERIALES.map(m => <option key={m}>{m}</option>)}
+            {materialesUnicos.map(m => <option key={m}>{m}</option>)}
           </select>
 
           <select
@@ -500,18 +569,23 @@ export default function HistorialdeEntregas() {
               <thead className="bg-dark text-white">
                 <tr>
                   {["Usuario", "Material", "Peso", "Puntos", "Fecha", "Estado", "Acciones"].map(h => (
-                    <th key={h} className="fw-bold border-0 px-3 py-2" style={{ fontSize: 11, letterSpacing: 0.5 }}>
-                      {h}
-                    </th>
+                    <th key={h} className="fw-bold border-0 px-3 py-2" style={{ fontSize: 11, letterSpacing: 0.5 }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filtradas.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-5">
+                      <span className="spinner-border text-warning" />
+                      <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando entregas...</div>
+                    </td>
+                  </tr>
+                ) : filtradas.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="text-center text-secondary py-5 fw-semibold">
                       <i className="bi bi-inbox d-block mb-2" style={{ fontSize: 32 }} />
-                      Sin resultados para los filtros aplicados
+                      {entregas.length === 0 ? "No hay entregas registradas" : "Sin resultados para los filtros aplicados"}
                     </td>
                   </tr>
                 ) : (
@@ -535,15 +609,13 @@ export default function HistorialdeEntregas() {
                       <td className="px-3 py-2"><Badge estado={e.estado} /></td>
                       <td className="px-3 py-2">
                         <div className="d-flex gap-1">
-                          {/* Ver detalle */}
                           <button
-                            onClick={() => setSeleccionado(e)}
+                            onClick={() => verDetalle(e)}
                             className="btn btn-sm btn-warning border border-dark fw-bold d-flex align-items-center gap-1"
                             style={{ fontSize: 11 }}
                           >
                             <i className="bi bi-eye" /> Ver
                           </button>
-                          {/* Cambiar estado rápido */}
                           <button
                             onClick={() => handleCambiarEstado(e.id, e.estado === "Validada" ? "Pendiente" : "Validada")}
                             className={`btn btn-sm border-2 border-dark fw-bold d-flex align-items-center gap-1 ${
@@ -554,7 +626,6 @@ export default function HistorialdeEntregas() {
                           >
                             <i className={`bi ${e.estado === "Validada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
                           </button>
-                          {/* Corregir puntos */}
                           <button
                             onClick={() => setModalPts(e)}
                             className="btn btn-sm btn-outline-dark border-2 fw-bold d-flex align-items-center gap-1"

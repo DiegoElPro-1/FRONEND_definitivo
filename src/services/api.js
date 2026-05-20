@@ -27,7 +27,6 @@ async function request(path, options = {}) {
 // AUTH  →  /api/auth
 // ============================================================
 
-/** POST /api/auth/iniciar-sesion  { correo, password } */
 export async function iniciarSesion(correo, password) {
   const data = await request('/api/auth/iniciar-sesion', {
     method: 'POST',
@@ -37,26 +36,20 @@ export async function iniciarSesion(correo, password) {
   return data;
 }
 
-/** DELETE /api/auth/cerrar-sesion */
 export async function cerrarSesion() {
   const data = await request('/api/auth/cerrar-sesion', { method: 'DELETE' });
   clearToken();
   return data;
 }
 
-/** POST /api/auth/registrarse  { nombre, correo, password, telefono? } */
 export async function registrarse(datos) {
   const data = await request('/api/auth/registrarse', {
     method: 'POST',
     body: JSON.stringify(datos),
   });
-  // No guardamos el token aquí: si un admin registra un usuario,
-  // no debe reemplazar su propio token de sesión.
-  // if (data.token) setToken(data.token);
   return data;
 }
 
-/** POST /api/auth/recuperar-password/solicitar  { correo } */
 export async function solicitarRecuperacion(correo) {
   return request('/api/auth/recuperar-password/solicitar', {
     method: 'POST',
@@ -64,7 +57,6 @@ export async function solicitarRecuperacion(correo) {
   });
 }
 
-/** POST /api/auth/recuperar-password/restablecer  { correo, codigo, passwordNuevo } */
 export async function restablecerPassword(datos) {
   return request('/api/auth/recuperar-password/restablecer', {
     method: 'POST',
@@ -73,15 +65,13 @@ export async function restablecerPassword(datos) {
 }
 
 // ============================================================
-// USUARIO  →  /api/usuario  (requiere token + rol usuario)
+// USUARIO  →  /api/usuario
 // ============================================================
 
-/** GET /api/usuario/perfil */
 export async function getPerfil() {
   return request('/api/usuario/perfil');
 }
 
-/** PUT /api/usuario/perfil  { nombre?, telefono?, imagen? } */
 export async function actualizarPerfil(datos) {
   return request('/api/usuario/perfil', {
     method: 'PUT',
@@ -89,7 +79,6 @@ export async function actualizarPerfil(datos) {
   });
 }
 
-/** PUT /api/usuario/perfil/cambiar-password  { passwordActual, passwordNuevo } */
 export async function cambiarPassword(passwordActual, passwordNuevo) {
   return request('/api/usuario/perfil/cambiar-password', {
     method: 'PUT',
@@ -97,17 +86,14 @@ export async function cambiarPassword(passwordActual, passwordNuevo) {
   });
 }
 
-/** GET /api/usuario/entregas */
 export async function getEntregas() {
   return request('/api/usuario/entregas');
 }
 
-/** GET /api/usuario/entregas/:id */
 export async function getEntrega(id) {
   return request(`/api/usuario/entregas/${id}`);
 }
 
-/** POST /api/usuario/entregas  { idPuntoReciclaje, materiales: [{idMaterial, pesoKg}] } */
 export async function crearEntrega(datos) {
   return request('/api/usuario/entregas', {
     method: 'POST',
@@ -115,27 +101,22 @@ export async function crearEntrega(datos) {
   });
 }
 
-/** GET /api/usuario/puntos  → { saldo, ganados, descontados, movimientos } */
 export async function getPuntos() {
   return request('/api/usuario/puntos');
 }
 
-/** GET /api/usuario/puntos/historial  → { movimientos: [...] } */
 export async function getHistorialPuntos() {
   return request('/api/usuario/puntos/historial');
 }
 
-/** GET /api/usuario/canjes */
 export async function getCanjes() {
   return request('/api/usuario/canjes');
 }
 
-/** GET /api/usuario/canjes/:id */
 export async function getCanje(id) {
   return request(`/api/usuario/canjes/${id}`);
 }
 
-/** POST /api/usuario/canjes  { idRecompensa } */
 export async function canjearRecompensa(idRecompensa) {
   return request('/api/usuario/canjes', {
     method: 'POST',
@@ -144,15 +125,13 @@ export async function canjearRecompensa(idRecompensa) {
 }
 
 // ============================================================
-// ALIADO  →  /api/aliado  (requiere token + rol aliado)
+// ALIADO  →  /api/aliado
 // ============================================================
 
-/** GET /api/aliado/perfil */
 export async function getPerfilAliado() {
   return request('/api/aliado/perfil');
 }
 
-/** PUT /api/aliado/perfil */
 export async function actualizarPerfilAliado(datos) {
   return request('/api/aliado/perfil', {
     method: 'PUT',
@@ -160,7 +139,6 @@ export async function actualizarPerfilAliado(datos) {
   });
 }
 
-/** POST /api/aliado/perfil/puntos */
 export async function agregarPuntoReciclaje(datos) {
   return request('/api/aliado/perfil/puntos', {
     method: 'POST',
@@ -168,7 +146,6 @@ export async function agregarPuntoReciclaje(datos) {
   });
 }
 
-/** PUT /api/aliado/perfil/puntos/:id */
 export async function actualizarPuntoReciclaje(id, datos) {
   return request(`/api/aliado/perfil/puntos/${id}`, {
     method: 'PUT',
@@ -176,17 +153,14 @@ export async function actualizarPuntoReciclaje(id, datos) {
   });
 }
 
-/** GET /api/aliado/entregas */
 export async function getEntregasAliado() {
   return request('/api/aliado/entregas');
 }
 
-/** GET /api/aliado/entregas/:id */
 export async function getEntregaAliado(id) {
   return request(`/api/aliado/entregas/${id}`);
 }
 
-/** PUT /api/aliado/entregas/:id/estado  { idEstadoEntrega } */
 export async function actualizarEstadoEntrega(id, idEstadoEntrega) {
   return request(`/api/aliado/entregas/${id}/estado`, {
     method: 'PUT',
@@ -194,7 +168,6 @@ export async function actualizarEstadoEntrega(id, idEstadoEntrega) {
   });
 }
 
-// ── Estados de materiales ───────────────────────────────────
 export async function getEstadosMateriales() {
   return request('/api/admin/estados-materiales');
 }
@@ -219,12 +192,10 @@ export async function eliminarEstadoMaterial(id) {
   });
 }
 
-/** GET /api/aliado/clasificaciones */
 export async function getClasificaciones() {
   return request('/api/aliado/clasificaciones');
 }
 
-/** POST /api/aliado/clasificaciones */
 export async function crearClasificacion(datos) {
   return request('/api/aliado/clasificaciones', {
     method: 'POST',
@@ -233,61 +204,115 @@ export async function crearClasificacion(datos) {
 }
 
 // ============================================================
-// ADMIN  →  /api/admin  (requiere token + rol admin)
+// ADMIN  →  /api/admin
 // ============================================================
 
-// ── Administradores ─────────────────────────────────────────
 export async function getAdmins()               { return request('/api/admin/admins'); }
 export async function crearAdmin(datos)          { return request('/api/admin/admins', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarAdmin(id, datos) { return request(`/api/admin/admins/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarAdmin(id)          { return request(`/api/admin/admins/${id}`, { method: 'DELETE' }); }
 
-// ── Usuarios ─────────────────────────────────────────────────
 export async function getUsuarios()                { return request('/api/admin/usuarios'); }
 export async function getUsuario(id)               { return request(`/api/admin/usuarios/${id}`); }
 export async function actualizarUsuario(id, datos) { return request(`/api/admin/usuarios/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarUsuario(id)          { return request(`/api/admin/usuarios/${id}`, { method: 'DELETE' }); }
 
-// ── Aliados ──────────────────────────────────────────────────
 export async function getAliados()                { return request('/api/admin/aliados'); }
 export async function getAliado(id)               { return request(`/api/admin/aliados/${id}`); }
 export async function crearAliado(datos)           { return request('/api/admin/aliados', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarAliado(id, datos) { return request(`/api/admin/aliados/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarAliado(id)          { return request(`/api/admin/aliados/${id}`, { method: 'DELETE' }); }
 
-// ── Materiales ───────────────────────────────────────────────
 export async function getMateriales()               { return request('/api/admin/materiales'); }
 export async function getMaterial(id)               { return request(`/api/admin/materiales/${id}`); }
 export async function crearMaterial(datos)          { return request('/api/admin/materiales', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarMaterial(id, datos) { return request(`/api/admin/materiales/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarMaterial(id)          { return request(`/api/admin/materiales/${id}`, { method: 'DELETE' }); }
 
-// ── Recompensas ──────────────────────────────────────────────
 export async function getRecompensas()                { return request('/api/admin/recompensas'); }
 export async function getRecompensa(id)               { return request(`/api/admin/recompensas/${id}`); }
 export async function crearRecompensa(datos)          { return request('/api/admin/recompensas', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarRecompensa(id, datos) { return request(`/api/admin/recompensas/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarRecompensa(id)          { return request(`/api/admin/recompensas/${id}`, { method: 'DELETE' }); }
 
-// ── Roles ─────────────────────────────────────────────────────
 export async function getRoles()               { return request('/api/admin/roles'); }
 export async function crearRol(datos)          { return request('/api/admin/roles', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarRol(id, datos) { return request(`/api/admin/roles/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarRol(id)          { return request(`/api/admin/roles/${id}`, { method: 'DELETE' }); }
 
-// ── Encargados ────────────────────────────────────────────────
 export async function getEncargados()                { return request('/api/admin/encargados'); }
 export async function getEncargado(id)               { return request(`/api/admin/encargados/${id}`); }
 export async function crearEncargado(datos)          { return request('/api/admin/encargados', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarEncargado(id, datos) { return request(`/api/admin/encargados/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarEncargado(id)          { return request(`/api/admin/encargados/${id}`, { method: 'DELETE' }); }
 
-// ── Entregas (admin) ──────────────────────────────────────────
 export async function getEntregasAdmin()                        { return request('/api/admin/entregas'); }
 export async function getEntregaAdmin(id)                       { return request(`/api/admin/entregas/${id}`); }
 export async function actualizarEstadoEntregaAdmin(id, idEstadoEntrega) {
   return request(`/api/admin/entregas/${id}/estado`, {
     method: 'PUT',
     body: JSON.stringify({ idEstadoEntrega }),
+  });
+}
+
+// ============================================================
+// ENCARGADO  →  /api/encargado
+// ============================================================
+
+/** GET /api/encargado/usuarios?q=nombre */
+export async function buscarUsuariosEncargado(q = '') {
+  return request(`/api/encargado/usuarios?q=${encodeURIComponent(q)}`);
+}
+
+/** GET /api/encargado/materiales */
+export async function getMaterialesEncargado() {
+  return request('/api/encargado/materiales');
+}
+
+/** GET /api/encargado/entregas */
+export async function getEntregasEncargado() {
+  return request('/api/encargado/entregas');
+}
+
+/** GET /api/encargado/entregas/:id */
+export async function getEntregaEncargado(id) {
+  return request(`/api/encargado/entregas/${id}`);
+}
+
+/** POST /api/encargado/entregas
+ *  body: { idUsuario, idPunto?, idEstadoEntrega?, observacion?, materiales: [{ idMaterial, peso, puntosGenerados }] }
+ */
+export async function registrarEntregaEncargado(datos) {
+  return request('/api/encargado/entregas', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+/** GET /api/encargado/canjes */
+export async function getCanjesEncargado() {
+  return request('/api/encargado/canjes');
+}
+
+/** GET /api/encargado/canjes/:id */
+export async function getCanjeEncargado(id) {
+  return request(`/api/encargado/canjes/${id}`);
+}
+
+/** POST /api/encargado/canjes
+ *  body: { idUsuario, idRecompensa, idEstadoCanje? }
+ */
+export async function registrarCanjeEncargado(datos) {
+  return request('/api/encargado/canjes', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+/** PUT /api/encargado/canjes/:id/estado */
+export async function actualizarEstadoCanjeEncargado(id, idEstadoCanje) {
+  return request(`/api/encargado/canjes/${id}/estado`, {
+    method: 'PUT',
+    body: JSON.stringify({ idEstadoCanje }),
   });
 }

@@ -1,19 +1,64 @@
 // src/components/RegistrarEntrega.jsx
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { buscarUsuariosEncargado, registrarEntregaEncargado } from "../../services/api";
 
 const MATERIALES = [
-  { key: "papel",    label: "Papel",    icon: "bi-file-earmark-text", ptsPorKg: 15, color: "#ffc107", colorText: "#000" },
-  { key: "carton",   label: "Cartón",   icon: "bi-box-seam",          ptsPorKg: 20, color: "#198754", colorText: "#fff" },
-  { key: "vidrio",   label: "Vidrio",   icon: "bi-cup-straw",         ptsPorKg: 25, color: "#000",    colorText: "#ffc107" },
-  { key: "plastico", label: "Plástico", icon: "bi-bag",               ptsPorKg: 30, color: "#198754", colorText: "#fff" },
+  { key: "papel",    idMaterial: 2, label: "Papel",    icon: "bi-file-earmark-text", ptsPorKg: 15, color: "#ffc107", colorText: "#000" },
+  { key: "carton",   idMaterial: 3, label: "Cartón",   icon: "bi-box-seam",          ptsPorKg: 20, color: "#198754", colorText: "#fff" },
+  { key: "vidrio",   idMaterial: 4, label: "Vidrio",   icon: "bi-cup-straw",         ptsPorKg: 25, color: "#000",    colorText: "#ffc107" },
+  { key: "plastico", idMaterial: 1, label: "Plástico", icon: "bi-bag",               ptsPorKg: 30, color: "#198754", colorText: "#fff" },
 ];
 
 const PESOS_INICIAL = { papel: "", carton: "", vidrio: "", plastico: "" };
 
 export default function RegistrarEntrega() {
-  const [usuario, setUsuario] = useState("");
-  const [pesos,   setPesos]   = useState(PESOS_INICIAL);
-  const [enviado, setEnviado] = useState(false);
+  const [usuarioBusqueda, setUsuarioBusqueda] = useState("");
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null); // { idUsuario, nombre, correo, puntosDisponibles }
+  const [sugerencias, setSugerencias] = useState([]);
+  const [buscando, setBuscando] = useState(false);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
+
+  const [pesos,    setPesos]   = useState(PESOS_INICIAL);
+  const [enviado,  setEnviado] = useState(false);
+  const [loading,  setLoading] = useState(false);
+  const [error,    setError]   = useState("");
+  const [resumen,  setResumen] = useState(null);
+
+  const debounceRef = useRef(null);
+  const wrapperRef  = useRef(null);
+
+  // Cerrar sugerencias al hacer click fuera
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setMostrarSugerencias(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Buscar usuarios con debounce
+  useEffect(() => {
+    if (!usuarioBusqueda.trim() || usuarioSeleccionado) {
+      setSugerencias([]);
+      return;
+    }
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      setBuscando(true);
+      try {
+        const data = await buscarUsuariosEncargado(usuarioBusqueda);
+        const lista = Array.isArray(data) ? data : (data.usuarios ?? []);
+        setSugerencias(lista);
+        setMostrarSugerencias(true);
+      } catch {
+        setSugerencias([]);
+      } finally {
+        setBuscando(false);
+      }
+    }, 350);
+  }, [usuarioBusqueda, usuarioSeleccionado]);
 
   const handlePeso = (key, val) => {
     if (val === "" || (/^\d*\.?\d*$/.test(val) && Number(val) >= 0)) {
@@ -21,7 +66,19 @@ export default function RegistrarEntrega() {
     }
   };
 
-  // Calcular totales por material y globales
+  const seleccionarUsuario = (u) => {
+    setUsuarioSeleccionado(u);
+    setUsuarioBusqueda(u.nombre);
+    setSugerencias([]);
+    setMostrarSugerencias(false);
+  };
+
+  const limpiarUsuario = () => {
+    setUsuarioSeleccionado(null);
+    setUsuarioBusqueda("");
+    setSugerencias([]);
+  };
+
   const filas = MATERIALES.map(m => {
     const kg  = parseFloat(pesos[m.key]) || 0;
     const pts = Math.round(kg * m.ptsPorKg);
@@ -32,19 +89,45 @@ export default function RegistrarEntrega() {
   const totalPts = filas.reduce((a, f) => a + f.pts, 0);
   const hayAlgo  = filas.some(f => f.kg > 0);
 
-  const handleRegistrar = () => {
-    if (!usuario.trim() || !hayAlgo) return;
-    setEnviado(true);
+  const handleRegistrar = async () => {
+    if (!usuarioSeleccionado || !hayAlgo) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const materialesPayload = filas
+        .filter(f => f.kg > 0)
+        .map(f => ({
+          idMaterial:       f.idMaterial,
+          peso:             f.kg,
+          puntosGenerados:  f.pts,
+        }));
+
+      await registrarEntregaEncargado({
+        idUsuario:  usuarioSeleccionado.idUsuario,
+        materiales: materialesPayload,
+      });
+
+      setResumen({ usuario: usuarioSeleccionado.nombre, filas: filas.filter(f => f.kg > 0), totalKg, totalPts });
+      setEnviado(true);
+    } catch (e) {
+      setError(e.message || "Error al registrar la entrega");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleNuevo = () => {
-    setUsuario("");
+    setUsuarioBusqueda("");
+    setUsuarioSeleccionado(null);
     setPesos(PESOS_INICIAL);
     setEnviado(false);
+    setResumen(null);
+    setError("");
   };
 
   // ── Vista de éxito ──────────────────────────────────────────────────────────
-  if (enviado) {
+  if (enviado && resumen) {
     return (
       <div className="card border border-2 border-dark rounded-3 shadow-sm text-center p-5">
         <div
@@ -55,16 +138,15 @@ export default function RegistrarEntrega() {
         </div>
         <h4 className="fw-black text-dark mb-1">¡Entrega registrada!</h4>
         <p className="text-secondary mb-4" style={{ fontSize: 14 }}>
-          La entrega de <strong>{usuario}</strong> fue guardada correctamente.
+          La entrega de <strong>{resumen.usuario}</strong> fue guardada correctamente.
         </p>
 
-        {/* Resumen */}
         <div className="card border border-2 border-dark rounded-3 mb-4 text-start mx-auto" style={{ maxWidth: 420 }}>
           <div className="card-body p-3">
             <div className="fw-bold text-secondary text-uppercase mb-3" style={{ fontSize: 10, letterSpacing: 1 }}>
               Resumen de entrega
             </div>
-            {filas.filter(f => f.kg > 0).map(f => (
+            {resumen.filas.map(f => (
               <div key={f.key} className="d-flex align-items-center justify-content-between py-2 border-bottom border-light">
                 <div className="d-flex align-items-center gap-2">
                   <div
@@ -84,8 +166,8 @@ export default function RegistrarEntrega() {
             <div className="d-flex justify-content-between align-items-center pt-2">
               <span className="fw-black text-dark">Total</span>
               <div>
-                <span className="fw-black text-dark">{totalKg.toFixed(2)} kg</span>
-                <span className="fw-black text-success ms-3">+{totalPts} pts</span>
+                <span className="fw-black text-dark">{resumen.totalKg.toFixed(2)} kg</span>
+                <span className="fw-black text-success ms-3">+{resumen.totalPts} pts</span>
               </div>
             </div>
           </div>
@@ -120,19 +202,98 @@ export default function RegistrarEntrega() {
               </div>
             </div>
 
-            {/* Usuario */}
-            <div className="mb-4">
+            {/* Error */}
+            {error && (
+              <div className="alert alert-danger border border-2 border-dark d-flex align-items-center gap-2 mb-3 py-2">
+                <i className="bi bi-exclamation-triangle-fill" />
+                <span style={{ fontSize: 13 }}>{error}</span>
+              </div>
+            )}
+
+            {/* Búsqueda usuario */}
+            <div className="mb-4" ref={wrapperRef}>
               <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
                 <i className="bi bi-person-fill me-1" />Nombre del usuario
               </label>
-              <input
-                type="text"
-                className="form-control border border-2 border-dark fw-semibold"
-                placeholder="Ej: Diego Tamayo"
-                value={usuario}
-                onChange={e => setUsuario(e.target.value)}
-                style={{ fontSize: 14 }}
-              />
+              <div className="position-relative">
+                <input
+                  type="text"
+                  className={`form-control border border-2 fw-semibold ${usuarioSeleccionado ? "border-success" : "border-dark"}`}
+                  placeholder="Ej: Diego Tamayo"
+                  value={usuarioBusqueda}
+                  onChange={e => { setUsuarioBusqueda(e.target.value); setUsuarioSeleccionado(null); }}
+                  onFocus={() => sugerencias.length > 0 && setMostrarSugerencias(true)}
+                  style={{ fontSize: 14, paddingRight: usuarioSeleccionado ? 36 : 14 }}
+                  autoComplete="off"
+                />
+                {/* Botón limpiar */}
+                {usuarioSeleccionado && (
+                  <button
+                    onClick={limpiarUsuario}
+                    className="btn btn-sm position-absolute top-50 end-0 translate-middle-y me-2 p-0 border-0 bg-transparent text-secondary"
+                    style={{ fontSize: 16 }}
+                    title="Cambiar usuario"
+                  >
+                    <i className="bi bi-x-circle-fill" />
+                  </button>
+                )}
+                {/* Spinner buscando */}
+                {buscando && (
+                  <div className="position-absolute top-50 end-0 translate-middle-y me-2">
+                    <span className="spinner-border spinner-border-sm text-warning" />
+                  </div>
+                )}
+                {/* Sugerencias */}
+                {mostrarSugerencias && sugerencias.length > 0 && !usuarioSeleccionado && (
+                  <div
+                    className="position-absolute w-100 border border-2 border-dark rounded-3 bg-white shadow-lg"
+                    style={{ top: "calc(100% + 4px)", zIndex: 1000, maxHeight: 220, overflowY: "auto" }}
+                  >
+                    {sugerencias.map(u => (
+                      <div
+                        key={u.idUsuario}
+                        className="d-flex align-items-center gap-3 px-3 py-2 border-bottom border-light"
+                        style={{ cursor: "pointer" }}
+                        onMouseDown={() => seleccionarUsuario(u)}
+                        onMouseEnter={e => e.currentTarget.style.background = "#fff9e6"}
+                        onMouseLeave={e => e.currentTarget.style.background = ""}
+                      >
+                        <div
+                          className="d-flex align-items-center justify-content-center rounded-circle bg-warning border border-dark fw-black"
+                          style={{ width: 34, height: 34, fontSize: 13, flexShrink: 0 }}
+                        >
+                          {u.nombre?.slice(0,2).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="fw-bold text-dark" style={{ fontSize: 13 }}>{u.nombre}</div>
+                          <div className="text-secondary" style={{ fontSize: 11 }}>{u.correo}</div>
+                        </div>
+                        {u.puntosDisponibles !== undefined && (
+                          <div className="ms-auto fw-black text-warning" style={{ fontSize: 13 }}>
+                            {u.puntosDisponibles} pts
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {/* Sin resultados */}
+                {mostrarSugerencias && !buscando && sugerencias.length === 0 && usuarioBusqueda.trim() && !usuarioSeleccionado && (
+                  <div
+                    className="position-absolute w-100 border border-2 border-dark rounded-3 bg-white shadow p-3 text-center text-secondary"
+                    style={{ top: "calc(100% + 4px)", zIndex: 1000, fontSize: 13 }}
+                  >
+                    <i className="bi bi-person-x me-1" />No se encontró ningún usuario
+                  </div>
+                )}
+              </div>
+              {/* Badge usuario seleccionado */}
+              {usuarioSeleccionado && (
+                <div className="mt-2 d-inline-flex align-items-center gap-2 px-3 py-1 rounded-2 bg-success border border-dark">
+                  <i className="bi bi-check-circle-fill text-white" style={{ fontSize: 12 }} />
+                  <span className="fw-bold text-white" style={{ fontSize: 12 }}>{usuarioSeleccionado.nombre}</span>
+                </div>
+              )}
             </div>
 
             {/* Materiales */}
@@ -150,21 +311,16 @@ export default function RegistrarEntrega() {
                     className="d-flex align-items-center gap-3 p-3 rounded-2 border border-2 border-dark"
                     style={{ background: "#fafafa" }}
                   >
-                    {/* Ícono material */}
                     <div
                       className="d-flex align-items-center justify-content-center rounded-2 border border-dark flex-shrink-0"
                       style={{ width: 42, height: 42, background: m.color }}
                     >
                       <i className={`bi ${m.icon}`} style={{ color: m.colorText, fontSize: 18 }} />
                     </div>
-
-                    {/* Nombre + pts/kg */}
                     <div style={{ minWidth: 90 }}>
                       <div className="fw-black text-dark" style={{ fontSize: 14 }}>{m.label}</div>
                       <div className="text-secondary" style={{ fontSize: 11 }}>{m.ptsPorKg} pts / kg</div>
                     </div>
-
-                    {/* Input peso */}
                     <input
                       type="number"
                       min="0"
@@ -175,15 +331,9 @@ export default function RegistrarEntrega() {
                       className="form-control border border-2 border-dark fw-bold text-center"
                       style={{ width: 90, fontSize: 16 }}
                     />
-
                     <span className="text-secondary fw-semibold" style={{ fontSize: 13 }}>kg</span>
-
-                    {/* Puntos calculados */}
                     <div className="ms-auto text-end">
-                      <div
-                        className={`fw-black ${pts > 0 ? "text-success" : "text-secondary"}`}
-                        style={{ fontSize: 18 }}
-                      >
+                      <div className={`fw-black ${pts > 0 ? "text-success" : "text-secondary"}`} style={{ fontSize: 18 }}>
                         +{pts}
                       </div>
                       <div className="text-secondary" style={{ fontSize: 10 }}>puntos</div>
@@ -210,18 +360,29 @@ export default function RegistrarEntrega() {
             {/* Botón */}
             <button
               onClick={handleRegistrar}
-              disabled={!usuario.trim() || !hayAlgo}
+              disabled={!usuarioSeleccionado || !hayAlgo || loading}
               className="btn btn-success border border-2 border-dark fw-black w-100 py-2 d-flex align-items-center justify-content-center gap-2"
               style={{ fontSize: 15 }}
             >
-              <i className="bi bi-check-circle-fill" />
-              Registrar entrega
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm" />
+                  Registrando...
+                </>
+              ) : (
+                <>
+                  <i className="bi bi-check-circle-fill" />
+                  Registrar entrega
+                </>
+              )}
             </button>
 
-            {(!usuario.trim() || !hayAlgo) && (
+            {(!usuarioSeleccionado || !hayAlgo) && !loading && (
               <div className="text-center text-secondary mt-2" style={{ fontSize: 11 }}>
                 <i className="bi bi-info-circle me-1" />
-                Ingresa el nombre del usuario y al menos un material con peso mayor a 0
+                {!usuarioSeleccionado
+                  ? "Busca y selecciona un usuario de la lista"
+                  : "Ingresa al menos un material con peso mayor a 0"}
               </div>
             )}
 
