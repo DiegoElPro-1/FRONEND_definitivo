@@ -8,9 +8,7 @@ const CAMPOS = [
 
 const DATOS_INICIALES = [
   { id: 1, nombre: "Disponible",   descripcion: "Recompensa activa y canjeable" },
-  { id: 2, nombre: "Agotada",      descripcion: "Recompensa sin stock disponible" },
-  { id: 3, nombre: "Suspendida",   descripcion: "Recompensa pausada temporalmente" },
-  { id: 4, nombre: "Vencida",      descripcion: "Recompensa fuera de fecha de vigencia" },
+  
 ];
 
 export default function CatEstadosRecompensas() {

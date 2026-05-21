@@ -8,9 +8,7 @@ const CAMPOS = [
 
 const DATOS_INICIALES = [
   { id: 1, nombre: "Activo",    descripcion: "Puntos disponibles para canje" },
-  { id: 2, nombre: "Inactivo",  descripcion: "Puntos bloqueados temporalmente" },
-  { id: 3, nombre: "Expirado",  descripcion: "Puntos que han vencido" },
-  { id: 4, nombre: "Canjeado",  descripcion: "Puntos ya utilizados en un canje" },
+  
 ];
 
 export default function CatEstadosPuntos() {

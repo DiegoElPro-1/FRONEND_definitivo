@@ -62,12 +62,8 @@ const validar = async (e) => {
             <ul className="bg-white text-dark p-3 rounded list-unstyled">
 
               <div className="text-center mb-2">
-                <div className="d-inline-flex justify-content-center align-items-center rounded-circle bg-success bg-opacity-10 p-4">
-                  <i className="bi bi-person fs-2 text-success"></i>
-                </div>
-                <div>
-                  <i className="bi bi-leaf-fill text-success"></i>
-                </div>
+                
+                
               </div>
 
               <h1 className="text-center text-dark">Crear cuenta</h1>
@@ -132,7 +128,8 @@ const validar = async (e) => {
                 </div>
               </li>
 
-              {/* CONTRASEÑA */}
+              {/* crear y confirmar contraseña
+              */}
               <div className="d-flex justify-content-center gap-2">
 
                 <li className="mb-2 w-50">
@@ -169,30 +166,10 @@ const validar = async (e) => {
 
               </div>
 
-              {/* CÓMO TE ENTERASTE */}
-              <li className="mb-2">
-                <label className="form-label text-dark">
-                  ¿Cómo te enteraste de nosotros?
-                </label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <i className="bi bi-globe"></i>
-                  </span>
-                  <select
-                    className="form-select"
-                    value={origen}
-                    onChange={(e) => setOrigen(e.target.value)}
-                  >
-                    <option value="">Selecciona una opción</option>
-                    <option value="redes">Redes sociales</option>
-                    <option value="amigo">Amigo o familiar</option>
-                    <option value="google">Google</option>
-                    <option value="otro">Otro</option>
-                  </select>
-                </div>
-              </li>
+             
+              
 
-              {/* TÉRMINOS */}
+              {/* terminos y condiciones  */}
               <li className="mb-2">
                 <input
                   className="form-check-input me-2"
@@ -227,7 +204,7 @@ const validar = async (e) => {
 
             </div>
 
-            {/* GOOGLE FACEBOOK */}
+          
             
 
             <div className="d-flex justify-content-center align-items-center gap-2">
