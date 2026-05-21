@@ -8,6 +8,7 @@ import PanelControl      from "./PanelControl";
 import Reportes          from "./Reportes";
 import Av                from "./Av";
 import PerfilEncargado   from "./PerfilEncargado";
+import Notificaciones    from "./Notificaciones";
 
 const ENCARGADO = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
 
@@ -22,8 +23,8 @@ const NAV = [
 ];
 
 export default function PanelEncargado({ onLogout }) {
-  const navigate  = useNavigate();
-  const location  = useLocation();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const activeKey    = NAV.find(n => location.pathname.includes(n.path))?.key || "dashboard";
   const tituloActivo = NAV.find(n => n.key === activeKey)?.label || "Dashboard";
@@ -44,21 +45,17 @@ export default function PanelEncargado({ onLogout }) {
     <div className="d-flex" style={{ minHeight: "100vh", background: "#f8f9fa", fontFamily: "'Segoe UI', sans-serif" }}>
       <Sidebar active={activeKey} onNav={handleNav} encargado={ENCARGADO} onLogout={handleLogout} />
 
-      <main style={{ marginLeft: 230, flex: 1, padding: 28 }}>
-        <div className="d-flex align-items-center justify-content-between mb-4">
+      <main style={{ marginLeft: 230, flex: 1, padding: 28, overflow: "visible" }}>
+        <div className="d-flex align-items-center justify-content-between mb-4" style={{ position: "relative", overflow: "visible" }}>
           <div>
             <div className="fw-black text-dark" style={{ fontSize: 22 }}>{tituloActivo}</div>
             <div className="text-secondary fw-semibold" style={{ fontSize: 13 }}>
               {ENCARGADO.punto} · Bienvenido, {ENCARGADO.nombre.split(" ")[0]}
             </div>
           </div>
+
           <div className="d-flex align-items-center gap-2">
-            <button
-              className="btn btn-outline-dark border-2 rounded-2 d-flex align-items-center justify-content-center p-0"
-              style={{ width: 38, height: 38 }}
-            >
-              <i className="bi bi-bell-fill text-dark" style={{ fontSize: 16 }} />
-            </button>
+            <Notificaciones />
             <Av text={ENCARGADO.av} size={38} bg="#ffc107" color="#000" />
           </div>
         </div>
