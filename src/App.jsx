@@ -35,6 +35,7 @@ import CatEstadosEntregas     from "./paneles/administrador/catalogos/CatEstados
 
 // ── Panel Encargado ──
 import PanelEncargado from "./paneles/encargado/PanelEncargado";
+import PerfilEncargado from "./paneles/encargado/PerfilEncargado";
 
 function reducer(state, { type, payload }) {
   switch (type) {
