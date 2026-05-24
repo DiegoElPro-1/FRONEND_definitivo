@@ -19,6 +19,47 @@ const MAT_ICON = {
 
 const ESTADOS = ["Todos", "Pendiente", "Completada", "Cancelada"];
 
+// Paleta prioridad — amarillo / verde / negro
+const PRIO_CONFIG = {
+  alta:   { bg: "#212529", text: "#ffc107", label: "Alta"   },
+  normal: { bg: "#ffc107", text: "#212529", label: "Normal" },
+  baja:   { bg: "#198754", text: "#fff",    label: "Baja"   },
+};
+
+// Estado del material — mismo esquema que RegistrarEntrega
+const ESTADO_MAT_CONFIG = {
+  1: { label: "Bueno",   icon: "bi-check-circle-fill", bg: "#198754", text: "#fff"    },
+  2: { label: "Regular", icon: "bi-dash-circle-fill",  bg: "#ffc107", text: "#212529" },
+  3: { label: "Malo",    icon: "bi-x-circle-fill",     bg: "#212529", text: "#ffc107" },
+};
+
+function BadgePrioridad({ prioridad }) {
+  if (!prioridad) return null;
+  const cfg = PRIO_CONFIG[prioridad?.toLowerCase()] ?? PRIO_CONFIG.normal;
+  return (
+    <span
+      className="badge border border-dark fw-bold"
+      style={{ background: cfg.bg, color: cfg.text, fontSize: 10 }}
+    >
+      <i className="bi bi-flag-fill me-1" />{cfg.label}
+    </span>
+  );
+}
+
+function BadgeEstadoMat({ estadoMaterial }) {
+  if (!estadoMaterial) return null;
+  const cfg = ESTADO_MAT_CONFIG[estadoMaterial];
+  if (!cfg) return null;
+  return (
+    <span
+      className="badge border border-dark fw-bold"
+      style={{ background: cfg.bg, color: cfg.text, fontSize: 10 }}
+    >
+      <i className={`bi ${cfg.icon} me-1`} />{cfg.label}
+    </span>
+  );
+}
+
 function getIniciales(nombre = "") {
   return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
 }
@@ -27,6 +68,7 @@ function capitalizar(str = "") {
   return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
+// normalizar ahora incluye prioridad y estadoMaterial sin romper nada previo
 function normalizar(e) {
   const nombre   = e.usuario?.nombre   ?? e.nombre   ?? "—";
 
@@ -51,20 +93,29 @@ function normalizar(e) {
   const estado   = capitalizar(e.estadoEntrega?.nombre ?? e.estado ?? "Pendiente");
   const obs      = e.observacion ?? e.obs ?? "";
 
+  // ── campos nuevos (opcionales, no rompen si el backend no los trae) ──
+  const prioridad      = e.prioridad ?? null;
+  const estadoMaterial = e.estadoMaterial ?? null;
+
   return {
-    id:       e.idEntrega ?? e.id,
+    id: e.idEntrega ?? e.id,
     nombre,
-    av:       getIniciales(nombre),
+    av: getIniciales(nombre),
     material,
     peso:     Number(peso),
     pts:      Number(pts),
     fecha,
     estado,
     obs,
-    _raw:     e,
+    prioridad,
+    estadoMaterial,
+    _raw: e,
   };
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// MODAL CORREGIR PUNTOS (sin cambios funcionales)
+// ══════════════════════════════════════════════════════════════════════════════
 function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
   const [nuevosPts, setNuevosPts] = useState(entrega.pts);
   const [motivo,    setMotivo]    = useState("");
@@ -89,15 +140,15 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
         <div className="card-body p-4">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <div className="fw-black text-dark" style={{ fontSize: 16 }}>
-              <i className="bi bi-arrow-repeat text-warning me-2" />Corregir puntos
+              <i className="bi bi-arrow-repeat me-2" style={{ color: "#ffc107" }} />Corregir puntos
             </div>
             <button onClick={onCerrar} className="btn btn-sm btn-outline-dark border-2 rounded-2 p-0" style={{ width: 28, height: 28 }}>
               <i className="bi bi-x" />
             </button>
           </div>
 
-          <div className="p-2 rounded-2 bg-warning border border-dark mb-3 d-flex align-items-center gap-2">
-            <Av text={entrega.av} size={32} bg="#000" color="#ffc107" />
+          <div className="p-2 rounded-2 border border-dark mb-3 d-flex align-items-center gap-2" style={{ background: "#ffc107" }}>
+            <Av text={entrega.av} size={32} bg="#212529" color="#ffc107" />
             <div>
               <div className="fw-bold text-dark" style={{ fontSize: 13 }}>{entrega.nombre}</div>
               <div className="text-dark" style={{ fontSize: 11 }}>{entrega.material} · {entrega.peso} kg</div>
@@ -106,7 +157,7 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
 
           <div className="mb-3">
             <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Puntos actuales</label>
-            <div className="fw-black text-warning" style={{ fontSize: 28 }}>{entrega.pts} pts</div>
+            <div className="fw-black" style={{ fontSize: 28, color: "#ffc107" }}>{entrega.pts} pts</div>
           </div>
 
           <div className="mb-3">
@@ -134,7 +185,11 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
 
           <div className="d-flex gap-2">
             <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">Cancelar</button>
-            <button onClick={guardar}  className="btn btn-warning border border-2 border-dark fw-bold flex-fill">
+            <button
+              onClick={guardar}
+              className="btn fw-bold flex-fill border border-2 border-dark"
+              style={{ background: "#ffc107", color: "#212529" }}
+            >
               <i className="bi bi-check-circle-fill me-1" /> Guardar
             </button>
           </div>
@@ -144,6 +199,9 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// MODAL EDITAR (sin cambios funcionales)
+// ══════════════════════════════════════════════════════════════════════════════
 function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
   const [peso,     setPeso]     = useState(entrega.peso);
   const [material, setMaterial] = useState(entrega.material);
@@ -173,15 +231,15 @@ function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
         <div className="card-body p-4">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <div className="fw-black text-dark" style={{ fontSize: 16 }}>
-              <i className="bi bi-pencil-square text-success me-2" />Editar entrega
+              <i className="bi bi-pencil-square me-2" style={{ color: "#198754" }} />Editar entrega
             </div>
             <button onClick={onCerrar} className="btn btn-sm btn-outline-dark border-2 rounded-2 p-0" style={{ width: 28, height: 28 }}>
               <i className="bi bi-x" />
             </button>
           </div>
 
-          <div className="p-2 rounded-2 bg-warning border border-dark mb-3 d-flex align-items-center gap-2">
-            <Av text={entrega.av} size={32} bg="#000" color="#ffc107" />
+          <div className="p-2 rounded-2 border border-dark mb-3 d-flex align-items-center gap-2" style={{ background: "#ffc107" }}>
+            <Av text={entrega.av} size={32} bg="#212529" color="#ffc107" />
             <div className="fw-bold text-dark" style={{ fontSize: 13 }}>{entrega.nombre}</div>
           </div>
 
@@ -221,7 +279,11 @@ function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
 
           <div className="d-flex gap-2">
             <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">Cancelar</button>
-            <button onClick={guardar}  className="btn btn-success border border-2 border-dark fw-bold flex-fill">
+            <button
+              onClick={guardar}
+              className="btn fw-bold flex-fill border border-2 border-dark"
+              style={{ background: "#198754", color: "#fff" }}
+            >
               <i className="bi bi-check-circle-fill me-1" /> Guardar cambios
             </button>
           </div>
@@ -231,16 +293,22 @@ function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
   );
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// DETALLE DE ENTREGA — ahora muestra prioridad y estadoMaterial
+// ══════════════════════════════════════════════════════════════════════════════
 function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onEditar, loadingDetalle }) {
   const siguienteEstado = entrega.estado === "Completada" ? "Pendiente" : "Completada";
   const [obsEdit,     setObsEdit]     = useState(entrega.obs || "");
   const [obsSaved,    setObsSaved]    = useState(entrega.obs || "");
   const [editandoObs, setEditandoObs] = useState(false);
 
+  const prioConf = entrega.prioridad ? PRIO_CONFIG[entrega.prioridad?.toLowerCase()] : null;
+  const estMatConf = entrega.estadoMaterial ? ESTADO_MAT_CONFIG[entrega.estadoMaterial] : null;
+
   if (loadingDetalle) {
     return (
       <div className="text-center py-5">
-        <span className="spinner-border text-warning" />
+        <span className="spinner-border" style={{ color: "#ffc107" }} />
         <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando detalle...</div>
       </div>
     );
@@ -256,39 +324,79 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
       </button>
 
       <div className="row g-3">
+
+        {/* ── Card info reciclador ── */}
         <div className="col-md-6">
           <div className="card border border-2 border-dark rounded-3 shadow-sm h-100">
             <div className="card-body p-4">
               <div className="fw-bold text-secondary text-uppercase mb-3" style={{ fontSize: 10, letterSpacing: 1 }}>
                 Información del reciclador
               </div>
-              <div className="d-flex align-items-center gap-3 mb-4 p-3 rounded-2 bg-warning border border-dark">
-                <Av text={entrega.av} size={52} bg="#000" color="#ffc107" />
+              <div
+                className="d-flex align-items-center gap-3 mb-4 p-3 rounded-2 border border-dark"
+                style={{ background: "#ffc107" }}
+              >
+                <Av text={entrega.av} size={52} bg="#212529" color="#ffc107" />
                 <div>
                   <div className="fw-black text-dark" style={{ fontSize: 16 }}>{entrega.nombre}</div>
                   <div className="fw-semibold text-dark" style={{ fontSize: 12 }}>Usuario reciclador</div>
-                  <div className="mt-1"><Badge estado={entrega.estado} /></div>
+                  <div className="mt-1 d-flex flex-wrap gap-1">
+                    <Badge estado={entrega.estado} />
+                    <BadgePrioridad prioridad={entrega.prioridad} />
+                    <BadgeEstadoMat estadoMaterial={entrega.estadoMaterial} />
+                  </div>
                 </div>
               </div>
+
               <div className="d-flex flex-column gap-2 mb-3">
                 {[
                   ["bi-box-seam",     "Material", entrega.material],
                   ["bi-speedometer2", "Peso",     `${entrega.peso} kg`],
                   ["bi-calendar3",    "Fecha",    entrega.fecha],
                 ].map(([icon, label, val]) => (
-                  <div key={label} className="d-flex align-items-center gap-2 p-2 rounded-2 bg-light border border-dark">
-                    <i className={`bi ${icon} text-success`} style={{ fontSize: 15, width: 18 }} />
+                  <div
+                    key={label}
+                    className="d-flex align-items-center gap-2 p-2 rounded-2 border border-dark"
+                    style={{ background: "#f8f9fa" }}
+                  >
+                    <i className={`bi ${icon}`} style={{ fontSize: 15, width: 18, color: "#198754" }} />
                     <span className="text-secondary fw-semibold" style={{ fontSize: 12 }}>{label}:</span>
                     <span className="fw-bold text-dark" style={{ fontSize: 13 }}>{val}</span>
                   </div>
                 ))}
+
+                {/* Prioridad como fila de detalle */}
+                {prioConf && (
+                  <div
+                    className="d-flex align-items-center gap-2 p-2 rounded-2 border border-dark"
+                    style={{ background: "#f8f9fa" }}
+                  >
+                    <i className="bi bi-flag-fill" style={{ fontSize: 15, width: 18, color: "#ffc107" }} />
+                    <span className="text-secondary fw-semibold" style={{ fontSize: 12 }}>Prioridad:</span>
+                    <BadgePrioridad prioridad={entrega.prioridad} />
+                  </div>
+                )}
+
+                {/* Estado del material como fila de detalle */}
+                {estMatConf && (
+                  <div
+                    className="d-flex align-items-center gap-2 p-2 rounded-2 border border-dark"
+                    style={{ background: "#f8f9fa" }}
+                  >
+                    <i className={`bi ${estMatConf.icon}`} style={{ fontSize: 15, width: 18, color: estMatConf.bg }} />
+                    <span className="text-secondary fw-semibold" style={{ fontSize: 12 }}>Estado material:</span>
+                    <BadgeEstadoMat estadoMaterial={entrega.estadoMaterial} />
+                  </div>
+                )}
               </div>
 
               <button
                 onClick={() => onCambiarEstado(entrega.id, siguienteEstado)}
-                className={`btn border-2 border-dark fw-bold w-100 d-flex align-items-center justify-content-center gap-2 ${
-                  entrega.estado === "Completada" ? "btn-outline-dark" : "btn-success"
-                }`}
+                className="btn fw-bold w-100 d-flex align-items-center justify-content-center gap-2 border border-2 border-dark"
+                style={{
+                  background: entrega.estado === "Completada" ? "#fff"     : "#198754",
+                  color:      entrega.estado === "Completada" ? "#212529"  : "#fff",
+                }}
               >
                 <i className={`bi ${entrega.estado === "Completada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
                 {entrega.estado === "Completada" ? "Marcar como Pendiente" : "Marcar como Completada"}
@@ -297,23 +405,31 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
           </div>
         </div>
 
+        {/* ── Card puntos ── */}
         <div className="col-md-6">
           <div className="card border border-2 border-dark rounded-3 shadow-sm h-100">
             <div className="card-body p-4 d-flex flex-column align-items-center justify-content-center text-center">
               <div
-                className="d-flex align-items-center justify-content-center rounded-3 bg-success border border-dark mb-3"
-                style={{ width: 60, height: 60 }}
+                className="d-flex align-items-center justify-content-center rounded-3 border border-dark mb-3"
+                style={{ width: 60, height: 60, background: "#198754" }}
               >
                 <i className="bi bi-recycle text-white" style={{ fontSize: 28 }} />
               </div>
               <div className="text-secondary fw-semibold mb-1" style={{ fontSize: 13 }}>Puntos otorgados</div>
-              <div className="fw-black text-warning" style={{ fontSize: 56 }}>{entrega.pts}</div>
+              <div className="fw-black" style={{ fontSize: 56, color: "#ffc107" }}>{entrega.pts}</div>
               <div className="text-secondary" style={{ fontSize: 12 }}>puntos</div>
               <div className="mt-4 d-flex gap-2 w-100">
-                <button onClick={() => onEditar(entrega)} className="btn btn-outline-dark border-2 fw-bold flex-fill btn-sm">
+                <button
+                  onClick={() => onEditar(entrega)}
+                  className="btn btn-outline-dark border-2 fw-bold flex-fill btn-sm"
+                >
                   <i className="bi bi-pencil me-1" /> Editar
                 </button>
-                <button onClick={() => onCorregirPts(entrega)} className="btn btn-warning border border-2 border-dark fw-bold flex-fill btn-sm">
+                <button
+                  onClick={() => onCorregirPts(entrega)}
+                  className="btn fw-bold flex-fill btn-sm border border-2 border-dark"
+                  style={{ background: "#ffc107", color: "#212529" }}
+                >
                   <i className="bi bi-arrow-repeat me-1" /> Corregir pts
                 </button>
               </div>
@@ -321,11 +437,15 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
           </div>
         </div>
 
+        {/* ── Observaciones ── */}
         <div className="col-12">
           <div className="card border border-2 border-dark rounded-3 shadow-sm">
             <div className="card-body p-4">
               <div className="d-flex align-items-center justify-content-between mb-2">
-                <div className="fw-bold text-secondary text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>Observaciones</div>
+                <div className="fw-bold text-secondary text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>
+                  <i className="bi bi-chat-left-text-fill me-1" style={{ color: "#ffc107" }} />
+                  Observaciones
+                </div>
                 <button
                   onClick={() => setEditandoObs(o => !o)}
                   className="btn btn-sm btn-outline-dark border-2 fw-bold"
@@ -348,31 +468,39 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
                   />
                   <button
                     onClick={() => { setObsSaved(obsEdit); setEditandoObs(false); }}
-                    className="btn btn-success border border-2 border-dark fw-bold btn-sm"
+                    className="btn fw-bold btn-sm border border-2 border-dark"
+                    style={{ background: "#198754", color: "#fff" }}
                   >
                     <i className="bi bi-floppy me-1" /> Guardar observación
                   </button>
                 </>
               ) : (
-                <div className="rounded-2 p-3 bg-light border border-dark text-secondary fst-italic" style={{ fontSize: 14 }}>
+                <div
+                  className="rounded-2 p-3 border border-dark text-secondary fst-italic"
+                  style={{ background: "#f8f9fa", fontSize: 14 }}
+                >
                   {obsSaved || "Sin observaciones registradas."}
                 </div>
               )}
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// COMPONENTE PRINCIPAL
+// ══════════════════════════════════════════════════════════════════════════════
 export default function HistorialdeEntregas() {
   const [entregas,     setEntregas]     = useState([]);
   const [materiales,   setMateriales]   = useState([]);
   const [seleccionado, setSeleccionado] = useState(null);
   const [filtroMat,    setFiltroMat]    = useState("Todos");
   const [filtroEst,    setFiltroEst]    = useState("Todos");
+  const [filtroPrio,   setFiltroPrio]   = useState("Todos");
   const [busqueda,     setBusqueda]     = useState("");
   const [modalPts,     setModalPts]     = useState(null);
   const [modalEditar,  setModalEditar]  = useState(null);
@@ -381,6 +509,7 @@ export default function HistorialdeEntregas() {
   const [loadingDetalle, setLoadingDetalle] = useState(false);
   const [error,          setError]          = useState("");
 
+  // ── Fetch — sin cambios ──────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -394,7 +523,6 @@ export default function HistorialdeEntregas() {
         const listaM = Array.isArray(dataMateriales)
           ? dataMateriales
           : (dataMateriales.materiales ?? []);
-
         setEntregas(listaE.map(normalizar));
         setMateriales(listaM);
       })
@@ -402,7 +530,7 @@ export default function HistorialdeEntregas() {
       .finally(() => setLoading(false));
   }, []);
 
-  // ── Cambiar estado — guarda en el backend ───────────────────────────
+  // ── Handlers — sin cambios en lógica de backend ──────────────────────────
   const handleCambiarEstado = async (id, nuevoEstado) => {
     const idEstado = nuevoEstado === "Completada" ? 2 : 1;
     try {
@@ -437,6 +565,7 @@ export default function HistorialdeEntregas() {
     }
   };
 
+  // ── Vista detalle ────────────────────────────────────────────────────────
   if (seleccionado) {
     const entregaActual = entregas.find(e => e.id === seleccionado.id) || seleccionado;
     return (
@@ -468,18 +597,21 @@ export default function HistorialdeEntregas() {
     );
   }
 
+  // ── Opciones de filtro ───────────────────────────────────────────────────
   const materialesUnicos = ["Todos", ...new Set(entregas.map(e => e.material).filter(m => m && m !== "—"))];
 
   const filtradas = entregas.filter(e => {
-    const matchMat = filtroMat === "Todos" || e.material === filtroMat;
-    const matchEst = filtroEst === "Todos" || e.estado   === filtroEst;
-    const matchBus = e.nombre.toLowerCase().includes(busqueda.toLowerCase());
-    return matchMat && matchEst && matchBus;
+    const matchMat  = filtroMat  === "Todos" || e.material === filtroMat;
+    const matchEst  = filtroEst  === "Todos" || e.estado   === filtroEst;
+    const matchPrio = filtroPrio === "Todos" || (e.prioridad?.toLowerCase() ?? "normal") === filtroPrio;
+    const matchBus  = e.nombre.toLowerCase().includes(busqueda.toLowerCase());
+    return matchMat && matchEst && matchPrio && matchBus;
   });
 
   const totalKg  = filtradas.reduce((a, e) => a + e.peso, 0).toFixed(1);
   const totalPts = filtradas.reduce((a, e) => a + e.pts,  0);
 
+  // ── Vista lista ──────────────────────────────────────────────────────────
   return (
     <>
       {modalPts && (
@@ -492,14 +624,19 @@ export default function HistorialdeEntregas() {
 
       <div>
         {error && (
-          <div className="alert alert-danger border border-2 border-dark d-flex align-items-center gap-2 mb-3">
+          <div
+            className="d-flex align-items-center gap-2 rounded-2 border border-2 border-dark mb-3 px-3 py-2"
+            style={{ background: "#212529", color: "#ffc107", fontSize: 13 }}
+          >
             <i className="bi bi-exclamation-triangle-fill" />
-            <span style={{ fontSize: 13 }}>{error}</span>
+            <span>{error}</span>
           </div>
         )}
 
+        {/* ── Filtros ── */}
         <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
-          <div className="input-group" style={{ maxWidth: 260 }}>
+          {/* Busqueda */}
+          <div className="input-group" style={{ maxWidth: 240 }}>
             <span className="input-group-text border-2 border-dark bg-white">
               <i className="bi bi-search text-dark" />
             </span>
@@ -513,22 +650,37 @@ export default function HistorialdeEntregas() {
             />
           </div>
 
+          {/* Filtro material */}
           <select
             className="form-select border-2 border-dark fw-semibold"
-            style={{ maxWidth: 170, fontSize: 13 }}
+            style={{ maxWidth: 160, fontSize: 13 }}
             value={filtroMat}
             onChange={e => setFiltroMat(e.target.value)}
           >
             {materialesUnicos.map(m => <option key={m}>{m}</option>)}
           </select>
 
+          {/* Filtro estado */}
           <select
             className="form-select border-2 border-dark fw-semibold"
-            style={{ maxWidth: 150, fontSize: 13 }}
+            style={{ maxWidth: 145, fontSize: 13 }}
             value={filtroEst}
             onChange={e => setFiltroEst(e.target.value)}
           >
             {ESTADOS.map(s => <option key={s}>{s}</option>)}
+          </select>
+
+          {/* Filtro prioridad — nuevo */}
+          <select
+            className="form-select border-2 border-dark fw-semibold"
+            style={{ maxWidth: 145, fontSize: 13 }}
+            value={filtroPrio}
+            onChange={e => setFiltroPrio(e.target.value)}
+          >
+            <option value="Todos">Prioridad</option>
+            <option value="alta">Alta</option>
+            <option value="normal">Normal</option>
+            <option value="baja">Baja</option>
           </select>
 
           <span className="ms-auto text-secondary fw-semibold" style={{ fontSize: 12 }}>
@@ -536,6 +688,7 @@ export default function HistorialdeEntregas() {
           </span>
         </div>
 
+        {/* ── KPIs ── */}
         <div className="row g-2 mb-3">
           <div className="col-4">
             <div className="card border border-2 border-dark rounded-3 text-center py-2 bg-white shadow-sm">
@@ -544,78 +697,121 @@ export default function HistorialdeEntregas() {
             </div>
           </div>
           <div className="col-4">
-            <div className="card border border-2 border-dark rounded-3 text-center py-2 bg-success shadow-sm">
+            <div className="card border border-2 border-dark rounded-3 text-center py-2 shadow-sm" style={{ background: "#198754" }}>
               <div className="fw-black text-white" style={{ fontSize: 20 }}>{totalKg} kg</div>
               <div className="text-white fw-semibold" style={{ fontSize: 11 }}>Total reciclado</div>
             </div>
           </div>
           <div className="col-4">
-            <div className="card border border-2 border-dark rounded-3 text-center py-2 bg-warning shadow-sm">
+            <div className="card border border-2 border-dark rounded-3 text-center py-2 shadow-sm" style={{ background: "#ffc107" }}>
               <div className="fw-black text-dark" style={{ fontSize: 20 }}>{totalPts}</div>
               <div className="text-dark fw-semibold" style={{ fontSize: 11 }}>Puntos otorgados</div>
             </div>
           </div>
         </div>
 
+        {/* ── Tabla ── */}
         <div className="card border border-2 border-dark rounded-3 shadow-sm overflow-hidden">
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
-              <thead className="bg-dark text-white">
+              <thead style={{ background: "#212529" }}>
                 <tr>
-                  {["Usuario", "Material", "Peso", "Puntos", "Fecha", "Estado", "Acciones"].map(h => (
-                    <th key={h} className="fw-bold border-0 px-3 py-2" style={{ fontSize: 11, letterSpacing: 0.5 }}>{h}</th>
+                  {["Usuario", "Material", "Peso", "Puntos", "Prioridad", "Estado mat.", "Fecha", "Estado", "Acciones"].map(h => (
+                    <th
+                      key={h}
+                      className="fw-bold border-0 px-3 py-2 text-white"
+                      style={{ fontSize: 11, letterSpacing: 0.5 }}
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-5">
-                      <span className="spinner-border text-warning" />
+                    <td colSpan={9} className="text-center py-5">
+                      <span className="spinner-border" style={{ color: "#ffc107" }} />
                       <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando entregas...</div>
                     </td>
                   </tr>
                 ) : filtradas.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center text-secondary py-5 fw-semibold">
+                    <td colSpan={9} className="text-center text-secondary py-5 fw-semibold">
                       <i className="bi bi-inbox d-block mb-2" style={{ fontSize: 32 }} />
-                      {entregas.length === 0 ? "No hay entregas registradas" : "Sin resultados para los filtros aplicados"}
+                      {entregas.length === 0
+                        ? "No hay entregas registradas"
+                        : "Sin resultados para los filtros aplicados"}
                     </td>
                   </tr>
                 ) : (
                   filtradas.map(e => (
                     <tr key={e.id}>
+                      {/* Usuario */}
                       <td className="px-3 py-2">
                         <div className="d-flex align-items-center gap-2">
                           <Av text={e.av} size={30} />
                           <span className="fw-bold text-dark">{e.nombre}</span>
                         </div>
                       </td>
+
+                      {/* Material */}
                       <td className="px-3 py-2">
                         <div className="d-flex align-items-center gap-1">
-                          <i className={`bi ${MAT_ICON[e.material] || "bi-recycle"} text-success`} />
+                          <i
+                            className={`bi ${MAT_ICON[e.material] || "bi-recycle"}`}
+                            style={{ color: "#198754" }}
+                          />
                           <span className="fw-semibold text-dark">{e.material}</span>
                         </div>
                       </td>
+
+                      {/* Peso */}
                       <td className="px-3 py-2 fw-bold text-dark">{e.peso} kg</td>
-                      <td className="px-3 py-2 fw-black text-warning">{e.pts}</td>
+
+                      {/* Puntos */}
+                      <td className="px-3 py-2 fw-black" style={{ color: "#ffc107" }}>{e.pts}</td>
+
+                      {/* Prioridad — nuevo */}
+                      <td className="px-3 py-2">
+                        {e.prioridad
+                          ? <BadgePrioridad prioridad={e.prioridad} />
+                          : <span className="text-secondary" style={{ fontSize: 11 }}>—</span>
+                        }
+                      </td>
+
+                      {/* Estado material — nuevo */}
+                      <td className="px-3 py-2">
+                        {e.estadoMaterial
+                          ? <BadgeEstadoMat estadoMaterial={e.estadoMaterial} />
+                          : <span className="text-secondary" style={{ fontSize: 11 }}>—</span>
+                        }
+                      </td>
+
+                      {/* Fecha */}
                       <td className="px-3 py-2 text-secondary">{e.fecha}</td>
+
+                      {/* Estado entrega */}
                       <td className="px-3 py-2"><Badge estado={e.estado} /></td>
+
+                      {/* Acciones */}
                       <td className="px-3 py-2">
                         <div className="d-flex gap-1">
                           <button
                             onClick={() => verDetalle(e)}
-                            className="btn btn-sm btn-warning border border-dark fw-bold d-flex align-items-center gap-1"
-                            style={{ fontSize: 11 }}
+                            className="btn btn-sm fw-bold d-flex align-items-center gap-1 border border-dark"
+                            style={{ fontSize: 11, background: "#ffc107", color: "#212529" }}
                           >
                             <i className="bi bi-eye" /> Ver
                           </button>
                           <button
                             onClick={() => handleCambiarEstado(e.id, e.estado === "Completada" ? "Pendiente" : "Completada")}
-                            className={`btn btn-sm border-2 border-dark fw-bold d-flex align-items-center gap-1 ${
-                              e.estado === "Completada" ? "btn-outline-dark" : "btn-success"
-                            }`}
-                            style={{ fontSize: 11 }}
+                            className="btn btn-sm fw-bold d-flex align-items-center gap-1 border border-2 border-dark"
+                            style={{
+                              fontSize: 11,
+                              background: e.estado === "Completada" ? "#fff"     : "#198754",
+                              color:      e.estado === "Completada" ? "#212529"  : "#fff",
+                            }}
                             title={e.estado === "Completada" ? "Marcar Pendiente" : "Marcar Completada"}
                           >
                             <i className={`bi ${e.estado === "Completada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
