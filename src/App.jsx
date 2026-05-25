@@ -33,28 +33,26 @@ import CatTiposRecompensa     from "./paneles/administrador/catalogos/CatTiposRe
 import CatEstadosMateriales   from "./paneles/administrador/catalogos/CatEstadosMateriales";
 import CatEstadosEntregas     from "./paneles/administrador/catalogos/CatEstadosEntregas";
 
-// ── Panel Encargado ──
-import PanelEncargado from "./paneles/encargado/PanelEncargado";
-import PerfilEncargado from "./paneles/encargado/PerfilEncargado";
+import PanelEncargado  from "./paneles/encargado/PanelEncargado";
 
 function reducer(state, { type, payload }) {
   switch (type) {
-    case "ADD_ENTREGA":    return { ...state, entregas:  [payload, ...state.entregas] };
-    case "ADD_HISTORIAL":  return { ...state, historial: [payload, ...state.historial] };
-    case "ADD_PTS":        return { ...state, pts: state.pts + payload };
-    case "SET_PTS":        return { ...state, pts: payload };
-    case "ADD_IA_HIST":    return { ...state, iaHist: [payload, ...state.iaHist] };
-    case "SET_IA_RESULT":  return { ...state, iaResult: payload };
-    case "SET_USUARIOS":   return { ...state, usuarios: payload };
-    case "SET_ADMINS":     return { ...state, usuarios: [...state.usuarios.filter(u => u.rol !== "Admin"), ...payload] };
-    case "ADD_USER":       return { ...state, usuarios: [...state.usuarios, payload] };
-    case "UPDATE_USER":    return { ...state, usuarios: state.usuarios.map(u => u.id === payload.id ? payload : u) };
-    case "TOGGLE_USER":    return { ...state, usuarios: state.usuarios.map(u => u.id === payload ? { ...u, activo: !u.activo } : u) };
-    case "DEL_USER":       return { ...state, usuarios: state.usuarios.filter(u => u.id !== payload) };
-    case "SET_ALIADOS":    return { ...state, aliados: payload };
-    case "ADD_ALIADO":     return { ...state, aliados: [...(state.aliados || []), payload] };
-    case "TOGGLE_ALIADO":  return { ...state, aliados: (state.aliados || []).map(u => u.id === payload ? { ...u, activo: !u.activo } : u) };
-    case "DEL_ALIADO":     return { ...state, aliados: (state.aliados || []).filter(u => u.id !== payload) };
+    case "ADD_ENTREGA":      return { ...state, entregas:   [payload, ...state.entregas] };
+    case "ADD_HISTORIAL":    return { ...state, historial:  [payload, ...state.historial] };
+    case "ADD_PTS":          return { ...state, pts: state.pts + payload };
+    case "SET_PTS":          return { ...state, pts: payload };
+    case "ADD_IA_HIST":      return { ...state, iaHist:    [payload, ...state.iaHist] };
+    case "SET_IA_RESULT":    return { ...state, iaResult:   payload };
+    case "SET_USUARIOS":     return { ...state, usuarios:   payload };
+    case "SET_ADMINS":       return { ...state, usuarios:   [...state.usuarios.filter(u => u.rol !== "Admin"), ...payload] };
+    case "ADD_USER":         return { ...state, usuarios:   [...state.usuarios, payload] };
+    case "UPDATE_USER":      return { ...state, usuarios:   state.usuarios.map(u => u.id === payload.id ? payload : u) };
+    case "TOGGLE_USER":      return { ...state, usuarios:   state.usuarios.map(u => u.id === payload ? { ...u, activo: !u.activo } : u) };
+    case "DEL_USER":         return { ...state, usuarios:   state.usuarios.filter(u => u.id !== payload) };
+    case "SET_ALIADOS":      return { ...state, aliados:    payload };
+    case "ADD_ALIADO":       return { ...state, aliados:    [...(state.aliados || []), payload] };
+    case "TOGGLE_ALIADO":    return { ...state, aliados:    (state.aliados || []).map(u => u.id === payload ? { ...u, activo: !u.activo } : u) };
+    case "DEL_ALIADO":       return { ...state, aliados:    (state.aliados || []).filter(u => u.id !== payload) };
     case "SET_ENCARGADOS":   return { ...state, encargados: payload };
     case "ADD_ENCARGADO":    return { ...state, encargados: [payload, ...(state.encargados || [])] };
     case "UPDATE_ENCARGADO": return { ...state, encargados: (state.encargados || []).map(u => u.id === payload.id ? payload : u) };
@@ -85,42 +83,39 @@ export default function App() {
   const [state, dispatch]             = useReducer(reducer, INITIAL_STATE);
   const { toasts, showToast, remove } = useToast();
 
-  // ── Cargar usuarios y admins al iniciar (o recargar) si hay sesión admin ──
   useEffect(() => {
     if (!user || user.rolSeleccionado === "encargado") return;
 
-    // Cargar usuarios normales
     getUsuarios()
       .then(data => {
         const lista = (data.usuarios ?? data ?? []).map(u => ({
-          id:       u.idUsuario,
-          nombre:   u.nombre,
-          email:    u.correo,
-          telefono: u.telefono ?? "",
-          rol:      "Usuario",
-          zona:     "",
-          pts:      0,
-          activo:   u.idEstadoUsuario === 1,
-          av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
+          id:        u.idUsuario,
+          nombre:    u.nombre,
+          email:     u.correo,
+          telefono:  u.telefono ?? "",
+          rol:       "Usuario",
+          zona:      "",
+          pts:       0,
+          activo:    u.idEstadoUsuario === 1,
+          av:        (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
           fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
         }));
         dispatch({ type: "SET_USUARIOS", payload: lista });
       })
       .catch(() => {});
 
-    // Cargar admins
     getAdmins()
       .then(data => {
         const lista = (data.admins ?? data.administradores ?? []).map(u => ({
-          id:       u.idAdmin ?? u.idUsuario,
-          nombre:   u.nombre,
-          email:    u.correo,
-          telefono: u.telefono ?? "",
-          rol:      "Admin",
-          zona:     "",
-          pts:      0,
-          activo:   u.idEstadoUsuario === 1,
-          av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
+          id:        u.idAdmin ?? u.idUsuario,
+          nombre:    u.nombre,
+          email:     u.correo,
+          telefono:  u.telefono ?? "",
+          rol:       "Admin",
+          zona:      "",
+          pts:       0,
+          activo:    u.idEstadoUsuario === 1,
+          av:        (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
           fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
         }));
         dispatch({ type: "SET_ADMINS", payload: lista });
@@ -132,35 +127,38 @@ export default function App() {
     sessionStorage.setItem("user", JSON.stringify(usuarioData));
     setUser(usuarioData);
 
-    // Redirigir según rol seleccionado en el login
+    // La redirección la maneja el rol detectado automáticamente
     if (usuarioData.rolSeleccionado === "encargado") {
       navigate("/encargado/dashboard");
-    } else {
+    } else if (usuarioData.rolSeleccionado === "administrador") {
       navigate("/dashboard");
+    } else {
+      navigate("/"); // usuario normal — ajusta cuando tengas su panel
     }
   };
 
   const handleLogout = async () => {
     try { await cerrarSesion(); } catch (_) {}
     sessionStorage.removeItem("user");
+    localStorage.removeItem("usuario");
     setUser(null);
-    navigate("/login");
+    window.location.replace("/login");
   };
 
-  // ───────── RUTAS PÚBLICAS ─────────
+  // ── Rutas públicas ─────────────────────────────────────────────────────
   if (!user) {
     return (
       <Routes>
-        <Route path="/"        element={<LandingPage />} />
-        <Route path="/login"   element={<Login onLogin={handleLogin} />} />
+        <Route path="/"         element={<LandingPage />} />
+        <Route path="/login"    element={<Login onLogin={handleLogin} />} />
         <Route path="/registro" element={<Registro />} />
-        <Route path="/forgot"  element={<ForgotPassword />} />
-        <Route path="*"        element={<Navigate to="/" replace />} />
+        <Route path="/forgot"   element={<ForgotPassword />} />
+        <Route path="*"         element={<Navigate to="/login" replace />} />
       </Routes>
     );
   }
 
-  // ───────── PANEL ENCARGADO (layout propio) ─────────
+  // ── Panel Encargado ────────────────────────────────────────────────────
   if (user.rolSeleccionado === "encargado") {
     return (
       <Routes>
@@ -170,7 +168,7 @@ export default function App() {
     );
   }
 
-  // ───────── RUTAS PRIVADAS ADMIN ─────────
+  // ── Panel Admin ────────────────────────────────────────────────────────
   const shared = { state, dispatch, showToast, navigate, user };
 
   return (

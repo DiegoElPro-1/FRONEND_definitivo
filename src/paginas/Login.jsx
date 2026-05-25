@@ -1,38 +1,32 @@
 import { useState } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { iniciarSesion } from "../services/api";
-import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png'
+import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png';
 
-const ROLES = [
-  { value: "usuario",      label: "Usuario",        icon: "bi-person-fill"       },
-  { value: "administrador",label: "Administrador",  icon: "bi-shield-lock-fill"  },
-  { value: "encargado",    label: "Encargado",      icon: "bi-shop"              },
-];
+function detectarRol(usuario) {
+  const idRol = usuario?.id_rol ?? usuario?.idRol ?? usuario?.rol?.id_rol ?? usuario?.rol?.idRol;
+  const rolNombre = (usuario?.rol ?? "").toString().toLowerCase();
 
-// ─────────────────────────────────────────────
-// FORMULARIO DE LOGIN
-// ─────────────────────────────────────────────
-function LoginForm({ onLogin }) {
+  if (idRol === 1 || rolNombre === "administrador" || rolNombre === "admin") return "administrador";
+  if (idRol === 4 || rolNombre === "encargado") return "encargado";
+  return "usuario";
+}
+
+export default function Login({ onLogin }) {
   const [correo,     setCorreo]     = useState("");
   const [contraseña, setContraseña] = useState("");
-  const [rol,        setRol]        = useState("usuario");
   const [error,      setError]      = useState("");
   const [loading,    setLoading]    = useState(false);
   const [showPass,   setShowPass]   = useState(false);
-  const [remember,   setRemember]   = useState(false);
-  const [dropOpen,   setDropOpen]   = useState(false);
   const navigate = useNavigate();
 
-  const rolActual = ROLES.find(r => r.value === rol);
-
   const validar = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
+    if (e?.preventDefault) e.preventDefault();
 
-    if (correo.trim() === "" || contraseña.trim() === "") {
+    if (!correo.trim() || !contraseña.trim()) {
       setError("Todos los campos son obligatorios");
       return;
     }
-
     if (!correo.includes("@") || !correo.includes(".")) {
       setError("Correo electrónico inválido");
       return;
@@ -42,39 +36,29 @@ function LoginForm({ onLogin }) {
     setLoading(true);
 
     try {
-      const data = await iniciarSesion(correo.trim(), contraseña);
+      const data    = await iniciarSesion(correo.trim(), contraseña);
       const usuario = data.usuario ?? data;
 
-      localStorage.setItem("usuario", JSON.stringify(usuario));
-      sessionStorage.setItem("user", JSON.stringify(usuario));
+      const rolSeleccionado = detectarRol(usuario);
 
-      if (onLogin) onLogin({ ...usuario, rolSeleccionado: rol });
+      localStorage.setItem("usuario",  JSON.stringify(usuario));
+      sessionStorage.setItem("user",   JSON.stringify({ ...usuario, rolSeleccionado }));
 
-      // Redirigir según rol seleccionado
-      if (rol === "encargado") {
-        navigate("/encargado/dashboard");
-      } else {
-        navigate("/dashboard");
-      }
+      if (onLogin) onLogin({ ...usuario, rolSeleccionado });
 
     } catch (err) {
-      setError(err.message || "Error al iniciar sesión");
+      setError(err.message || "Correo o contraseña incorrectos");
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter") validar();
   };
 
   return (
     <div className="container-fluid">
       <div className="row min-vh-100">
 
-        {/* ── PANEL IZQUIERDO: imagen de fondo ── */}
         <div
-          className="col-md-6 p-0"
+          className="col-md-6 p-0 d-none d-md-block"
           style={{
             backgroundImage: `url(${fondoReciclaje})`,
             backgroundSize: "cover",
@@ -84,248 +68,103 @@ function LoginForm({ onLogin }) {
           }}
         />
 
-        {/* ── PANEL DERECHO: formulario ── */}
-        <div className="col-md-6 d-flex justify-content-center align-items-center">
-          <div className="w-100 p-4 mx-auto">
-            <form
-              className="bg-white text-dark p-4 rounded shadow-sm"
-              onSubmit={validar}
-              noValidate
-            >
-              <h1 className="text-center text-dark fw-bold fs-3">
-                ¡Bienvenido de nuevo! <i className="bi bi-leaf-fill text-success"></i>
-              </h1>
+        <div className="col-12 col-md-6 d-flex justify-content-center align-items-center bg-white">
+          <div className="w-100 px-4" style={{ maxWidth: 420 }}>
+            <form className="py-5" onSubmit={validar} noValidate>
 
-              <h2 className="text-center fw-light text-success fs-6">
-                Inicia sesión para continuar reciclando y ganando
-              </h2>
-
-              <br />
-
-              {error && (
-                <div className="alert alert-danger py-2 text-center">{error}</div>
-              )}
-
-              {/* ── Selector de rol ── */}
-              <div className="mb-3">
-                <label className="form-label">Iniciar sesión como</label>
-                <div className="dropdown">
-                  <button
-                    type="button"
-                    className="btn btn-outline-success w-100 d-flex align-items-center justify-content-between"
-                    onClick={() => setDropOpen(o => !o)}
-                  >
-                    <span>
-                      <i className={`bi ${rolActual.icon} me-2`}></i>
-                      {rolActual.label}
-                    </span>
-                    <i className={`bi bi-chevron-${dropOpen ? "up" : "down"}`}></i>
-                  </button>
-
-                  {dropOpen && (
-                    <ul
-                      className="dropdown-menu show w-100 shadow-sm border-0"
-                      style={{ zIndex: 1000 }}
-                    >
-                      {ROLES.map(r => (
-                        <li key={r.value}>
-                          <button
-                            type="button"
-                            className={`dropdown-item d-flex align-items-center gap-2 py-2 ${rol === r.value ? "active bg-success" : ""}`}
-                            onClick={() => { setRol(r.value); setDropOpen(false); }}
-                          >
-                            <i className={`bi ${r.icon}`}></i>
-                            {r.label}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
+              <div className="text-center mb-4">
+                <h1 className="fw-bold text-dark fs-3 mb-1">
+                  ¡Bienvenido de nuevo! <i className="bi bi-leaf-fill text-success" />
+                </h1>
+                <p className="text-success fw-semibold mb-0" style={{ fontSize: 14 }}>
+                  Inicia sesión para continuar reciclando y ganando
+                </p>
               </div>
 
-              {/* Email */}
+              {error && (
+                <div className="alert alert-danger border border-danger d-flex align-items-center gap-2 py-2 mb-3" style={{ fontSize: 13 }}>
+                  <i className="bi bi-exclamation-circle-fill text-danger" />
+                  {error}
+                </div>
+              )}
+
               <div className="mb-3">
-                <label className="form-label">Correo electrónico</label>
+                <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                  Correo electrónico
+                </label>
                 <div className="input-group">
-                  <span className="input-group-text">
-                    <i className="bi bi-envelope"></i>
+                  <span className="input-group-text bg-white">
+                    <i className="bi bi-envelope text-success" />
                   </span>
                   <input
                     type="email"
                     className="form-control"
-                    placeholder="Ingresa tu correo electrónico"
+                    placeholder="tucorreo@ejemplo.com"
                     value={correo}
-                    onChange={(e) => setCorreo(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onChange={e => setCorreo(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && validar()}
+                    autoComplete="email"
                   />
                 </div>
               </div>
 
-              {/* Contraseña */}
               <div className="mb-3">
-                <label className="form-label">Contraseña</label>
+                <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                  Contraseña
+                </label>
                 <div className="input-group">
-                  <span className="input-group-text">
-                    <i className="bi bi-lock"></i>
+                  <span className="input-group-text bg-white">
+                    <i className="bi bi-lock text-success" />
                   </span>
                   <input
                     className="form-control"
-                    placeholder="Ingresa tu contraseña"
+                    placeholder="Tu contraseña"
                     type={showPass ? "text" : "password"}
                     value={contraseña}
-                    onChange={(e) => setContraseña(e.target.value)}
-                    onKeyDown={handleKeyDown}
+                    onChange={e => setContraseña(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && validar()}
+                    autoComplete="current-password"
                   />
-                  <button
-                    type="button"
-                    className="input-group-text"
-                    style={{ cursor: "pointer" }}
-                    onClick={() => setShowPass((s) => !s)}
-                  >
-                    <i className={`bi ${showPass ? "bi-eye-slash" : "bi-eye"}`}></i>
+                  <button type="button" className="input-group-text bg-white"
+                    style={{ cursor: "pointer" }} onClick={() => setShowPass(s => !s)}>
+                    <i className={`bi ${showPass ? "bi-eye-slash" : "bi-eye"} text-secondary`} />
                   </button>
                 </div>
               </div>
 
-              {/* Recordarme + ¿Olvidaste? */}
-              <div className="mb-3 d-flex justify-content-between align-items-center">
-                <div className="form-check">
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    id="remember"
-                    checked={remember}
-                    onChange={(e) => setRemember(e.target.checked)}
-                  />
-                  <label className="form-check-label" htmlFor="remember">
-                    Recordarme
-                  </label>
-                </div>
-
-                <button
-                  type="button"
-                  className="btn btn-link p-0 text-success small text-decoration-none"
-                  onClick={() => navigate("/forgot")}
-                >
+              <div className="d-flex justify-content-end mb-4">
+                <button type="button"
+                  className="btn btn-link p-0 text-success fw-semibold text-decoration-none"
+                  style={{ fontSize: 13 }}
+                  onClick={() => navigate("/forgot")}>
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
 
-              {/* Botón iniciar sesión */}
-              <div className="d-grid">
-                <button
-                  type="submit"
-                  className="btn btn-success rounded-pill py-2"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2"></span>
-                      Entrando...
-                    </>
-                  ) : (
-                    <>
-                      <i className="bi bi-leaf-fill me-2"></i>INICIAR SESIÓN
-                    </>
-                  )}
+              <div className="d-grid mb-3">
+                <button type="submit" className="btn btn-success fw-bold rounded-pill py-2"
+                  style={{ fontSize: 15 }} disabled={loading}>
+                  {loading
+                    ? <><span className="spinner-border spinner-border-sm me-2" />Entrando...</>
+                    : <><i className="bi bi-box-arrow-in-right me-2" />INICIAR SESIÓN</>
+                  }
                 </button>
               </div>
 
-              <br />
-
-              <div className="text-center">
-                <span className="text-secondary">¿No tienes cuenta?</span>{" "}
-                <button
-                  type="button"
+              <div className="text-center" style={{ fontSize: 13 }}>
+                <span className="text-secondary">¿No tienes cuenta? </span>
+                <button type="button"
                   className="btn btn-link p-0 fw-bold text-success text-decoration-none"
-                  onClick={() => navigate("/Registro")}
-                >
+                  style={{ fontSize: 13 }}
+                  onClick={() => navigate("/registro")}>
                   Regístrate aquí
                 </button>
               </div>
-            </form>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// FORMULARIO DE REGISTRO
-// ─────────────────────────────────────────────
-function RegistroForm() {
-  const [nombre,   setNombre]   = useState("");
-  const [usuario,  setUsuario]  = useState("");
-  const [correo,   setCorreo]   = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmar,setConfirmar]= useState("");
-  const [terminos, setTerminos] = useState(false);
-  const [origen,   setOrigen]   = useState("");
-  const [error,    setError]    = useState("");
-  const navigate = useNavigate();
-
-  const validar = (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-    setError("");
-
-    if (nombre.trim() === "")    return setError("Nombre requerido");
-    if (usuario.trim() === "")   return setError("Usuario requerido");
-    if (correo.trim() === "")    return setError("Correo requerido");
-    if (password.trim() === "")  return setError("Contraseña requerida");
-    if (confirmar.trim() === "") return setError("Confirmación requerida");
-    if (password !== confirmar)  return setError("Las contraseñas no coinciden");
-    if (!terminos)               return setError("Debes aceptar términos y condiciones");
-    if (origen.trim() === "")    return setError("Selecciona cómo te enteraste de nosotros");
-
-    alert("¡Cuenta creada correctamente!");
-    navigate("/");
-  };
-
-  return (
-    <div className="container-fluid">
-      <div className="row min-vh-100">
-        <div className="col-md-6 bg-light d-flex justify-content-center align-items-center p-5">
-          <img src="/src/assets/imagenes/eco.png" alt="EcoRecicla" className="img-fluid" />
-        </div>
-
-        <div className="col-md-6 d-flex justify-content-center align-items-center">
-          <div className="w-100 p-4">
-            <form className="bg-white text-dark p-3 rounded" onSubmit={validar} noValidate>
-
-              <div className="text-center mb-2">
-                <div className="d-inline-flex justify-content-center align-items-center rounded-circle bg-success bg-opacity-10 p-4">
-                  <i className="bi bi-person fs-2 text-success"></i>
-                </div>
-              </div>
-
-              <h1 className="text-center text-dark">Crear cuenta</h1>
-              <h2 className="text-center fw-light text-success fs-5">Es rápido y fácil</h2>
-              <br />
-
-              {error && (
-                <div className="alert alert-danger py-2 text-center">{error}</div>
-              )}
 
             </form>
           </div>
         </div>
       </div>
     </div>
-  );
-}
-
-// ─────────────────────────────────────────────
-// EXPORT
-// ─────────────────────────────────────────────
-export default function Login({ onLogin }) {
-  return (
-    <Routes>
-      <Route path="/"         element={<LoginForm onLogin={onLogin} />} />
-      <Route path="/Registro" element={<RegistroForm />} />
-      <Route path="*"         element={<Navigate to="/" replace />} />
-    </Routes>
   );
 }
