@@ -8,10 +8,7 @@ const CAMPOS = [
 
 const DATOS_INICIALES = [
   { id: 1, nombre: "Activo",      descripcion: "Usuario habilitado para usar la plataforma" },
-  { id: 2, nombre: "Inactivo",    descripcion: "Usuario deshabilitado temporalmente" },
-  { id: 3, nombre: "Suspendido",  descripcion: "Usuario suspendido por mal uso" },
-  { id: 4, nombre: "Pendiente",   descripcion: "Usuario en espera de verificación de cuenta" },
-  { id: 5, nombre: "Eliminado",   descripcion: "Usuario dado de baja definitivamente" },
+ 
 ];
 
 export default function CatEstadosUsuarios() {

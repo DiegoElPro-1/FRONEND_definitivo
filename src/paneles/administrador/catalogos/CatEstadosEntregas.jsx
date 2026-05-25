@@ -8,10 +8,7 @@ const CAMPOS = [
 
 const DATOS_INICIALES = [
   { id: 1, nombre: "Pendiente",   descripcion: "Entrega registrada, en espera de revisión" },
-  { id: 2, nombre: "En proceso",  descripcion: "Entrega siendo procesada por el encargado" },
-  { id: 3, nombre: "Completada",  descripcion: "Entrega finalizada y puntos asignados" },
-  { id: 4, nombre: "Rechazada",   descripcion: "Entrega no aceptada por incumplir requisitos" },
-  { id: 5, nombre: "Cancelada",   descripcion: "Entrega cancelada por el usuario" },
+ 
 ];
 
 export default function CatEstadosEntregas() {
