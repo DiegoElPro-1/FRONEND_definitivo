@@ -19,18 +19,20 @@ export default function Usuarios({ state, dispatch, showToast }) {
   useEffect(() => {
     getUsuarios()
       .then(data => {
-        const lista = (data.usuarios ?? data ?? []).map(u => ({
-          id:       u.idUsuario,
-          nombre:   u.nombre,
-          email:    u.correo,
-          telefono: u.telefono ?? "",
-          rol:      "Usuario",
-          zona:     "",
-          pts:      0,
-          activo:   u.idEstadoUsuario === 1,
-          av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
-          fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
-        }));
+        const lista = (data.usuarios ?? data ?? [])
+          .filter(u => (u.idRol ?? u.id_rol) === 3)  // ← solo rol usuario
+          .map(u => ({
+            id:       u.idUsuario,
+            nombre:   u.nombre,
+            email:    u.correo,
+            telefono: u.telefono ?? "",
+            rol:      "Usuario",
+            zona:     "",
+            pts:      0,
+            activo:   u.idEstadoUsuario === 1,
+            av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
+            fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
+          }));
         dispatch({ type: "SET_USUARIOS", payload: lista });
       })
       .catch(() => {
@@ -102,12 +104,17 @@ export default function Usuarios({ state, dispatch, showToast }) {
     }
   };
 
-  const handleSave     = (u) => dispatch({ type: "UPDATE_USER", payload: u });
+  const handleSave = (u) => dispatch({ type: "UPDATE_USER", payload: u });
 
-  const handleEliminar = (id) => {
-    dispatch({ type: "DEL_USER", payload: id });
-    showToast("Usuario eliminado", "error");
-    if (viewUser?.id === id) setViewUser(null);
+  const handleEliminar = async (id) => {
+    try {
+      await eliminarUsuario(id);
+      dispatch({ type: "DEL_USER", payload: id });
+      showToast("Usuario eliminado", "error");
+      if (viewUser?.id === id) setViewUser(null);
+    } catch (err) {
+      showToast("Error al eliminar: " + err.message, "error");
+    }
   };
 
   const filtered = usuarios.filter(u => {
@@ -125,7 +132,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
   return (
     <div className="panel-page">
 
-      {/* ── ENCABEZADO ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
         <div>
           <h4 className="panel-title">
@@ -141,7 +147,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
         </button>
       </div>
 
-      {/* ── BUSCADOR ── */}
       <div style={{ marginBottom: 16 }}>
         <div className="search-box" style={{ maxWidth: 380 }}>
           <i className="bi bi-search"></i>
@@ -154,7 +159,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
         </div>
       </div>
 
-      {/* ── CARGANDO ── */}
       {loading && (
         <div style={{ textAlign: "center", padding: "12px 0", fontSize: "0.78rem", color: "var(--gris-texto)" }}>
           <span className="spinner-border spinner-border-sm" style={{ color: "var(--verde)", marginRight: 6 }}></span>
@@ -162,7 +166,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
         </div>
       )}
 
-      {/* ── TABLA ── */}
       <div className="panel-table-wrap">
         <TablaUsuarios
           lista={filtered}
@@ -172,7 +175,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
         />
       </div>
 
-      {/* ── MODAL DETALLE / EDITAR ── */}
       <ModalDetalle
         user={viewUser}
         onClose={() => setViewUser(null)}
@@ -180,7 +182,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
         showToast={showToast}
       />
 
-      {/* ── MODAL NUEVO USUARIO ── */}
       {modal && (
         <div
           className="panel-modal-bg"
@@ -188,7 +189,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
         >
           <div className="panel-modal">
 
-            {/* Header */}
             <div className="panel-modal-head">
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div style={{
@@ -212,7 +212,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
               </button>
             </div>
 
-            {/* Body */}
             <div className="panel-modal-body">
               <div className="panel-modal-grid">
 
@@ -301,7 +300,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
               </div>
             </div>
 
-            {/* Footer */}
             <div className="panel-modal-foot">
               <button className="btn-panel ghost" onClick={cerrarModal}>
                 <i className="bi bi-x-lg"></i> Cancelar
