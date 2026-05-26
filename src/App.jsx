@@ -127,13 +127,12 @@ export default function App() {
     sessionStorage.setItem("user", JSON.stringify(usuarioData));
     setUser(usuarioData);
 
-    // La redirección la maneja el rol detectado automáticamente
     if (usuarioData.rolSeleccionado === "encargado") {
       navigate("/encargado/dashboard");
     } else if (usuarioData.rolSeleccionado === "administrador") {
       navigate("/dashboard");
     } else {
-      navigate("/"); // usuario normal — ajusta cuando tengas su panel
+      navigate("/");
     }
   };
 
@@ -145,7 +144,6 @@ export default function App() {
     window.location.replace("/login");
   };
 
-  // ── Rutas públicas ─────────────────────────────────────────────────────
   if (!user) {
     return (
       <Routes>
@@ -158,7 +156,6 @@ export default function App() {
     );
   }
 
-  // ── Panel Encargado ────────────────────────────────────────────────────
   if (user.rolSeleccionado === "encargado") {
     return (
       <Routes>
@@ -168,7 +165,6 @@ export default function App() {
     );
   }
 
-  // ── Panel Admin ────────────────────────────────────────────────────────
   const shared = { state, dispatch, showToast, navigate, user };
 
   return (

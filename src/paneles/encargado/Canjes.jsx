@@ -1,455 +1,459 @@
 // src/paneles/encargado/Canjes.jsx
-import { useState, useEffect } from "react";
-import {
-  buscarUsuariosEncargado,
-  getCanjesEncargado,
-  registrarCanjeEncargado,
-  getRecompensas,
-  actualizarEstadoCanjeEncargado,
-} from "../../services/api";
+import { useState } from "react";
+import { C, S, Av, BadgeCanje, getIniciales, getPtsUsuario, getPtsRecompensa, generarCodigo, capitalizar } from "./encargadoTheme";
 
-function Av({ text, size = 36, bg = "#ffc107", color = "#000" }) {
-  return (
-    <div
-      className="d-flex align-items-center justify-content-center rounded-circle fw-black flex-shrink-0"
-      style={{ width: size, height: size, backgroundColor: bg, color, fontSize: size * 0.36 }}
-    >
-      {text}
-    </div>
-  );
-}
+// ── MOCK DATA ─────────────────────────────────────────────────────────────────
+const USUARIOS_MOCK = [
+  { idUsuario: 1, nombre: "Diego Ramírez",    puntosDisponibles: 320, correo: "diego@mail.com"   },
+  { idUsuario: 2, nombre: "Laura Martínez",   puntosDisponibles: 150, correo: "laura@mail.com"   },
+  { idUsuario: 3, nombre: "Carlos Jiménez",   puntosDisponibles: 480, correo: "carlos@mail.com"  },
+  { idUsuario: 4, nombre: "Sofía Peña",       puntosDisponibles: 90,  correo: "sofia@mail.com"   },
+  { idUsuario: 5, nombre: "Andrés Torres",    puntosDisponibles: 210, correo: "andres@mail.com"  },
+  { idUsuario: 6, nombre: "Valentina Ruiz",   puntosDisponibles: 560, correo: "vale@mail.com"    },
+];
 
-function BadgeCanje({ estado }) {
-  const map = {
-    Canjeado:  { bg: "#198754", text: "white", icon: "bi-check-circle-fill" },
-    canjeado:  { bg: "#198754", text: "white", icon: "bi-check-circle-fill" },
-    Pendiente: { bg: "#ffc107", text: "#000",  icon: "bi-clock-fill"        },
-    pendiente: { bg: "#ffc107", text: "#000",  icon: "bi-clock-fill"        },
-    Vencido:   { bg: "#dc3545", text: "white", icon: "bi-x-circle-fill"     },
-    vencido:   { bg: "#dc3545", text: "white", icon: "bi-x-circle-fill"     },
-  };
-  const s = map[estado] || map.Pendiente;
-  return (
-    <span
-      className="badge d-inline-flex align-items-center gap-1 fw-bold"
-      style={{ backgroundColor: s.bg, color: s.text, fontSize: 11 }}
-    >
-      <i className={`bi ${s.icon}`} /> {estado}
-    </span>
-  );
-}
+const ENTREGAS_MOCK = {
+  1: [
+    { id: 1,  material: "Papel",    kg: 2.5, puntos: 80,  fecha: "2026-03-12" },
+    { id: 2,  material: "Cartón",   kg: 4.0, puntos: 120, fecha: "2026-03-20" },
+    { id: 3,  material: "Vidrio",   kg: 1.8, puntos: 60,  fecha: "2026-03-28" },
+    { id: 4,  material: "Plástico", kg: 1.2, puntos: 60,  fecha: "2026-04-05" },
+  ],
+  2: [
+    { id: 5,  material: "Papel",    kg: 1.0, puntos: 30,  fecha: "2026-04-01" },
+    { id: 6,  material: "Plástico", kg: 2.0, puntos: 80,  fecha: "2026-04-10" },
+    { id: 7,  material: "Cartón",   kg: 1.5, puntos: 40,  fecha: "2026-04-18" },
+  ],
+  3: [
+    { id: 8,  material: "Vidrio",   kg: 3.0, puntos: 90,  fecha: "2026-02-10" },
+    { id: 9,  material: "Papel",    kg: 5.0, puntos: 150, fecha: "2026-02-28" },
+    { id: 10, material: "Plástico", kg: 4.0, puntos: 120, fecha: "2026-03-15" },
+    { id: 11, material: "Cartón",   kg: 4.0, puntos: 120, fecha: "2026-04-02" },
+  ],
+  4: [
+    { id: 12, material: "Papel",    kg: 1.5, puntos: 45,  fecha: "2026-04-20" },
+    { id: 13, material: "Vidrio",   kg: 1.0, puntos: 30,  fecha: "2026-04-25" },
+    { id: 14, material: "Cartón",   kg: 0.5, puntos: 15,  fecha: "2026-05-01" },
+  ],
+  5: [
+    { id: 15, material: "Plástico", kg: 3.5, puntos: 105, fecha: "2026-03-05" },
+    { id: 16, material: "Papel",    kg: 2.0, puntos: 60,  fecha: "2026-03-22" },
+    { id: 17, material: "Vidrio",   kg: 1.5, puntos: 45,  fecha: "2026-04-14" },
+  ],
+  6: [
+    { id: 18, material: "Cartón",   kg: 6.0, puntos: 180, fecha: "2026-02-15" },
+    { id: 19, material: "Plástico", kg: 5.0, puntos: 150, fecha: "2026-03-10" },
+    { id: 20, material: "Papel",    kg: 3.0, puntos: 90,  fecha: "2026-03-30" },
+    { id: 21, material: "Vidrio",   kg: 2.0, puntos: 60,  fecha: "2026-04-22" },
+    { id: 22, material: "Cartón",   kg: 2.5, puntos: 80,  fecha: "2026-05-05" },
+  ],
+};
 
-function generarCodigo() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  return "ECO-" + Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-}
+const RECOMPENSAS_MOCK = [
+  { idRecompensa: 1, nombre: "Bolsa ecológica",       puntosRequeridos: 100, stock: 15, mercado: "Punto Verde Centro"  },
+  { idRecompensa: 2, nombre: "Taza reutilizable",     puntosRequeridos: 150, stock: 8,  mercado: "Punto Verde Centro"  },
+  { idRecompensa: 3, nombre: "Descuento 10% mercado", puntosRequeridos: 200, stock: 20, mercado: "Mercado Sur"         },
+  { idRecompensa: 4, nombre: "Kit de semillas",       puntosRequeridos: 250, stock: 5,  mercado: "Punto Verde Centro"  },
+  { idRecompensa: 5, nombre: "Botella térmica",       puntosRequeridos: 350, stock: 3,  mercado: "Mercado Norte"       },
+  { idRecompensa: 6, nombre: "Camiseta reciclada",    puntosRequeridos: 500, stock: 6,  mercado: "Punto Verde Centro"  },
+];
 
-function getIniciales(nombre = "") {
-  return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
-}
+const HISTORIAL_MOCK = [
+  { idCanje: 1, usuario: "Diego Ramírez",  recompensa: "Bolsa ecológica",   puntosUsados: 100, codigoCanje: "ECO-A1B2", fechaCanje: "2026-04-10", estadoCanje: { nombre: "Canjeado"  } },
+  { idCanje: 2, usuario: "Carlos Jiménez", recompensa: "Taza reutilizable", puntosUsados: 150, codigoCanje: "ECO-C3D4", fechaCanje: "2026-04-18", estadoCanje: { nombre: "Pendiente" } },
+  { idCanje: 3, usuario: "Valentina Ruiz", recompensa: "Kit de semillas",   puntosUsados: 250, codigoCanje: "ECO-E5F6", fechaCanje: "2026-05-02", estadoCanje: { nombre: "Canjeado"  } },
+  { idCanje: 4, usuario: "Andrés Torres",  recompensa: "Bolsa ecológica",   puntosUsados: 100, codigoCanje: "ECO-G7H8", fechaCanje: "2026-05-10", estadoCanje: { nombre: "Pendiente" } },
+];
 
-function capitalizar(str = "") {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
+const MATERIAL_ICON = {
+  Papel:    { icon: "bi-file-earmark",  bg: "#fff3cd",   color: "#856404"      },
+  Cartón:   { icon: "bi-box-seam",      bg: C.verdeClaro, color: C.verdeOscuro },
+  Vidrio:   { icon: "bi-cup-straw",     bg: "#e3f2fd",   color: "#1565c0"      },
+  Plástico: { icon: "bi-bag",           bg: "#f3e5f5",   color: "#6a1b9a"      },
+};
 
-function getPtsRecompensa(r) {
-  return r?.puntosRequeridos ?? r?.puntosNecesarios ?? r?.pts ?? 0;
-}
-
-function getPtsUsuario(u) {
-  return u?.puntosDisponibles ?? u?.puntos ?? u?.pts ?? 0;
-}
-
+// ── COMPONENTE ────────────────────────────────────────────────────────────────
 export default function Canjes() {
-  const [tab, setTab]               = useState("canjear");
-  const [busqueda, setBusqueda]     = useState("");
-  const [usuarioSel, setUsuarioSel] = useState(null);
-  const [recompSel, setRecompSel]   = useState(null);
-  const [comprobante, setComprobante] = useState(null);
-  const [errorSaldo, setErrorSaldo]   = useState(false);
-  const [errorMsg, setErrorMsg]       = useState("");
+  const [tab,           setTab]           = useState("canjear");
+  const [busqueda,      setBusqueda]      = useState("");
+  const [usuarioSel,    setUsuarioSel]    = useState(null);
+  const [recompSel,     setRecompSel]     = useState(null);
+  const [comprobante,   setComprobante]   = useState(null);
+  const [historial,     setHistorial]     = useState(HISTORIAL_MOCK);
+  const [mostrarDrop,   setMostrarDrop]   = useState(false);
 
-  const [recompensas, setRecompensas] = useState([]);
-  const [historial,   setHistorial]   = useState([]);
-  const [usuariosFiltrados, setUsuariosFiltrados] = useState([]);
-
-  const [loadingRecomp,    setLoadingRecomp]    = useState(false);
-  const [loadingHistorial, setLoadingHistorial] = useState(false);
-  const [loadingCanjear,   setLoadingCanjear]   = useState(false);
-  const [loadingBusqueda,  setLoadingBusqueda]  = useState(false);
-
-  useEffect(() => {
-    setLoadingRecomp(true);
-    getRecompensas()
-      .then(data => {
-        const lista = Array.isArray(data) ? data : (data.recompensas ?? []);
-        setRecompensas(lista);
-      })
-      .catch(() => setRecompensas([]))
-      .finally(() => setLoadingRecomp(false));
-  }, []);
-
-  useEffect(() => {
-    if (tab !== "historial") return;
-    setLoadingHistorial(true);
-    getCanjesEncargado()
-      .then(data => {
-        const lista = Array.isArray(data) ? data : (data.canjes ?? []);
-        setHistorial(lista);
-      })
-      .catch(() => setHistorial([]))
-      .finally(() => setLoadingHistorial(false));
-  }, [tab]);
-
-  useEffect(() => {
-    if (!busqueda.trim() || usuarioSel) {
-      setUsuariosFiltrados([]);
-      return;
-    }
-    const timer = setTimeout(() => {
-      setLoadingBusqueda(true);
-      buscarUsuariosEncargado(busqueda)
-        .then(data => {
-          const lista = Array.isArray(data) ? data : (data.usuarios ?? []);
-          setUsuariosFiltrados(lista);
-        })
-        .catch(() => setUsuariosFiltrados([]))
-        .finally(() => setLoadingBusqueda(false));
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [busqueda, usuarioSel]);
+  const usuariosFiltrados = busqueda.trim().length > 0 && !usuarioSel
+    ? USUARIOS_MOCK.filter(u => u.nombre.toLowerCase().includes(busqueda.toLowerCase()))
+    : [];
 
   const seleccionarUsuario = (u) => {
     setUsuarioSel(u);
     setBusqueda(u.nombre);
-    setUsuariosFiltrados([]);
+    setMostrarDrop(false);
     setRecompSel(null);
-    setErrorSaldo(false);
-    setErrorMsg("");
   };
 
-  // ── Cambiar estado canje — guarda en backend ─────────────────────────
-  const handleCambiarEstadoCanje = async (id, nuevoEstado) => {
-    const idEstado = nuevoEstado === "Canjeado" ? 2 : 1;
-    try {
-      await actualizarEstadoCanjeEncargado(id, idEstado);
-      setHistorial(prev =>
-        prev.map(h => {
-          const hId = h.idCanje ?? h.id;
-          return hId === id ? { ...h, estadoCanje: { nombre: nuevoEstado } } : h;
-        })
-      );
-    } catch (err) {
-      alert("Error al actualizar el estado: " + err.message);
-    }
+  const limpiar = () => {
+    setBusqueda(""); setUsuarioSel(null);
+    setRecompSel(null); setMostrarDrop(false);
   };
 
-  const handleCanjear = async () => {
+  const entregas    = usuarioSel ? (ENTREGAS_MOCK[usuarioSel.idUsuario] ?? []) : [];
+  const ptsEntregas = entregas.reduce((a, e) => a + e.puntos, 0);
+  const ptsUsuario  = usuarioSel ? getPtsUsuario(usuarioSel) : 0;
+
+  // recompensas que el usuario SÍ puede canjear
+  const recompensasDisponibles = RECOMPENSAS_MOCK.filter(r => !usuarioSel || ptsUsuario >= getPtsRecompensa(r));
+  const recompensasNoDisponibles = RECOMPENSAS_MOCK.filter(r => usuarioSel && ptsUsuario < getPtsRecompensa(r));
+
+  const handleCanjear = () => {
     if (!usuarioSel || !recompSel) return;
-
-    const ptsUsuario = getPtsUsuario(usuarioSel);
-    const ptsRecomp  = getPtsRecompensa(recompSel);
-
-    if (ptsUsuario < ptsRecomp) {
-      setErrorSaldo(true);
-      return;
-    }
-
-    setLoadingCanjear(true);
-    setErrorMsg("");
-    try {
-      const resultado = await registrarCanjeEncargado({
-        idUsuario:    usuarioSel.idUsuario ?? usuarioSel.id,
-        idRecompensa: recompSel.idRecompensa ?? recompSel.id,
-      });
-
-      const nuevo = {
-        id:         resultado?.idCanje ?? Date.now(),
-        usuario:    usuarioSel.nombre,
-        recompensa: recompSel.nombre,
-        pts:        ptsRecomp,
-        fecha:      new Date().toISOString().split("T")[0],
-        codigo:     resultado?.canje?.codigoCanje ?? resultado?.codigo ?? generarCodigo(),
-        estado:     resultado?.estado ?? "Canjeado",
-      };
-
-      setComprobante(nuevo);
-      setUsuarioSel(null);
-      setBusqueda("");
-      setRecompSel(null);
-      setErrorSaldo(false);
-    } catch (e) {
-      setErrorMsg(e.message || "Error al registrar el canje");
-    } finally {
-      setLoadingCanjear(false);
-    }
+    const codigo = generarCodigo();
+    const nuevoCanje = {
+      idCanje:      historial.length + 1,
+      usuario:      usuarioSel.nombre,
+      recompensa:   recompSel.nombre,
+      puntosUsados: getPtsRecompensa(recompSel),
+      codigoCanje:  codigo,
+      fechaCanje:   new Date().toISOString().split("T")[0],
+      estadoCanje:  { nombre: "Pendiente" },
+    };
+    setHistorial(prev => [nuevoCanje, ...prev]);
+    setComprobante({
+      usuario:    usuarioSel.nombre,
+      recompensa: recompSel.nombre,
+      pts:        getPtsRecompensa(recompSel),
+      fecha:      nuevoCanje.fechaCanje,
+      codigo,
+    });
+    limpiar();
   };
 
-  const COLORES = ["#198754","#0d6efd","#dc3545","#d63384","#0dcaf0","#6f42c1","#fd7e14","#20c997"];
-  const ICONOS  = ["bi-bag-fill","bi-star-fill","bi-gift-fill","bi-heart-pulse-fill","bi-cup-hot-fill","bi-camera-reels","bi-wifi","bi-bus-front-fill"];
+  const handleCambiarEstado = (id, estadoActual) => {
+    setHistorial(prev => prev.map(h =>
+      (h.idCanje ?? h.id) === id
+        ? { ...h, estadoCanje: { nombre: estadoActual === "Canjeado" ? "Pendiente" : "Canjeado" } }
+        : h
+    ));
+  };
 
   return (
     <div>
+      {/* Pestañas */}
       <div className="d-flex gap-2 mb-4">
         {[
-          { key: "canjear",   icon: "bi-gift-fill",     label: "Gestión de canjes"   },
-          { key: "historial", icon: "bi-clock-history",  label: "Historial de canjes" },
+          { key: "canjear",   icon: "bi-gift",         label: "Gestión de canjes"   },
+          { key: "historial", icon: "bi-clock-history", label: "Historial de canjes" },
         ].map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`btn fw-bold d-flex align-items-center gap-2 border-2 ${
-              tab === t.key ? "btn-warning border-dark text-dark" : "btn-outline-dark text-dark"
-            }`}
-            style={{ fontSize: 13 }}
-          >
+          <button key={t.key} onClick={() => setTab(t.key)}
+            className="btn fw-bold d-flex align-items-center gap-2"
+            style={tab === t.key ? S.tabActivo : S.tabInactivo}>
             <i className={`bi ${t.icon}`} /> {t.label}
           </button>
         ))}
       </div>
 
+      {/* ── GESTIÓN DE CANJES ── */}
       {tab === "canjear" && (
         <div className="row g-4">
           <div className="col-lg-7">
-            <div className="card border border-2 border-dark rounded-3 shadow-sm mb-3">
+
+            {/* Buscar usuario */}
+            <div className="card mb-3" style={S.card}>
               <div className="card-body p-3">
-                <div className="fw-black text-dark mb-1" style={{ fontSize: 15 }}>
-                  <i className="bi bi-person-fill text-warning me-2" />Buscar usuario
+                <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
+                  <i className="bi bi-person" style={{ color: C.verde }} />Buscar usuario
                 </div>
-                <div className="text-secondary mb-3" style={{ fontSize: 12 }}>
-                  Escribe el nombre del reciclador
-                </div>
+                <div className="fw-semibold mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Escribe el nombre del reciclador</div>
 
                 <div className="position-relative">
                   <div className="input-group">
-                    <span className="input-group-text border-dark border-2 bg-white">
-                      {loadingBusqueda
-                        ? <span className="spinner-border spinner-border-sm text-secondary" />
-                        : <i className="bi bi-search text-secondary" />}
+                    <span className="input-group-text bg-white" style={{ border: `1.5px solid ${C.verdeBorde}` }}>
+                      <i className="bi bi-search text-secondary" />
                     </span>
-                    <input
-                      type="text"
-                      className="form-control border-dark border-2 fw-semibold"
-                      placeholder="Ej: Elena Santacruz"
+                    <input type="text" className="form-control" placeholder="Ej: Diego Ramírez"
                       value={busqueda}
-                      onChange={e => {
-                        setBusqueda(e.target.value);
-                        setUsuarioSel(null);
-                        setErrorSaldo(false);
-                        setErrorMsg("");
-                      }}
-                      style={{ fontSize: 14 }}
+                      style={{ ...S.input, fontSize: 13 }}
+                      onChange={e => { setBusqueda(e.target.value); setUsuarioSel(null); setMostrarDrop(true); }}
                     />
                     {busqueda && (
-                      <button
-                        className="btn btn-outline-dark border-2"
-                        onClick={() => { setBusqueda(""); setUsuarioSel(null); setRecompSel(null); setErrorSaldo(false); setErrorMsg(""); }}
-                      >
+                      <button className="btn btn-outline-secondary" style={{ border: `1.5px solid ${C.verdeBorde}` }} onClick={limpiar}>
                         <i className="bi bi-x-lg" />
                       </button>
                     )}
                   </div>
 
-                  {usuariosFiltrados.length > 0 && !usuarioSel && (
-                    <div
-                      className="position-absolute w-100 bg-white border border-2 border-dark rounded-3 shadow mt-1"
-                      style={{ zIndex: 99 }}
-                    >
-                      {usuariosFiltrados.map(u => {
-                        const pts = getPtsUsuario(u);
-                        const av  = getIniciales(u.nombre);
-                        return (
-                          <button
-                            key={u.idUsuario ?? u.id}
-                            className="btn w-100 d-flex align-items-center gap-3 px-3 py-2 text-start border-0 rounded-0"
-                            onClick={() => seleccionarUsuario(u)}
-                            style={{ fontSize: 13 }}
-                            onMouseEnter={e => e.currentTarget.style.background = "#fff8e1"}
-                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-                          >
-                            <Av text={av} size={34} bg="#ffc107" color="#000" />
-                            <div>
-                              <div className="fw-bold text-dark">{u.nombre}</div>
-                              <div className="text-secondary" style={{ fontSize: 11 }}>
-                                <i className="bi bi-star-fill text-warning me-1" />{pts} puntos disponibles
-                              </div>
+                  {/* Dropdown resultados */}
+                  {mostrarDrop && usuariosFiltrados.length > 0 && (
+                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1" style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}` }}>
+                      {usuariosFiltrados.map(u => (
+                        <button key={u.idUsuario}
+                          className="btn w-100 d-flex align-items-center gap-3 px-3 py-2 text-start border-0 rounded-0"
+                          onClick={() => seleccionarUsuario(u)} style={{ fontSize: 13 }}
+                          onMouseEnter={e => e.currentTarget.style.background = C.verdeClaro}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                          <Av text={getIniciales(u.nombre)} size={34} />
+                          <div>
+                            <div className="fw-bold" style={{ color: C.negro }}>{u.nombre}</div>
+                            <div style={{ fontSize: 11, color: C.grisTexto }}>
+                              <i className="bi bi-star-fill me-1" style={{ color: C.verde }} />
+                              {u.puntosDisponibles} puntos disponibles
                             </div>
-                          </button>
-                        );
-                      })}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {mostrarDrop && busqueda.trim().length > 0 && usuariosFiltrados.length === 0 && (
+                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1 px-3 py-2"
+                      style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}`, fontSize: 13, color: C.grisTexto }}>
+                      Sin resultados para "{busqueda}"
                     </div>
                   )}
                 </div>
 
+                {/* Usuario seleccionado */}
                 {usuarioSel && (
-                  <div className="mt-3 p-3 rounded-2 border border-2 border-dark bg-warning d-flex align-items-center gap-3">
-                    <Av text={getIniciales(usuarioSel.nombre)} size={44} bg="#000" color="#ffc107" />
+                  <div className="mt-3 p-3 rounded-3 d-flex align-items-center gap-3" style={S.chipUsuario}>
+                    <Av text={getIniciales(usuarioSel.nombre)} size={44} />
                     <div className="flex-grow-1">
-                      <div className="fw-black text-dark" style={{ fontSize: 15 }}>{usuarioSel.nombre}</div>
-                      <div className="fw-semibold text-dark" style={{ fontSize: 12 }}>Usuario reciclador</div>
+                      <div className="fw-bold" style={{ fontSize: 14, color: C.negro }}>{usuarioSel.nombre}</div>
+                      <div style={{ fontSize: 12, color: C.grisTexto }}>Usuario reciclador</div>
                     </div>
                     <div className="text-center">
-                      <div className="fw-black text-dark lh-1" style={{ fontSize: 24 }}>
-                        {getPtsUsuario(usuarioSel)}
-                      </div>
-                      <div className="fw-bold text-dark" style={{ fontSize: 10 }}>PUNTOS</div>
+                      <div className="fw-bold lh-1" style={{ fontSize: 22, color: C.verdeOscuro }}>{ptsUsuario}</div>
+                      <div style={{ fontSize: 10, color: C.grisTexto }}>PUNTOS</div>
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="card border border-2 border-dark rounded-3 shadow-sm">
+            {/* Entregas del usuario */}
+            {usuarioSel && (
+              <div className="card mb-3" style={S.card}>
+                <div className="card-body p-3">
+                  <div className="fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
+                    <i className="bi bi-recycle" style={{ color: C.verde }} />
+                    Entregas de {usuarioSel.nombre.split(" ")[0]}
+                  </div>
+
+                  {entregas.length === 0 ? (
+                    <div className="text-center py-3" style={{ fontSize: 13, color: C.grisTexto }}>
+                      <i className="bi bi-inbox d-block mb-1" style={{ fontSize: 22 }} />Sin entregas registradas
+                    </div>
+                  ) : (
+                    <>
+                      {entregas.map(e => {
+                        const m = MATERIAL_ICON[e.material] ?? { icon: "bi-recycle", bg: C.verdeClaro, color: C.verdeOscuro };
+                        return (
+                          <div key={e.id} className="d-flex align-items-center gap-3 py-2"
+                            style={{ borderBottom: `1px solid ${C.verdeClaro}` }}>
+                            <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
+                              style={{ width: 36, height: 36, backgroundColor: m.bg, color: m.color }}>
+                              <i className={`bi ${m.icon}`} style={{ fontSize: 16 }} />
+                            </div>
+                            <div className="flex-grow-1">
+                              <div className="fw-bold" style={{ fontSize: 13, color: C.negro }}>{e.material}</div>
+                              <div style={{ fontSize: 11, color: C.grisTexto }}>{e.fecha} · {e.kg} kg</div>
+                            </div>
+                            <span style={S.badgePuntos}>+{e.puntos} pts</span>
+                          </div>
+                        );
+                      })}
+                      <div className="d-flex align-items-center justify-content-between mt-3 p-2 rounded-2"
+                        style={S.cajaTotalVerde}>
+                        <span className="fw-bold" style={{ fontSize: 13, color: C.negro }}>Total acumulado</span>
+                        <span className="fw-bold" style={{ fontSize: 16, color: C.verdeOscuro }}>
+                          <i className="bi bi-star-fill me-1" />{ptsEntregas} pts
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Recompensas */}
+            <div className="card" style={S.card}>
               <div className="card-body p-3">
-                <div className="fw-black text-dark mb-3" style={{ fontSize: 15 }}>
-                  <i className="bi bi-gift-fill text-warning me-2" />Recompensas disponibles
+                <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
+                  <i className="bi bi-gift" style={{ color: C.verde }} />Recompensas disponibles
+                  {usuarioSel && <span style={{ fontSize: 11, color: C.grisTexto, fontWeight: 400 }}>— según los puntos de {usuarioSel.nombre.split(" ")[0]}</span>}
                 </div>
 
-                {loadingRecomp ? (
-                  <div className="text-center py-4">
-                    <span className="spinner-border text-warning" />
-                  </div>
-                ) : recompensas.length === 0 ? (
-                  <div className="text-center text-secondary py-3" style={{ fontSize: 13 }}>
-                    <i className="bi bi-inbox d-block mb-1" style={{ fontSize: 24 }} />
-                    No hay recompensas disponibles
-                  </div>
-                ) : (
-                  <div className="row g-2">
-                    {recompensas.map((r, idx) => {
-                      const activa   = recompSel?.idRecompensa === r.idRecompensa;
-                      const ptsR     = getPtsRecompensa(r);
-                      const ptsU     = usuarioSel ? getPtsUsuario(usuarioSel) : Infinity;
-                      const sinSaldo = usuarioSel && ptsU < ptsR;
-                      const color    = r.color ?? COLORES[idx % COLORES.length];
-                      const icon     = r.icon  ?? ICONOS[idx % ICONOS.length];
-                      const stock    = r.stock ?? r.cantidad ?? "—";
-                      return (
-                        <div className="col-6" key={r.idRecompensa ?? idx}>
-                          <button
-                            type="button"
-                            onClick={() => { setRecompSel(r); setErrorSaldo(false); setErrorMsg(""); }}
-                            disabled={sinSaldo}
-                            className={`btn w-100 h-100 d-flex flex-column align-items-start p-3 rounded-2 border-2 fw-bold text-start ${
-                              activa ? "bg-warning border-dark text-dark"
-                                : sinSaldo ? "btn-outline-secondary opacity-50"
-                                : "btn-outline-dark text-dark"
-                            }`}
-                            style={{ fontSize: 13, minHeight: 90 }}
-                          >
-                            <div className="d-flex align-items-center gap-2 mb-1 w-100">
-                              <div
-                                className="d-flex align-items-center justify-content-center rounded-2"
-                                style={{ width: 30, height: 30, backgroundColor: color, flexShrink: 0 }}
-                              >
-                                <i className={`bi ${icon} text-white`} style={{ fontSize: 14 }} />
-                              </div>
-                              <span style={{ fontSize: 12, lineHeight: 1.2 }}>{r.nombre}</span>
-                              {activa && <i className="bi bi-check-circle-fill text-success ms-auto" />}
-                            </div>
-                            <div className="d-flex align-items-center justify-content-between w-100 mt-1">
-                              <span
-                                className="badge border border-dark fw-black"
-                                style={{ backgroundColor: activa ? "#000" : "#ffc107", color: activa ? "#ffc107" : "#000", fontSize: 11 }}
-                              >
-                                <i className="bi bi-star-fill me-1" />{ptsR} pts
-                              </span>
-                              <span className="text-secondary" style={{ fontSize: 10 }}>Stock: {stock}</span>
-                            </div>
-                          </button>
+                {/* Sin usuario: muestra todas */}
+                {!usuarioSel && (
+                  <div className="row g-2 mt-2">
+                    {RECOMPENSAS_MOCK.map(r => (
+                      <div className="col-6" key={r.idRecompensa}>
+                        <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                          style={{ border: `1.5px solid ${C.verdeBorde}`, backgroundColor: C.grisFondo }}>
+                          <div className="d-flex align-items-center gap-2">
+                            <i className="bi bi-gift" style={{ color: C.verdeMedio, fontSize: 15 }} />
+                            <span className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{r.nombre}</span>
+                          </div>
+                          <div className="d-flex align-items-center justify-content-between mt-1">
+                            <span style={S.badgePuntos}><i className="bi bi-star me-1" />{r.puntosRequeridos} pts</span>
+                            <span style={{ fontSize: 10, color: C.grisTexto }}>Stock: {r.stock}</span>
+                          </div>
+                          <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.mercado}</div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
+                )}
+
+                {/* Con usuario: separa las que puede y no puede */}
+                {usuarioSel && (
+                  <>
+                    {recompensasDisponibles.length === 0 && (
+                      <div className="text-center py-3 mt-2" style={{ fontSize: 13, color: C.grisTexto }}>
+                        <i className="bi bi-emoji-frown d-block mb-1" style={{ fontSize: 22 }} />
+                        {usuarioSel.nombre.split(" ")[0]} aún no tiene puntos suficientes para ninguna recompensa
+                      </div>
+                    )}
+
+                    {recompensasDisponibles.length > 0 && (
+                      <>
+                        <div className="fw-bold mb-2 mt-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.verde }}>
+                          <i className="bi bi-check-circle-fill" />Puede canjear ({recompensasDisponibles.length})
+                        </div>
+                        <div className="row g-2 mb-3">
+                          {recompensasDisponibles.map(r => {
+                            const activa = recompSel?.idRecompensa === r.idRecompensa;
+                            return (
+                              <div className="col-6" key={r.idRecompensa}>
+                                <button type="button" onClick={() => setRecompSel(activa ? null : r)}
+                                  className="btn w-100 h-100 d-flex flex-column align-items-start p-3 rounded-2 text-start"
+                                  style={{
+                                    border: activa ? `2px solid ${C.verde}` : `1.5px solid ${C.verdeBorde}`,
+                                    backgroundColor: activa ? C.verdeClaro : C.blanco,
+                                  }}>
+                                  <div className="d-flex align-items-center gap-2 mb-1 w-100">
+                                    <i className="bi bi-gift" style={{ fontSize: 15, color: activa ? C.verdeOscuro : C.verdeMedio }} />
+                                    <span className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{r.nombre}</span>
+                                    {activa && <i className="bi bi-check-circle-fill ms-auto" style={{ color: C.verde }} />}
+                                  </div>
+                                  <div className="d-flex align-items-center justify-content-between w-100 mt-1">
+                                    <span style={S.badgePuntos}><i className="bi bi-star me-1" />{r.puntosRequeridos} pts</span>
+                                    <span style={{ fontSize: 10, color: C.grisTexto }}>Stock: {r.stock}</span>
+                                  </div>
+                                  <div style={{ fontSize: 10, color: C.grisTexto, marginTop: 4 }}>
+                                    <i className="bi bi-shop me-1" />{r.mercado}
+                                  </div>
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    )}
+
+                    {recompensasNoDisponibles.length > 0 && (
+                      <>
+                        <div className="fw-bold mb-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.grisTexto }}>
+                          <i className="bi bi-lock-fill" />Sin puntos suficientes ({recompensasNoDisponibles.length})
+                        </div>
+                        <div className="row g-2">
+                          {recompensasNoDisponibles.map(r => (
+                            <div className="col-6" key={r.idRecompensa}>
+                              <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                                style={{ border: `1.5px solid ${C.grisBorde}`, backgroundColor: C.grisFondo, opacity: 0.6 }}>
+                                <div className="d-flex align-items-center gap-2">
+                                  <i className="bi bi-lock" style={{ color: C.grisBorde, fontSize: 13 }} />
+                                  <span className="fw-bold" style={{ fontSize: 12, color: C.grisTexto }}>{r.nombre}</span>
+                                </div>
+                                <div className="d-flex align-items-center justify-content-between mt-1">
+                                  <span style={{ ...S.badgePuntos, backgroundColor: C.grisFondo, color: C.grisTexto, border: `1px solid ${C.grisBorde}` }}>
+                                    <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
+                                  </span>
+                                  <span style={{ fontSize: 10, color: C.grisTexto }}>
+                                    Faltan {r.puntosRequeridos - ptsUsuario} pts
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.mercado}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </>
                 )}
               </div>
             </div>
           </div>
 
+          {/* ── RESUMEN ── */}
           <div className="col-lg-5">
-            <div className="card border border-2 border-dark rounded-3 shadow-sm" style={{ position: "sticky", top: 20 }}>
+            <div className="card" style={{ ...S.card, position: "sticky", top: 20 }}>
               <div className="card-body p-3">
-                <div className="fw-black text-dark mb-3" style={{ fontSize: 15 }}>
-                  <i className="bi bi-receipt-cutoff me-2 text-warning" />Resumen del canje
+                <div className="fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
+                  <i className="bi bi-receipt" style={{ color: C.verde }} />Resumen del canje
                 </div>
 
+                {/* Usuario */}
                 <div className="mb-2">
-                  <div className="text-secondary fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1 }}>Usuario</div>
-                  <div className="p-2 rounded-2 border border-dark bg-light d-flex align-items-center gap-2" style={{ minHeight: 48 }}>
+                  <div className="fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1, color: C.grisTexto }}>Usuario</div>
+                  <div className="p-2 rounded-2 d-flex align-items-center gap-2"
+                    style={{ minHeight: 44, border: `1.5px solid ${C.verdeBorde}`, backgroundColor: C.grisFondo }}>
                     {usuarioSel
-                      ? <><Av text={getIniciales(usuarioSel.nombre)} size={30} bg="#ffc107" color="#000" />
-                          <span className="fw-bold text-dark" style={{ fontSize: 13 }}>{usuarioSel.nombre}</span></>
-                      : <span className="text-secondary" style={{ fontSize: 12 }}>Sin usuario seleccionado</span>}
+                      ? <><Av text={getIniciales(usuarioSel.nombre)} size={28} /><span className="fw-bold" style={{ fontSize: 13, color: C.negro }}>{usuarioSel.nombre}</span></>
+                      : <span style={{ fontSize: 12, color: C.grisTexto }}>Sin usuario seleccionado</span>}
                   </div>
                 </div>
 
+                {/* Recompensa */}
                 <div className="mb-2">
-                  <div className="text-secondary fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1 }}>Recompensa</div>
-                  <div className="p-2 rounded-2 border border-dark bg-light d-flex align-items-center gap-2" style={{ minHeight: 48 }}>
+                  <div className="fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1, color: C.grisTexto }}>Recompensa</div>
+                  <div className="p-2 rounded-2 d-flex align-items-center gap-2"
+                    style={{ minHeight: 44, border: `1.5px solid ${C.verdeBorde}`, backgroundColor: C.grisFondo }}>
                     {recompSel
-                      ? <span className="fw-bold text-dark" style={{ fontSize: 13 }}>{recompSel.nombre}</span>
-                      : <span className="text-secondary" style={{ fontSize: 12 }}>Sin recompensa seleccionada</span>}
+                      ? <span className="fw-bold" style={{ fontSize: 13, color: C.negro }}>{recompSel.nombre}</span>
+                      : <span style={{ fontSize: 12, color: C.grisTexto }}>Sin recompensa seleccionada</span>}
                   </div>
                 </div>
 
+                {/* Puntos */}
                 <div className="mb-3">
-                  <div className="text-secondary fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1 }}>Puntos</div>
+                  <div className="fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1, color: C.grisTexto }}>Puntos</div>
                   <div className="row g-2">
                     <div className="col-6">
-                      <div className="p-2 rounded-2 border border-dark bg-light text-center">
-                        <div className="fw-black text-dark" style={{ fontSize: 20 }}>
-                          {usuarioSel ? getPtsUsuario(usuarioSel) : "—"}
-                        </div>
-                        <div className="text-secondary" style={{ fontSize: 10 }}>Disponibles</div>
+                      <div className="p-2 rounded-2 text-center" style={S.statBox}>
+                        <div className="fw-bold" style={{ fontSize: 20, color: C.verdeOscuro }}>{usuarioSel ? ptsUsuario : "—"}</div>
+                        <div style={{ fontSize: 10, color: C.grisTexto }}>Disponibles</div>
                       </div>
                     </div>
                     <div className="col-6">
-                      <div className={`p-2 rounded-2 border border-2 border-dark text-center ${recompSel ? "bg-warning" : "bg-light"}`}>
-                        <div className="fw-black text-dark" style={{ fontSize: 20 }}>
-                          {recompSel ? `- ${getPtsRecompensa(recompSel)}` : "—"}
-                        </div>
-                        <div className="text-dark" style={{ fontSize: 10 }}>A descontar</div>
+                      <div className="p-2 rounded-2 text-center" style={recompSel ? S.statBoxActivo : S.statBox}>
+                        <div className="fw-bold" style={{ fontSize: 20, color: C.verdeOscuro }}>{recompSel ? `- ${getPtsRecompensa(recompSel)}` : "—"}</div>
+                        <div style={{ fontSize: 10, color: C.grisTexto }}>A descontar</div>
                       </div>
                     </div>
                   </div>
 
                   {usuarioSel && recompSel && (() => {
-                    const pU = getPtsUsuario(usuarioSel);
                     const pR = getPtsRecompensa(recompSel);
+                    const alcanza = ptsUsuario >= pR;
                     return (
-                      <div className={`mt-2 p-2 rounded-2 border border-2 border-dark text-center ${pU >= pR ? "bg-success" : "bg-danger"}`}>
-                        <div className="fw-black text-white" style={{ fontSize: 18 }}>
-                          {pU - pR} pts restantes
-                        </div>
+                      <div className="mt-2 p-2 rounded-2 text-center fw-bold"
+                        style={{ fontSize: 13, border: `1.5px solid ${alcanza ? C.verdeMedio : C.rojoBorde}`, backgroundColor: alcanza ? C.verdeClaro : C.rojoclaro, color: alcanza ? C.verdeOscuro : C.rojo }}>
+                        {alcanza
+                          ? <><i className="bi bi-check-circle me-1" />{ptsUsuario - pR} pts restantes</>
+                          : <><i className="bi bi-exclamation-circle me-1" />Puntos insuficientes</>}
                       </div>
                     );
                   })()}
                 </div>
 
-                {errorSaldo && (
-                  <div className="alert alert-danger border border-2 border-dark py-2 d-flex align-items-center gap-2 mb-3">
-                    <i className="bi bi-exclamation-triangle-fill" />
-                    <span style={{ fontSize: 13 }}>Saldo insuficiente para esta recompensa</span>
-                  </div>
-                )}
-
-                {errorMsg && (
-                  <div className="alert alert-danger border border-2 border-dark py-2 d-flex align-items-center gap-2 mb-3">
-                    <i className="bi bi-exclamation-triangle-fill" />
-                    <span style={{ fontSize: 13 }}>{errorMsg}</span>
-                  </div>
-                )}
-
                 <div className="d-grid">
-                  <button
-                    className="btn btn-dark border border-2 border-warning fw-black py-2 d-flex align-items-center justify-content-center gap-2"
-                    style={{ fontSize: 14 }}
-                    onClick={handleCanjear}
-                    disabled={!usuarioSel || !recompSel || loadingCanjear}
-                  >
-                    {loadingCanjear
-                      ? <><span className="spinner-border spinner-border-sm text-warning" /> Procesando...</>
-                      : <><i className="bi bi-gift-fill text-warning" /> Canjear recompensa</>}
+                  <button onClick={handleCanjear}
+                    disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0)}
+                    className="btn fw-bold py-2 d-flex align-items-center justify-content-center gap-2"
+                    style={S.btnPrimario}>
+                    <i className="bi bi-gift" /> Canjear recompensa
                   </button>
                 </div>
               </div>
@@ -458,73 +462,48 @@ export default function Canjes() {
         </div>
       )}
 
-      {/* Historial */}
+      {/* ── HISTORIAL ── */}
       {tab === "historial" && (
-        <div className="card border border-2 border-dark rounded-3 shadow-sm">
+        <div className="card" style={S.card}>
           <div className="card-body p-3">
-            <div className="fw-black text-dark mb-3" style={{ fontSize: 15 }}>
-              <i className="bi bi-clock-history text-warning me-2" />Historial de canjes
+            <div className="fw-bold mb-3 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
+              <i className="bi bi-clock-history" style={{ color: C.verde }} />Historial de canjes
             </div>
 
-            {loadingHistorial ? (
-              <div className="text-center py-5">
-                <span className="spinner-border text-warning" />
-              </div>
-            ) : historial.length === 0 ? (
-              <div className="text-center text-secondary py-5" style={{ fontSize: 13 }}>
-                <i className="bi bi-inbox d-block mb-2" style={{ fontSize: 32 }} />
-                No hay canjes registrados
+            {historial.length === 0 ? (
+              <div className="text-center py-5" style={{ fontSize: 13, color: C.grisTexto }}>
+                <i className="bi bi-inbox d-block mb-2" style={{ fontSize: 30 }} />No hay canjes registrados
               </div>
             ) : (
               <div className="table-responsive">
-                <table className="table table-bordered border-dark align-middle mb-0" style={{ fontSize: 13 }}>
-                  <thead className="bg-dark text-warning">
+                <table className="table align-middle mb-0" style={{ fontSize: 13, borderColor: C.verdeClaro }}>
+                  <thead style={S.tableHead}>
                     <tr>
-                      <th className="fw-black">Usuario</th>
-                      <th className="fw-black">Recompensa</th>
-                      <th className="fw-black text-center">Puntos</th>
-                      <th className="fw-black">Código</th>
-                      <th className="fw-black">Fecha</th>
-                      <th className="fw-black text-center">Estado</th>
-                      <th className="fw-black text-center">Acción</th>
+                      {["Usuario","Recompensa","Puntos","Código","Fecha","Estado","Acción"].map(h => (
+                        <th key={h} className="fw-bold px-3 py-2" style={S.tableHeadTh}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {historial.map(h => {
-                      const hId      = h.idCanje ?? h.id;
-                      const usuario    = h.usuario?.nombre ?? h.usuario ?? "—";
-                      const recompensa = h.recompensa?.nombre ?? h.recompensa ?? "—";
-                      const pts        = h.puntosUsados ?? h.pts ?? 0;
-                      const fecha      = (h.fechaCanje ?? h.createdAt ?? h.fecha ?? "").split("T")[0];
-                      const codigo     = h.codigoCanje ?? h.codigo ?? `ECO-${hId}`;
-                      const estado     = capitalizar(h.estadoCanje?.nombre ?? h.estado ?? "Pendiente");
-
+                      const hId    = h.idCanje ?? h.id;
+                      const estado = capitalizar(h.estadoCanje?.nombre ?? "Pendiente");
                       return (
-                        <tr key={hId}>
-                          <td className="fw-bold">{usuario}</td>
-                          <td>{recompensa}</td>
-                          <td className="text-center fw-black text-warning">
-                            <span className="badge bg-dark border border-warning" style={{ fontSize: 12 }}>
-                              <i className="bi bi-star-fill me-1" />{pts}
-                            </span>
+                        <tr key={hId} style={S.tableRow}>
+                          <td className="px-3 py-2 fw-bold" style={{ color: C.negro }}>{h.usuario}</td>
+                          <td className="px-3 py-2">{h.recompensa}</td>
+                          <td className="px-3 py-2 text-center"><span style={S.badgePuntos}><i className="bi bi-star me-1" />{h.puntosUsados}</span></td>
+                          <td className="px-3 py-2">
+                            <span style={S.badgeCodigo}><i className="bi bi-upc me-1" />{h.codigoCanje}</span>
                           </td>
-                          <td>
-                            <span className="badge bg-light border border-2 border-dark text-dark fw-black" style={{ fontSize: 11, letterSpacing: 1 }}>
-                              <i className="bi bi-upc me-1" />{codigo}
-                            </span>
-                          </td>
-                          <td className="text-secondary">{fecha}</td>
-                          <td className="text-center"><BadgeCanje estado={estado} /></td>
-                          <td className="text-center">
-                            <button
-                              onClick={() => handleCambiarEstadoCanje(hId, estado === "Canjeado" ? "Pendiente" : "Canjeado")}
-                              className={`btn btn-sm border-2 border-dark fw-bold ${
-                                estado === "Canjeado" ? "btn-outline-dark" : "btn-success"
-                              }`}
-                              style={{ fontSize: 11 }}
-                              title={estado === "Canjeado" ? "Marcar Pendiente" : "Marcar Canjeado"}
-                            >
-                              <i className={`bi ${estado === "Canjeado" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
+                          <td className="px-3 py-2" style={{ color: C.grisTexto }}>{h.fechaCanje?.split("T")[0]}</td>
+                          <td className="px-3 py-2 text-center"><BadgeCanje estado={estado} /></td>
+                          <td className="px-3 py-2 text-center">
+                            <button onClick={() => handleCambiarEstado(hId, estado)}
+                              className="btn btn-sm fw-bold"
+                              style={{ fontSize: 11, border: `1.5px solid ${C.verdeBorde}`, borderRadius: 6,
+                                backgroundColor: estado === "Canjeado" ? C.blanco : C.verdeClaro, color: C.verdeOscuro }}>
+                              <i className={`bi ${estado === "Canjeado" ? "bi-arrow-counterclockwise" : "bi-check-circle"}`} />
                             </button>
                           </td>
                         </tr>
@@ -538,47 +517,37 @@ export default function Canjes() {
         </div>
       )}
 
-      {/* Modal comprobante */}
+      {/* ── MODAL COMPROBANTE ── */}
       {comprobante && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.6)", zIndex: 999 }}
-          onClick={() => setComprobante(null)}
-        >
-          <div
-            className="bg-white border border-3 border-dark rounded-3 shadow-lg p-4 text-center"
-            style={{ maxWidth: 340, width: "90%" }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="bg-success rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-              style={{ width: 64, height: 64 }}>
-              <i className="bi bi-check-lg text-white" style={{ fontSize: 32 }} />
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={S.modalOverlay} onClick={() => setComprobante(null)}>
+          <div className="bg-white rounded-3 p-4 text-center shadow"
+            style={{ maxWidth: 320, width: "90%", border: `1.5px solid ${C.verdeBorde}` }}
+            onClick={e => e.stopPropagation()}>
+            <div className="rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+              style={{ width: 60, height: 60, backgroundColor: C.verdeClaro, border: `2px solid ${C.verdeMedio}` }}>
+              <i className="bi bi-check-lg" style={{ fontSize: 28, color: C.verdeOscuro }} />
             </div>
-            <div className="fw-black text-dark mb-1" style={{ fontSize: 18 }}>¡Canje exitoso!</div>
-            <div className="text-secondary mb-3" style={{ fontSize: 13 }}>Comprobante generado</div>
-            <div className="bg-warning border border-2 border-dark rounded-2 p-3 mb-3">
-              <div className="fw-bold text-dark" style={{ fontSize: 12 }}>CÓDIGO DE COMPROBANTE</div>
-              <div className="fw-black text-dark" style={{ fontSize: 26, letterSpacing: 3 }}>{comprobante.codigo}</div>
+            <div className="fw-bold mb-1" style={{ fontSize: 17, color: C.negro }}>¡Canje exitoso!</div>
+            <div className="mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Comprobante generado</div>
+            <div className="rounded-2 p-3 mb-3" style={{ backgroundColor: C.verdeClaro, border: `1.5px solid ${C.verdeMedio}` }}>
+              <div className="fw-bold" style={{ fontSize: 11, color: C.verde }}>CÓDIGO</div>
+              <div className="fw-bold" style={{ fontSize: 24, letterSpacing: 3, color: C.verdeOscuro }}>{comprobante.codigo}</div>
             </div>
-            <div className="text-start border border-dark rounded-2 p-3 mb-3" style={{ fontSize: 13 }}>
-              <div className="d-flex justify-content-between mb-1">
-                <span className="text-secondary">Usuario</span>
-                <span className="fw-bold">{comprobante.usuario}</span>
-              </div>
-              <div className="d-flex justify-content-between mb-1">
-                <span className="text-secondary">Recompensa</span>
-                <span className="fw-bold">{comprobante.recompensa}</span>
-              </div>
+            <div className="text-start rounded-2 p-3 mb-3" style={{ fontSize: 13, border: `1.5px solid ${C.verdeBorde}` }}>
+              {[["Usuario", comprobante.usuario], ["Recompensa", comprobante.recompensa], ["Fecha", comprobante.fecha]].map(([l, v]) => (
+                <div key={l} className="d-flex justify-content-between mb-1">
+                  <span style={{ color: C.grisTexto }}>{l}</span>
+                  <span className="fw-bold" style={{ color: C.negro }}>{v}</span>
+                </div>
+              ))}
               <div className="d-flex justify-content-between">
-                <span className="text-secondary">Puntos descontados</span>
-                <span className="fw-black text-danger">-{comprobante.pts} pts</span>
+                <span style={{ color: C.grisTexto }}>Puntos usados</span>
+                <span className="fw-bold" style={{ color: C.rojo }}>-{comprobante.pts} pts</span>
               </div>
             </div>
-            <button
-              className="btn btn-dark border border-2 border-warning fw-black w-100"
-              onClick={() => setComprobante(null)}
-            >
-              <i className="bi bi-check2 me-2 text-warning" />Cerrar
+            <button className="btn fw-bold w-100" style={S.btnPrimario} onClick={() => setComprobante(null)}>
+              <i className="bi bi-check2 me-2" />Cerrar
             </button>
           </div>
         </div>

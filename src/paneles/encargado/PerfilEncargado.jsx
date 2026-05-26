@@ -1,34 +1,21 @@
 // src/paneles/encargado/PerfilEncargado.jsx
 import { useState, useEffect } from "react";
+import { C, S } from "./encargadoTheme";
 import { getPerfil, actualizarPerfil } from "../../services/api";
 
-const PERFIL_DEFAULT = {
-  nombre:    "",
-  email:     "",
-  telefono:  "",
-  ciudad:    "",
-  bio:       "",
-  punto:     "",
-  zona:      "",
-  rol:       "",
-  fechaAlta: "",
-  foto:      "",
-};
+const PERFIL_DEFAULT = { nombre: "", email: "", telefono: "", ciudad: "", bio: "", punto: "", zona: "", rol: "", fechaAlta: "", foto: "" };
 
 export default function PerfilEncargado() {
   const [editMode, setEditMode] = useState(false);
   const [toast,    setToast]    = useState(null);
   const [form,     setForm]     = useState(PERFIL_DEFAULT);
-
-  const [saved, setSaved] = useState(() => {
-    const fotoEncargado = localStorage.getItem("perfilFotoEncargado");
-    const fotoGlobal    = localStorage.getItem("perfilFoto");
-    return { ...PERFIL_DEFAULT, foto: fotoEncargado || fotoGlobal || "" };
+  const [saved,    setSaved]    = useState(() => {
+    const foto = localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || "";
+    return { ...PERFIL_DEFAULT, foto };
   });
 
   const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3000);
+    setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
   };
 
   useEffect(() => {
@@ -37,25 +24,10 @@ export default function PerfilEncargado() {
         const usuario = JSON.parse(localStorage.getItem("usuario"));
         if (!usuario?.idUsuario) return;
         const data = await getPerfil(usuario.idUsuario);
-        const fotoEncargado = localStorage.getItem("perfilFotoEncargado");
-        const fotoGlobal    = localStorage.getItem("perfilFoto");
-        const perfil = {
-          nombre:    data?.nombre    || "",
-          email:     data?.correo    || "",
-          telefono:  data?.telefono  || "",
-          ciudad:    data?.ciudad    || "",
-          bio:       data?.bio       || "",
-          punto:     data?.punto     || "",
-          zona:      data?.zona      || "",
-          rol:       data?.rol       || "Encargado",
-          fechaAlta: data?.fechaAlta || "",
-          foto:      fotoEncargado || fotoGlobal || data?.foto || "",
-        };
-        setSaved(perfil);
-        setForm(perfil);
-      } catch (e) {
-        console.log("Error cargando perfil:", e);
-      }
+        const foto = localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || data?.foto || "";
+        const perfil = { nombre: data?.nombre || "", email: data?.correo || "", telefono: data?.telefono || "", ciudad: data?.ciudad || "", bio: data?.bio || "", punto: data?.punto || "", zona: data?.zona || "", rol: data?.rol || "Encargado", fechaAlta: data?.fechaAlta || "", foto };
+        setSaved(perfil); setForm(perfil);
+      } catch (e) { console.log("Error cargando perfil:", e); }
     };
     cargar();
   }, []);
@@ -65,79 +37,54 @@ export default function PerfilEncargado() {
     try {
       const usuario = JSON.parse(localStorage.getItem("usuario"));
       await actualizarPerfil(usuario.idUsuario, form);
-      setSaved({ ...form });
-      setEditMode(false);
+      setSaved({ ...form }); setEditMode(false);
       showToast("Perfil actualizado correctamente");
-    } catch {
-      showToast("Error actualizando perfil", "error");
-    }
+    } catch { showToast("Error actualizando perfil", "error"); }
   };
 
   const cancelar = () => { setForm({ ...saved }); setEditMode(false); };
 
   const handleFoto = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     const url = URL.createObjectURL(file);
-    setSaved(p => ({ ...p, foto: url }));
-    setForm(p =>  ({ ...p, foto: url }));
-    localStorage.setItem("perfilFotoEncargado", url);
-    localStorage.setItem("perfilFoto", url);
+    setSaved(p => ({ ...p, foto: url })); setForm(p => ({ ...p, foto: url }));
+    localStorage.setItem("perfilFotoEncargado", url); localStorage.setItem("perfilFoto", url);
   };
 
   return (
     <div className="row g-3 m-0 w-100">
-
-      {/* Toast */}
       {toast && (
         <div className="col-12 p-0">
-          <div
-            className={`alert alert-${toast.type === "error" ? "danger" : "success"} fw-semibold py-2 mb-0`}
-            style={{ fontSize: 13 }}
-          >
-            <i className={`bi ${toast.type === "error" ? "bi-x-circle" : "bi-check-circle"} me-2`} />
-            {toast.msg}
+          <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-2 mb-0" style={{ ...(toast.type === "error" ? S.alertaError : { backgroundColor: C.verdeClaro, border: `1px solid ${C.verdeMedio}`, color: C.verdeOscuro }), fontSize: 13 }}>
+            <i className={`bi ${toast.type === "error" ? "bi-x-circle" : "bi-check-circle"}`} />{toast.msg}
           </div>
         </div>
       )}
 
-      {/* ── Columna izquierda ── */}
+      {/* Columna izquierda */}
       <div className="col-md-4 ps-0">
-        <div className="card shadow-sm border text-center">
-          <div className="card-body">
-
-            {/* Avatar / foto */}
-            <div
-              className="rounded-circle bg-warning d-flex align-items-center justify-content-center mx-auto mb-3 overflow-hidden"
-              style={{ width: 96, height: 96, cursor: "pointer", border: "3px solid #000" }}
-              onClick={() => document.getElementById("inputFotoEnc").click()}
-              title="Cambiar foto"
-            >
+        <div className="card shadow-sm" style={S.card}>
+          <div className="card-body text-center">
+            <div className="rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3 overflow-hidden"
+              style={{ width: 96, height: 96, cursor: "pointer", backgroundColor: C.verdeClaro, border: `3px solid ${C.verde}` }}
+              onClick={() => document.getElementById("inputFotoEnc").click()} title="Cambiar foto">
               <input type="file" accept="image/*" id="inputFotoEnc" style={{ display: "none" }} onChange={handleFoto} />
               {saved.foto
                 ? <img src={saved.foto} alt="perfil" className="w-100 h-100 object-fit-cover" />
-                : <span className="fw-black text-dark" style={{ fontSize: 32 }}>
-                    {saved.nombre
-                      ? saved.nombre.trim().split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase()
-                      : "?"}
-                  </span>
-              }
+                : <span className="fw-bold" style={{ fontSize: 32, color: C.verdeOscuro }}>
+                    {saved.nombre ? saved.nombre.trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase() : "?"}
+                  </span>}
             </div>
-
-            <div className="fw-black fs-5 text-dark mb-1">{saved.nombre || "Sin nombre"}</div>
+            <div className="fw-bold fs-5 text-dark mb-1">{saved.nombre || "Sin nombre"}</div>
             <div className="text-muted small mb-2">{saved.email || "Sin correo"}</div>
-
-            <span className="badge bg-warning text-dark border border-dark fw-bold mb-3" style={{ fontSize: 11 }}>
-              <i className="bi bi-person-badge me-1" />
-              {saved.rol || "Encargado"}
+            <span className="badge fw-bold mb-3" style={{ fontSize: 11, backgroundColor: C.verdeClaro, color: C.verdeOscuro, border: `1px solid ${C.verdeMedio}` }}>
+              <i className="bi bi-person-badge me-1" />{saved.rol || "Encargado"}
             </span>
-
             {saved.bio && (
-              <div className="alert alert-warning text-start small mb-3 py-2 border border-dark">
-                <i className="bi bi-chat-quote me-1" />{saved.bio}
+              <div className="text-start small mb-3 py-2 px-3 rounded-2" style={{ backgroundColor: C.verdeClaro, border: `1px solid ${C.verdeBorde}` }}>
+                <i className="bi bi-chat-quote me-1" style={{ color: C.verde }} />{saved.bio}
               </div>
             )}
-
             <ul className="list-group list-group-flush text-start mb-4">
               {[
                 ["bi-geo-alt-fill",   "Ciudad",        saved.ciudad    || "No registrado"],
@@ -147,17 +94,14 @@ export default function PerfilEncargado() {
                 ["bi-calendar-check", "Miembro desde", saved.fechaAlta || "No registrado"],
               ].map(([ic, lb, val]) => (
                 <li key={lb} className="list-group-item px-0 border-0 small d-flex gap-2 align-items-center">
-                  <i className={`bi ${ic} text-warning`} />
+                  <i className={`bi ${ic}`} style={{ color: C.verde }} />
                   <span className="text-muted">{lb}:</span>
                   <span className="fw-semibold text-dark">{val}</span>
                 </li>
               ))}
             </ul>
-
-            <button
-              className={`btn w-100 fw-bold border-2 border-dark ${editMode ? "btn-outline-secondary" : "btn-warning text-dark"}`}
-              onClick={() => editMode ? cancelar() : setEditMode(true)}
-            >
+            <button className="btn w-100 fw-bold" style={editMode ? S.btnSecundario : S.btnPrimario}
+              onClick={() => editMode ? cancelar() : setEditMode(true)}>
               <i className={`bi ${editMode ? "bi-x-lg" : "bi-pencil"} me-1`} />
               {editMode ? "Cancelar" : "Editar perfil"}
             </button>
@@ -165,58 +109,47 @@ export default function PerfilEncargado() {
         </div>
       </div>
 
-      {/* ── Columna derecha ── */}
+      {/* Columna derecha */}
       <div className="col-md-8 pe-0 d-flex flex-column gap-3">
-        <div className="card shadow-sm border">
+        <div className="card shadow-sm" style={S.card}>
           <div className="card-body">
-
             <div className="d-flex align-items-center justify-content-between mb-3">
               <div className="fw-bold text-dark">
-                <i className={`bi ${editMode ? "bi-pencil-square" : "bi-clipboard-check"} text-warning me-1`} />
+                <i className={`bi ${editMode ? "bi-pencil-square" : "bi-clipboard-check"} me-1`} style={{ color: C.verde }} />
                 {editMode ? "Editar información" : "Información personal"}
               </div>
               {editMode && (
-                <button className="btn btn-warning btn-sm fw-bold border border-dark text-dark" onClick={guardar}>
+                <button className="btn btn-sm fw-bold" style={S.btnPrimario} onClick={guardar}>
                   <i className="bi bi-floppy me-1" />Guardar cambios
                 </button>
               )}
             </div>
-
             {editMode ? (
               <div className="row g-3">
-                {[
-                  ["nombre",   "Nombre completo",    "text"],
-                  ["email",    "Correo electrónico", "email"],
-                  ["telefono", "Teléfono",           "text"],
-                  ["ciudad",   "Ciudad",             "text"],
-                ].map(([key, label, type]) => (
+                {[["nombre","Nombre completo","text"],["email","Correo electrónico","email"],["telefono","Teléfono","text"],["ciudad","Ciudad","text"]].map(([key, label, type]) => (
                   <div key={key} className="col-md-6">
                     <label className="form-label fw-bold small text-muted">{label}</label>
-                    <input
-                      type={type}
-                      value={form[key] || ""}
-                      onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                      className="form-control form-control-sm bg-light"
-                    />
+                    <input type={type} value={form[key] || ""} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                      className="form-control form-control-sm" style={S.input} />
                   </div>
                 ))}
               </div>
             ) : (
               <div className="row g-3">
                 {[
-                  ["Nombre completo",               saved.nombre   || "No registrado"],
-                  ["Correo",                        saved.email    || "No registrado"],
-                  ["Teléfono",                      saved.telefono || "No registrado"],
-                  ["Ciudad",                        saved.ciudad   || "No registrado"],
-                  ["Punto de recoleccion encargado",saved.punto    || "No registrado"],
-                  ["Rol",                           saved.rol      || "No registrado"],
+                  ["Nombre completo", saved.nombre || "No registrado"],
+                  ["Correo",          saved.email  || "No registrado"],
+                  ["Teléfono",        saved.telefono || "No registrado"],
+                  ["Ciudad",          saved.ciudad   || "No registrado"],
+                  ["Punto de recolección", saved.punto || "No registrado"],
+                  ["Rol",             saved.rol    || "No registrado"],
                 ].map(([lb, val]) => (
                   <div key={lb} className="col-md-6">
-                    <div className="bg-light rounded-3 p-3">
+                    <div className="rounded-3 p-3" style={{ backgroundColor: C.grisFondo, border: `1px solid ${C.verdeBorde}` }}>
                       <div className="text-muted small mb-1">{lb}</div>
                       <div className="fw-bold small">
                         {lb === "Rol"
-                          ? <span className="badge bg-warning text-dark border border-dark">{val}</span>
+                          ? <span className="badge fw-bold" style={{ backgroundColor: C.verdeClaro, color: C.verdeOscuro, border: `1px solid ${C.verdeMedio}` }}>{val}</span>
                           : val}
                       </div>
                     </div>
@@ -227,7 +160,6 @@ export default function PerfilEncargado() {
           </div>
         </div>
       </div>
-
     </div>
   );
 }

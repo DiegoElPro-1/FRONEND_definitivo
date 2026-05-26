@@ -43,11 +43,10 @@ export async function cerrarSesion() {
 }
 
 export async function registrarse(datos) {
-  const data = await request('/api/auth/registrarse', {
+  return request('/api/auth/registrarse', {
     method: 'POST',
     body: JSON.stringify(datos),
   });
-  return data;
 }
 
 export async function solicitarRecuperacion(correo) {
@@ -304,7 +303,6 @@ export async function actualizarEstadoCanjeEncargado(id, idEstadoCanje) {
   });
 }
 
-// ← FUNCIÓN NUEVA AGREGADA
 export async function actualizarEstadoEntregaEncargado(id, idEstadoEntrega) {
   return request(`/api/encargado/entregas/${id}/estado`, {
     method: 'PUT',
