@@ -1,3 +1,4 @@
+// src/paneles/admin/Encargados.jsx
 import { useEffect, useState } from "react";
 import {
   getEncargados,
@@ -6,107 +7,56 @@ import {
   eliminarEncargado,
 } from "../../services/api";
 
-// ─────────────────────────────────────────────
-// TOGGLE
-// ─────────────────────────────────────────────
 function Toggle({ checked, onChange }) {
   return (
     <div
       onClick={() => onChange(!checked)}
       style={{
-        width: 38,
-        height: 21,
-        borderRadius: 12,
+        width: 38, height: 21, borderRadius: 12,
         background: checked ? "var(--verde)" : "#ddd",
-        cursor: "pointer",
-        position: "relative",
-        transition: "background 0.2s",
-        flexShrink: 0,
+        cursor: "pointer", position: "relative", transition: "background 0.2s", flexShrink: 0,
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 3,
-          left: checked ? 18 : 3,
-          width: 15,
-          height: 15,
-          borderRadius: "50%",
-          background: "#fff",
-          transition: "left 0.2s",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-        }}
-      />
+      <div style={{
+        position: "absolute", top: 3, left: checked ? 18 : 3,
+        width: 15, height: 15, borderRadius: "50%", background: "#fff",
+        transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+      }} />
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// MODAL DETALLE / EDITAR
-// ─────────────────────────────────────────────
 function ModalDetalle({ user, onClose, onSave, showToast }) {
   const [form, setForm] = useState(null);
-
-  useEffect(() => {
-    if (user) setForm({ ...user });
-  }, [user]);
-
+  useEffect(() => { if (user) setForm({ ...user }); }, [user]);
   if (!user || !form) return null;
-
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
   const handleSave = () => {
-    if (!form.nombre?.trim()) {
-      showToast("El nombre es obligatorio", "error");
-      return;
-    }
+    if (!form.nombre?.trim()) { showToast("El nombre es obligatorio", "error"); return; }
     onSave(form);
     showToast("Encargado actualizado");
     onClose();
   };
-
   return (
-    <div
-      className="panel-modal-bg"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
+    <div className="panel-modal-bg" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="panel-modal">
-        {/* HEAD */}
         <div className="panel-modal-head">
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                background: "var(--verde-claro)",
-                border: "1px solid var(--gris-borde)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                fontSize: "0.85rem",
-                color: "var(--verde)",
-              }}
-            >
-              {form.av}
-            </div>
+            <div style={{
+              width: 38, height: 38, borderRadius: "50%", background: "var(--verde-claro)",
+              border: "1px solid var(--gris-borde)", display: "flex", alignItems: "center",
+              justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "var(--verde)",
+            }}>{form.av}</div>
             <div>
               <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>
                 <i className="bi bi-person-badge" style={{ color: "var(--verde)", marginRight: 6 }} />
                 Detalle del encargado
               </div>
-              <div style={{ fontSize: "0.72rem", color: "var(--gris-texto)" }}>
-                Alta: {form.fechaAlta}
-              </div>
+              <div style={{ fontSize: "0.72rem", color: "var(--gris-texto)" }}>Alta: {form.fechaAlta}</div>
             </div>
           </div>
-          <button className="btn-icon" onClick={onClose}>
-            <i className="bi bi-x-lg" />
-          </button>
+          <button className="btn-icon" onClick={onClose}><i className="bi bi-x-lg" /></button>
         </div>
-
-        {/* BODY */}
         <div className="panel-modal-body">
           <div className="panel-modal-grid">
             <div>
@@ -115,11 +65,7 @@ function ModalDetalle({ user, onClose, onSave, showToast }) {
             </div>
             <div>
               <label className="panel-label">Teléfono</label>
-              <input
-                className="panel-input"
-                value={form.telefono}
-                onChange={(e) => set("telefono", e.target.value.replace(/\D/g, "").slice(0, 10))}
-              />
+              <input className="panel-input" value={form.telefono} onChange={(e) => set("telefono", e.target.value.replace(/\D/g, "").slice(0, 10))} />
             </div>
             <div className="full">
               <label className="panel-label">Correo electrónico</label>
@@ -135,24 +81,15 @@ function ModalDetalle({ user, onClose, onSave, showToast }) {
             </div>
           </div>
         </div>
-
-        {/* FOOT */}
         <div className="panel-modal-foot">
-          <button className="btn-panel ghost" onClick={onClose}>
-            <i className="bi bi-x" /> Cancelar
-          </button>
-          <button className="btn-panel primary" onClick={handleSave}>
-            <i className="bi bi-check-lg" /> Guardar cambios
-          </button>
+          <button className="btn-panel ghost" onClick={onClose}><i className="bi bi-x" /> Cancelar</button>
+          <button className="btn-panel primary" onClick={handleSave}><i className="bi bi-check-lg" /> Guardar cambios</button>
         </div>
       </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────
-// TABLA
-// ─────────────────────────────────────────────
 function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
   if (lista.length === 0) {
     return (
@@ -162,18 +99,12 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
       </div>
     );
   }
-
   return (
     <table className="panel-table">
       <thead>
         <tr>
-          <th>Encargado</th>
-          <th>Correo</th>
-          <th>Teléfono</th>
-          <th>Zona</th>
-          <th>Punto</th>
-          <th>Estado</th>
-          <th>Acciones</th>
+          <th>Encargado</th><th>Correo</th><th>Teléfono</th>
+          <th>Zona</th><th>Punto</th><th>Estado</th><th>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -181,17 +112,11 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
           <tr key={u.id}>
             <td>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div
-                  style={{
-                    width: 32, height: 32, borderRadius: "50%",
-                    background: "var(--verde-claro)", color: "var(--verde)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontWeight: 700, fontSize: "0.72rem", flexShrink: 0,
-                    border: "1px solid #c8e6c9",
-                  }}
-                >
-                  {u.av}
-                </div>
+                <div style={{
+                  width: 32, height: 32, borderRadius: "50%", background: "var(--verde-claro)",
+                  color: "var(--verde)", display: "flex", alignItems: "center", justifyContent: "center",
+                  fontWeight: 700, fontSize: "0.72rem", flexShrink: 0, border: "1px solid #c8e6c9",
+                }}>{u.av}</div>
                 <div>
                   <div style={{ fontWeight: 600, fontSize: "0.83rem" }}>{u.nombre}</div>
                   <div style={{ fontSize: "0.7rem", color: "#aaa" }}>Alta: {u.fechaAlta}</div>
@@ -210,19 +135,11 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
             </td>
             <td>
               <div style={{ display: "flex", gap: 6 }}>
-                <button className="btn-icon" title="Ver / Editar" onClick={() => onVer(u)}>
-                  <i className="bi bi-eye" />
-                </button>
-                <button
-                  className="btn-icon"
-                  title={u.activo ? "Desactivar" : "Activar"}
-                  onClick={() => onToggle(u.id, u.nombre, u.activo)}
-                >
+                <button className="btn-icon" title="Ver / Editar" onClick={() => onVer(u)}><i className="bi bi-eye" /></button>
+                <button className="btn-icon" title={u.activo ? "Desactivar" : "Activar"} onClick={() => onToggle(u.id, u.nombre, u.activo)}>
                   <i className={`bi bi-${u.activo ? "pause" : "play"}`} />
                 </button>
-                <button className="btn-icon del" title="Eliminar" onClick={() => onEliminar(u.id)}>
-                  <i className="bi bi-trash" />
-                </button>
+                <button className="btn-icon del" title="Eliminar" onClick={() => onEliminar(u.id)}><i className="bi bi-trash" /></button>
               </div>
             </td>
           </tr>
@@ -232,48 +149,34 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// FORM VACÍO
-// ─────────────────────────────────────────────
 const EMPTY_FORM = {
-  nombre: "",
-  email: "",
-  telefono: "",
-  zona: "",
-  puntoAsignado: "",
-  activo: true,
+  nombre: "", email: "", telefono: "", zona: "",
+  puntoAsignado: "", password: "", confirmarPassword: "", activo: true,
 };
 
-// ─────────────────────────────────────────────
-// COMPONENTE PRINCIPAL
-// ─────────────────────────────────────────────
 export default function Encargados({ state, dispatch, showToast }) {
-
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [search, setSearch] = useState("");
   const [viewUser, setViewUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  // ── CARGAR ──────────────────────────────────
   useEffect(() => {
     getEncargados()
       .then((data) => {
         const lista = (data.encargados ?? []).map((u) => ({
-          id: u.idEncargado,
+          id: u.idUsuario,
           nombre: u.nombre || "",
           email: u.correo || "",
           telefono: u.telefono || "",
           zona: u.zona || "",
           puntoAsignado: u.puntoAsignado || "",
-          activo: u.idEstado === 1,
-          av: (u.nombre || "")
-            .trim().split(" ").slice(0, 2)
-            .map((w) => w?.[0]?.toUpperCase() || "").join(""),
-          fechaAlta: u.fechaRegistro
-            ? new Date(u.fechaRegistro).toLocaleDateString("es-CO")
-            : "—",
+          activo: u.idEstadoUsuario === 1,
+          av: (u.nombre || "").trim().split(" ").slice(0, 2).map((w) => w?.[0]?.toUpperCase() || "").join(""),
+          fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
         }));
         dispatch({ type: "SET_ENCARGADOS", payload: lista });
       })
@@ -281,21 +184,10 @@ export default function Encargados({ state, dispatch, showToast }) {
       .finally(() => setLoading(false));
   }, [dispatch, showToast]);
 
-  // ── HELPERS ─────────────────────────────────
   const encargados = state?.encargados || [];
+  const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setErrors((e) => ({ ...e, [k]: "" })); };
+  const cerrarModal = () => { setModal(false); setForm(EMPTY_FORM); setErrors({}); setShowPass(false); setShowConfirm(false); };
 
-  const set = (k, v) => {
-    setForm((f) => ({ ...f, [k]: v }));
-    setErrors((e) => ({ ...e, [k]: "" }));
-  };
-
-  const cerrarModal = () => {
-    setModal(false);
-    setForm(EMPTY_FORM);
-    setErrors({});
-  };
-
-  // ── VALIDAR ─────────────────────────────────
   const validate = () => {
     const e = {};
     if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
@@ -311,10 +203,19 @@ export default function Encargados({ state, dispatch, showToast }) {
     } else if (!/^\d{10}$/.test(form.telefono.trim())) {
       e.telefono = "El teléfono debe tener exactamente 10 dígitos";
     }
+    if (!form.password.trim()) {
+      e.password = "La contraseña es obligatoria";
+    } else if (form.password.length < 6) {
+      e.password = "Mínimo 6 caracteres";
+    }
+    if (!form.confirmarPassword.trim()) {
+      e.confirmarPassword = "Confirma la contraseña";
+    } else if (form.password !== form.confirmarPassword) {
+      e.confirmarPassword = "Las contraseñas no coinciden";
+    }
     return e;
   };
 
-  // ── GUARDAR ─────────────────────────────────
   const guardar = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
@@ -323,22 +224,18 @@ export default function Encargados({ state, dispatch, showToast }) {
         nombre: form.nombre.trim(),
         correo: form.email.trim(),
         telefono: form.telefono.trim(),
+        password: form.password,
         zona: form.zona,
         puntoAsignado: form.puntoAsignado,
       });
-      const av = form.nombre.trim().split(" ").slice(0, 2)
-        .map((w) => w[0]?.toUpperCase() || "").join("");
+      const av = form.nombre.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("");
       dispatch({
         type: "ADD_ENCARGADO",
         payload: {
-          id: resp?.encargado?.idEncargado || Date.now(),
-          nombre: form.nombre.trim(),
-          email: form.email.trim(),
-          telefono: form.telefono.trim(),
-          zona: form.zona,
-          puntoAsignado: form.puntoAsignado,
-          activo: form.activo,
-          av,
+          id: resp?.encargado?.idUsuario || Date.now(),
+          nombre: form.nombre.trim(), email: form.email.trim(),
+          telefono: form.telefono.trim(), zona: form.zona,
+          puntoAsignado: form.puntoAsignado, activo: form.activo, av,
           fechaAlta: new Date().toLocaleDateString("es-CO"),
         },
       });
@@ -349,53 +246,32 @@ export default function Encargados({ state, dispatch, showToast }) {
     }
   };
 
-  // ── TOGGLE ──────────────────────────────────
   const handleToggle = async (id, nombre, estadoActual) => {
     try {
       await actualizarEncargado(id, { idEstado: estadoActual ? 2 : 1 });
       dispatch({ type: "TOGGLE_ENCARGADO", payload: id });
-      showToast(
-        estadoActual ? `${nombre} ha sido desactivado` : `${nombre} ha sido activado`,
-        estadoActual ? "error" : "success"
-      );
-    } catch (err) {
-      showToast("Error al cambiar estado: " + err.message, "error");
-    }
+      showToast(estadoActual ? `${nombre} ha sido desactivado` : `${nombre} ha sido activado`, estadoActual ? "error" : "success");
+    } catch (err) { showToast("Error al cambiar estado: " + err.message, "error"); }
   };
 
-  // ── EDITAR ──────────────────────────────────
-  const handleSave = (u) => {
-    dispatch({ type: "UPDATE_ENCARGADO", payload: u });
-  };
+  const handleSave = (u) => { dispatch({ type: "UPDATE_ENCARGADO", payload: u }); };
 
-  // ── ELIMINAR ────────────────────────────────
   const handleEliminar = async (id) => {
     try {
       await eliminarEncargado(id);
       dispatch({ type: "DEL_ENCARGADO", payload: id });
       showToast("Encargado eliminado", "error");
       if (viewUser?.id === id) setViewUser(null);
-    } catch (err) {
-      showToast("Error al eliminar: " + err.message, "error");
-    }
+    } catch (err) { showToast("Error al eliminar: " + err.message, "error"); }
   };
 
-  // ── FILTRO ──────────────────────────────────
   const filtered = encargados.filter((u) => {
     const q = search.toLowerCase();
-    return (
-      (u.nombre || "").toLowerCase().includes(q) ||
-      (u.email || "").toLowerCase().includes(q) ||
-      (u.zona || "").toLowerCase().includes(q)
-    );
+    return (u.nombre || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q) || (u.zona || "").toLowerCase().includes(q);
   });
 
-  // ── AVATAR PREVIEW ──────────────────────────
-  const avatarPreview =
-    form.nombre.trim().split(" ").slice(0, 2)
-      .map((w) => w[0]?.toUpperCase() || "").join("") || "?";
+  const avatarPreview = form.nombre.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("") || "?";
 
-  // ── LOADING ─────────────────────────────────
   if (loading) {
     return (
       <div className="panel-page">
@@ -407,21 +283,9 @@ export default function Encargados({ state, dispatch, showToast }) {
     );
   }
 
-  // ── RENDER ──────────────────────────────────
   return (
     <div className="panel-page">
-
-      {/* ── ENCABEZADO ── */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 8,
-          marginBottom: 20,
-        }}
-      >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
         <div>
           <h4 className="panel-title">
             <i className="bi bi-person-badge" style={{ color: "var(--verde)", marginRight: 8 }} />
@@ -431,177 +295,128 @@ export default function Encargados({ state, dispatch, showToast }) {
             {encargados.length} encargado{encargados.length !== 1 ? "s" : ""} registrado{encargados.length !== 1 ? "s" : ""}
           </span>
         </div>
-
         <button className="btn-panel primary" onClick={() => setModal(true)}>
           <i className="bi bi-person-plus" /> Nuevo encargado
         </button>
       </div>
 
-      {/* ── BUSCADOR ── */}
       <div style={{ marginBottom: 16 }}>
         <div className="search-box" style={{ maxWidth: 380 }}>
           <i className="bi bi-search" />
-          <input
-            placeholder="Buscar por nombre, correo o zona..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            style={{ width: "100%" }}
-          />
+          <input placeholder="Buscar por nombre, correo o zona..." value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: "100%" }} />
         </div>
       </div>
 
-      {/* ── TABLA ── */}
       <div className="panel-table-wrap">
-        <TablaEncargados
-          lista={filtered}
-          onToggle={handleToggle}
-          onVer={setViewUser}
-          onEliminar={handleEliminar}
-        />
+        <TablaEncargados lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} />
       </div>
 
-      {/* ── MODAL DETALLE ── */}
-      <ModalDetalle
-        user={viewUser}
-        onClose={() => setViewUser(null)}
-        onSave={handleSave}
-        showToast={showToast}
-      />
+      <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} />
 
-      {/* ── MODAL NUEVO ENCARGADO ── */}
       {modal && (
-        <div
-          className="panel-modal-bg"
-          onClick={(ev) => { if (ev.target === ev.currentTarget) cerrarModal(); }}
-        >
+        <div className="panel-modal-bg" onClick={(ev) => { if (ev.target === ev.currentTarget) cerrarModal(); }}>
           <div className="panel-modal">
-
-            {/* HEAD */}
             <div className="panel-modal-head">
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <div
-                  style={{
-                    width: 38, height: 38, borderRadius: "50%",
-                    background: "var(--verde-claro)", border: "1px solid var(--gris-borde)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontWeight: 700, fontSize: "0.85rem", color: "var(--verde)",
-                  }}
-                >
-                  {avatarPreview}
-                </div>
+                <div style={{
+                  width: 38, height: 38, borderRadius: "50%", background: "var(--verde-claro)",
+                  border: "1px solid var(--gris-borde)", display: "flex", alignItems: "center",
+                  justifyContent: "center", fontWeight: 700, fontSize: "0.85rem", color: "var(--verde)",
+                }}>{avatarPreview}</div>
                 <div>
                   <div style={{ fontWeight: 700, fontSize: "0.92rem" }}>
                     <i className="bi bi-person-badge" style={{ color: "var(--verde)", marginRight: 6 }} />
                     Nuevo encargado
                   </div>
-                  <div style={{ fontSize: "0.72rem", color: "var(--gris-texto)" }}>
-                    Acceso a gestión de entregas
-                  </div>
+                  <div style={{ fontSize: "0.72rem", color: "var(--gris-texto)" }}>Acceso a gestión de entregas</div>
                 </div>
               </div>
-              <button className="btn-icon" onClick={cerrarModal}>
-                <i className="bi bi-x-lg" />
-              </button>
+              <button className="btn-icon" onClick={cerrarModal}><i className="bi bi-x-lg" /></button>
             </div>
 
-            {/* BODY */}
             <div className="panel-modal-body">
               <div className="panel-modal-grid">
 
-                {/* NOMBRE */}
                 <div>
                   <label className="panel-label">Nombre completo *</label>
-                  <input
-                    className="panel-input"
-                    value={form.nombre}
-                    onChange={(e) => set("nombre", e.target.value)}
-                    placeholder="Ej: Carlos Ruiz"
-                    style={errors.nombre ? { borderColor: "var(--rojo)" } : {}}
-                  />
-                  {errors.nombre && (
-                    <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.nombre}</span>
-                  )}
+                  <input className="panel-input" value={form.nombre} onChange={(e) => set("nombre", e.target.value)}
+                    placeholder="Ej: Carlos Ruiz" style={errors.nombre ? { borderColor: "var(--rojo)" } : {}} />
+                  {errors.nombre && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.nombre}</span>}
                 </div>
 
-                {/* TELÉFONO */}
                 <div>
                   <label className="panel-label">Teléfono *</label>
-                  <input
-                    className="panel-input"
-                    value={form.telefono}
+                  <input className="panel-input" value={form.telefono}
                     onChange={(e) => set("telefono", e.target.value.replace(/\D/g, "").slice(0, 10))}
-                    placeholder="3001234567"
-                    style={errors.telefono ? { borderColor: "var(--rojo)" } : {}}
-                  />
-                  {errors.telefono && (
-                    <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.telefono}</span>
-                  )}
+                    placeholder="3001234567" style={errors.telefono ? { borderColor: "var(--rojo)" } : {}} />
+                  {errors.telefono && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.telefono}</span>}
                 </div>
 
-                {/* EMAIL */}
                 <div className="full">
                   <label className="panel-label">Correo electrónico *</label>
-                  <input
-                    type="email"
-                    className="panel-input"
-                    value={form.email}
-                    onChange={(e) => set("email", e.target.value)}
-                    placeholder="encargado@ejemplo.com"
-                    style={errors.email ? { borderColor: "var(--rojo)" } : {}}
-                  />
-                  {errors.email && (
-                    <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.email}</span>
-                  )}
+                  <input type="email" className="panel-input" value={form.email} onChange={(e) => set("email", e.target.value)}
+                    placeholder="encargado@ejemplo.com" style={errors.email ? { borderColor: "var(--rojo)" } : {}} />
+                  {errors.email && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.email}</span>}
                 </div>
 
-                {/* ZONA */}
+                <div>
+                  <label className="panel-label">Contraseña *</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      className="panel-input"
+                      type={showPass ? "text" : "password"}
+                      value={form.password}
+                      onChange={(e) => set("password", e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                      style={{ ...(errors.password ? { borderColor: "var(--rojo)" } : {}), paddingRight: 36 }}
+                    />
+                    <i
+                      className={`bi bi-${showPass ? "eye-slash" : "eye"}`}
+                      onClick={() => setShowPass(!showPass)}
+                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gris-texto)" }}
+                    />
+                  </div>
+                  {errors.password && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.password}</span>}
+                </div>
+
+                <div>
+                  <label className="panel-label">Confirmar contraseña *</label>
+                  <div style={{ position: "relative" }}>
+                    <input
+                      className="panel-input"
+                      type={showConfirm ? "text" : "password"}
+                      value={form.confirmarPassword}
+                      onChange={(e) => set("confirmarPassword", e.target.value)}
+                      placeholder="Repite la contraseña"
+                      style={{ ...(errors.confirmarPassword ? { borderColor: "var(--rojo)" } : {}), paddingRight: 36 }}
+                    />
+                    <i
+                      className={`bi bi-${showConfirm ? "eye-slash" : "eye"}`}
+                      onClick={() => setShowConfirm(!showConfirm)}
+                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gris-texto)" }}
+                    />
+                  </div>
+                  {errors.confirmarPassword && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.confirmarPassword}</span>}
+                </div>
+
                 <div>
                   <label className="panel-label">Zona</label>
-                  <input
-                    className="panel-input"
-                    value={form.zona}
-                    onChange={(e) => set("zona", e.target.value)}
-                    placeholder="Ej: Norte, Sur, Centro"
-                  />
+                  <input className="panel-input" value={form.zona} onChange={(e) => set("zona", e.target.value)} placeholder="Ej: Norte, Sur, Centro" />
                 </div>
 
-                {/* PUNTO ASIGNADO */}
                 <div>
                   <label className="panel-label">Punto asignado</label>
-                  <input
-                    className="panel-input"
-                    value={form.puntoAsignado}
-                    onChange={(e) => set("puntoAsignado", e.target.value)}
-                    placeholder="Ej: Punto 3"
-                  />
+                  <input className="panel-input" value={form.puntoAsignado} onChange={(e) => set("puntoAsignado", e.target.value)} placeholder="Ej: Punto 3" />
                 </div>
 
-                {/* ESTADO */}
                 <div className="full">
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "10px 14px",
-                      border: "1px solid var(--gris-borde)",
-                      borderRadius: 6,
-                    }}
-                  >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--gris-borde)", borderRadius: 6 }}>
                     <div>
                       <div style={{ fontWeight: 600, fontSize: "0.83rem" }}>Estado inicial</div>
-                      <div style={{ fontSize: "0.72rem", color: "var(--gris-texto)" }}>
-                        El encargado podrá operar si está activo
-                      </div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--gris-texto)" }}>El encargado podrá operar si está activo</div>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span
-                        className="panel-badge"
-                        style={{
-                          background: form.activo ? "var(--verde-claro)" : "#f5f5f5",
-                          color: form.activo ? "var(--verde)" : "#aaa",
-                        }}
-                      >
+                      <span className="panel-badge" style={{ background: form.activo ? "var(--verde-claro)" : "#f5f5f5", color: form.activo ? "var(--verde)" : "#aaa" }}>
                         {form.activo ? "Activo" : "Inactivo"}
                       </span>
                       <Toggle checked={form.activo} onChange={(v) => set("activo", v)} />
@@ -612,20 +427,13 @@ export default function Encargados({ state, dispatch, showToast }) {
               </div>
             </div>
 
-            {/* FOOT */}
             <div className="panel-modal-foot">
-              <button className="btn-panel ghost" onClick={cerrarModal}>
-                <i className="bi bi-x" /> Cancelar
-              </button>
-              <button className="btn-panel primary" onClick={guardar}>
-                <i className="bi bi-check-lg" /> Crear encargado
-              </button>
+              <button className="btn-panel ghost" onClick={cerrarModal}><i className="bi bi-x" /> Cancelar</button>
+              <button className="btn-panel primary" onClick={guardar}><i className="bi bi-check-lg" /> Crear encargado</button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }

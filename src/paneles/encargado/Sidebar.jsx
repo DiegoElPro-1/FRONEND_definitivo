@@ -42,7 +42,7 @@ function getDatosEncargado() {
 }
 
 const NAV_ITEMS = [
-  { icon: "bi-house-fill",        label: "Dashboard",          path: "/encargado/dashboard" },
+  { icon: "bi-calendar-check-fill", label: "Agendar citas",    path: "/encargado/dashboard" },
   { icon: "bi-grid-fill",         label: "Panel de control",   path: "/encargado/control"   },
   { icon: "bi-box-arrow-in-down", label: "Registrar entrega",  path: "/encargado/registrar" },
   { icon: "bi-clock-history",     label: "Historial entregas", path: "/encargado/historial" },
