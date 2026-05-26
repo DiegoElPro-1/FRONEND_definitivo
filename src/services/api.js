@@ -309,3 +309,10 @@ export async function actualizarEstadoEntregaEncargado(id, idEstadoEntrega) {
     body: JSON.stringify({ idEstadoEntrega }),
   });
 }
+
+export async function notificacionesEncargado(id, idEstadoEntrega) {
+  return request(`/api/encargado/notificaciones`, {
+    method: 'PUT',
+    body: JSON.stringify({ idEstadoEntrega }),
+  });
+}
