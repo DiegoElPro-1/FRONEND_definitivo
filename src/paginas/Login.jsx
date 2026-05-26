@@ -18,6 +18,7 @@ export default function Login({ onLogin }) {
   const [error,      setError]      = useState("");
   const [loading,    setLoading]    = useState(false);
   const [showPass,   setShowPass]   = useState(false);
+  const [rolDev,     setRolDev]     = useState("");
   const navigate = useNavigate();
 
   const validar = async (e) => {
@@ -39,7 +40,7 @@ export default function Login({ onLogin }) {
       const data    = await iniciarSesion(correo.trim(), contraseña);
       const usuario = data.usuario ?? data;
 
-      const rolSeleccionado = detectarRol(usuario);
+      const rolSeleccionado = rolDev || detectarRol(usuario);
 
       localStorage.setItem("usuario",  JSON.stringify(usuario));
       sessionStorage.setItem("user",   JSON.stringify({ ...usuario, rolSeleccionado }));
@@ -140,6 +141,24 @@ export default function Login({ onLogin }) {
                   ¿Olvidaste tu contraseña?
                 </button>
               </div>
+
+              {/* MENÚ TEMPORAL DEV - quitar después */}
+              <div className="mb-3 p-2 rounded" style={{ background: "#fff8e1", border: "1px dashed #ffc107" }}>
+                <label className="form-label fw-semibold mb-1" style={{ fontSize: 12, color: "#e65100" }}>
+                  🛠️ Modo dev — forzar rol
+                </label>
+                <select
+                  className="form-select form-select-sm"
+                  value={rolDev}
+                  onChange={e => setRolDev(e.target.value)}
+                >
+                  <option value="">— Usar rol real —</option>
+                  <option value="usuario">👤 Usuario</option>
+                  <option value="administrador">🛡️ Administrador</option>
+                  <option value="encargado">📦 Encargado</option>
+                </select>
+              </div>
+              {/* FIN MENÚ TEMPORAL */}
 
               <div className="d-grid mb-3">
                 <button type="submit" className="btn btn-success fw-bold rounded-pill py-2"

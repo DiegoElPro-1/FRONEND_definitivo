@@ -151,7 +151,7 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
 
 const EMPTY_FORM = {
   nombre: "", email: "", telefono: "", zona: "",
-  puntoAsignado: "", password: "", confirmarPassword: "", activo: true,
+  puntoAsignado: "", activo: true,
 };
 
 export default function Encargados({ state, dispatch, showToast }) {
@@ -161,8 +161,6 @@ export default function Encargados({ state, dispatch, showToast }) {
   const [search, setSearch] = useState("");
   const [viewUser, setViewUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showPass, setShowPass] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
 
   useEffect(() => {
     getEncargados()
@@ -186,7 +184,7 @@ export default function Encargados({ state, dispatch, showToast }) {
 
   const encargados = state?.encargados || [];
   const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setErrors((e) => ({ ...e, [k]: "" })); };
-  const cerrarModal = () => { setModal(false); setForm(EMPTY_FORM); setErrors({}); setShowPass(false); setShowConfirm(false); };
+  const cerrarModal = () => { setModal(false); setForm(EMPTY_FORM); setErrors({}); };
 
   const validate = () => {
     const e = {};
@@ -203,16 +201,6 @@ export default function Encargados({ state, dispatch, showToast }) {
     } else if (!/^\d{10}$/.test(form.telefono.trim())) {
       e.telefono = "El teléfono debe tener exactamente 10 dígitos";
     }
-    if (!form.password.trim()) {
-      e.password = "La contraseña es obligatoria";
-    } else if (form.password.length < 6) {
-      e.password = "Mínimo 6 caracteres";
-    }
-    if (!form.confirmarPassword.trim()) {
-      e.confirmarPassword = "Confirma la contraseña";
-    } else if (form.password !== form.confirmarPassword) {
-      e.confirmarPassword = "Las contraseñas no coinciden";
-    }
     return e;
   };
 
@@ -224,7 +212,6 @@ export default function Encargados({ state, dispatch, showToast }) {
         nombre: form.nombre.trim(),
         correo: form.email.trim(),
         telefono: form.telefono.trim(),
-        password: form.password,
         zona: form.zona,
         puntoAsignado: form.puntoAsignado,
       });
@@ -357,46 +344,6 @@ export default function Encargados({ state, dispatch, showToast }) {
                   <input type="email" className="panel-input" value={form.email} onChange={(e) => set("email", e.target.value)}
                     placeholder="encargado@ejemplo.com" style={errors.email ? { borderColor: "var(--rojo)" } : {}} />
                   {errors.email && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.email}</span>}
-                </div>
-
-                <div>
-                  <label className="panel-label">Contraseña *</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      className="panel-input"
-                      type={showPass ? "text" : "password"}
-                      value={form.password}
-                      onChange={(e) => set("password", e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                      style={{ ...(errors.password ? { borderColor: "var(--rojo)" } : {}), paddingRight: 36 }}
-                    />
-                    <i
-                      className={`bi bi-${showPass ? "eye-slash" : "eye"}`}
-                      onClick={() => setShowPass(!showPass)}
-                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gris-texto)" }}
-                    />
-                  </div>
-                  {errors.password && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.password}</span>}
-                </div>
-
-                <div>
-                  <label className="panel-label">Confirmar contraseña *</label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      className="panel-input"
-                      type={showConfirm ? "text" : "password"}
-                      value={form.confirmarPassword}
-                      onChange={(e) => set("confirmarPassword", e.target.value)}
-                      placeholder="Repite la contraseña"
-                      style={{ ...(errors.confirmarPassword ? { borderColor: "var(--rojo)" } : {}), paddingRight: 36 }}
-                    />
-                    <i
-                      className={`bi bi-${showConfirm ? "eye-slash" : "eye"}`}
-                      onClick={() => setShowConfirm(!showConfirm)}
-                      style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "var(--gris-texto)" }}
-                    />
-                  </div>
-                  {errors.confirmarPassword && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.confirmarPassword}</span>}
                 </div>
 
                 <div>
