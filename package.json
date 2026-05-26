@@ -10,7 +10,8 @@
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.15.0",
     "react-scripts": "5.0.1",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "sweetalert2": "^11.26.25"
   },
   "scripts": {
     "start": "react-scripts start",

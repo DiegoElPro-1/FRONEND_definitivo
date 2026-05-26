@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registrarse } from "../services/api";
 import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png'
+import Swal from "sweetalert2";
 
 function Registro() {
   const [nombre, setNombre] = useState("");
@@ -15,31 +16,59 @@ function Registro() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-const validar = async (e) => {
-  if (e && e.preventDefault) e.preventDefault();
-  setError("");
+  const validar = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setError("");
 
-  if (nombre.trim() === "") return setError("Nombre requerido");
-  if (usuario.trim() === "") return setError("Usuario requerido");
-  if (correo.trim() === "") return setError("Correo requerido");
-  if (password.trim() === "") return setError("Contraseña requerida");
-  if (confirmar.trim() === "") return setError("Confirmación requerida");
-  if (password !== confirmar) return setError("Las contraseñas no coinciden");
+    if (nombre.trim() === "") return setError("Nombre requerido");
+    if (usuario.trim() === "") return setError("Usuario requerido");
+    if (correo.trim() === "") return setError("Correo requerido");
+    if (password.trim() === "") return setError("Contraseña requerida");
+    if (confirmar.trim() === "") return setError("Confirmación requerida");
+    if (password !== confirmar) return setError("Las contraseñas no coinciden");
 
-  try {
-    await registrarse({
-      nombre,
-      usuario,
-      correo,
-      password
-    });
+    try {
+      await registrarse({
+        nombre,
+        usuario,
+        correo,
+        password
+      });
 
-    alert("¡Cuenta creada correctamente!");
-    navigate("/");
-  } catch (err) {
-    setError(err.message || "Error al registrar usuario");
-  }
-};
+      Swal.fire({
+        title: "Selecciona un rol",
+        html: `
+          <div class="form-check text-start mb-2">
+            <input 
+              class="form-check-input" 
+              type="checkbox" 
+              id="admin"
+            >
+            <label class="form-check-label" for="admin">
+              Admin
+            </label>
+          </div>
+
+          <div class="form-check text-start">
+            <input 
+              class="form-check-input" 
+              type="checkbox" 
+              id="encargado"
+            >
+            <label class="form-check-label" for="encargado">
+              Encargado
+            </label>
+          </div>
+        `,
+        confirmButtonText: "Aceptar"
+      });
+
+      navigate("/");
+
+    } catch (err) {
+      setError(err.message || "Error al registrar usuario");
+    }
+  };
 
   return (
     <div className="container-fluid">
@@ -62,11 +91,10 @@ const validar = async (e) => {
             <ul className="bg-white text-dark p-3 rounded list-unstyled">
 
               <div className="text-center mb-2">
-                
-                
               </div>
 
               <h1 className="text-center text-dark">Crear cuenta</h1>
+
               <h2 className="text-center fw-light text-success fs-5">
                 Es rápido y fácil
               </h2>
@@ -74,18 +102,24 @@ const validar = async (e) => {
               <br />
 
               {error && (
-                <div className="alert alert-danger py-2 text-center">{error}</div>
+                <div className="alert alert-danger py-2 text-center">
+                  {error}
+                </div>
               )}
 
               {/* NOMBRE Y USUARIO */}
               <div className="d-flex justify-content-center gap-2">
 
                 <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Nombre completo</label>
+                  <label className="form-label text-dark">
+                    Nombre completo
+                  </label>
+
                   <div className="input-group">
                     <span className="input-group-text">
                       <i className="bi bi-person"></i>
                     </span>
+
                     <input
                       className="form-control"
                       placeholder="Ingresa tu nombre completo"
@@ -96,11 +130,15 @@ const validar = async (e) => {
                 </li>
 
                 <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Nombre de usuario</label>
+                  <label className="form-label text-dark">
+                    Nombre de usuario
+                  </label>
+
                   <div className="input-group">
                     <span className="input-group-text">
                       <i className="bi bi-at"></i>
                     </span>
+
                     <input
                       className="form-control"
                       placeholder="Elige tu nombre de usuario"
@@ -114,30 +152,42 @@ const validar = async (e) => {
 
               {/* CORREO */}
               <li className="mb-2">
-                <label className="form-label text-dark">Correo electrónico</label>
+
+                <label className="form-label text-dark">
+                  Correo electrónico
+                </label>
+
                 <div className="input-group">
+
                   <span className="input-group-text">
                     <i className="bi bi-envelope"></i>
                   </span>
+
                   <input
                     className="form-control"
                     placeholder="Correo electrónico"
                     value={correo}
                     onChange={(e) => setCorreo(e.target.value)}
                   />
+
                 </div>
               </li>
 
-              {/* crear y confirmar contraseña
-              */}
+              {/* CONTRASEÑAS */}
               <div className="d-flex justify-content-center gap-2">
 
                 <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Contraseña</label>
+
+                  <label className="form-label text-dark">
+                    Contraseña
+                  </label>
+
                   <div className="input-group">
+
                     <span className="input-group-text">
                       <i className="bi bi-lock"></i>
                     </span>
+
                     <input
                       className="form-control"
                       placeholder="Crea una contraseña"
@@ -145,15 +195,22 @@ const validar = async (e) => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
+
                   </div>
                 </li>
 
                 <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Confirmar contraseña</label>
+
+                  <label className="form-label text-dark">
+                    Confirmar contraseña
+                  </label>
+
                   <div className="input-group">
+
                     <span className="input-group-text">
                       <i className="bi bi-lock"></i>
                     </span>
+
                     <input
                       className="form-control"
                       placeholder="Confirma tu contraseña"
@@ -161,25 +218,26 @@ const validar = async (e) => {
                       value={confirmar}
                       onChange={(e) => setConfirmar(e.target.value)}
                     />
+
                   </div>
                 </li>
 
               </div>
 
-             
-              
-
-              {/* terminos y condiciones  */}
+              {/* TERMINOS */}
               <li className="mb-2">
+
                 <input
                   className="form-check-input me-2"
                   type="checkbox"
                   checked={terminos}
                   onChange={(e) => setTerminos(e.target.checked)}
                 />
+
                 <span className="text-dark">
                   Acepto los términos y condiciones y la política de privacidad
                 </span>
+
               </li>
 
             </ul>
@@ -191,29 +249,42 @@ const validar = async (e) => {
                 onClick={validar}
                 disabled={loading}
               >
+
                 {loading ? (
-                  <><span className="spinner-border spinner-border-sm me-2" role="status"></span>Creando...</>
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                    ></span>
+
+                    Creando...
+                  </>
                 ) : (
-                  <>CREAR CUENTA <i className="bi bi-leaf-fill ms-2 text-white"></i></>
+                  <>
+                    CREAR CUENTA
+                    <i className="bi bi-leaf-fill ms-2 text-white"></i>
+                  </>
                 )}
+
               </button>
 
               <br />
 
-             
-
             </div>
 
-          
-            
-
             <div className="d-flex justify-content-center align-items-center gap-2">
+
               <span className="fw-light text-secondary">
                 ¿Ya tienes cuenta?
               </span>
-              <a href="/login" className="text-decoration-none fw-bold text-success">
+
+              <a
+                href="/login"
+                className="text-decoration-none fw-bold text-success"
+              >
                 Inicia sesión
               </a>
+
             </div>
 
           </div>
