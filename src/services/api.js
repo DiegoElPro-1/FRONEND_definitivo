@@ -310,9 +310,34 @@ export async function actualizarEstadoEntregaEncargado(id, idEstadoEntrega) {
   });
 }
 
-export async function notificacionesEncargado(id, idEstadoEntrega) {
-  return request(`/api/encargado/notificaciones`, {
+export async function getNotificacionesEncargado() {
+  return request('/api/encargado/notificaciones');
+}
+
+export async function marcarNotificacionLeida(id) {
+  return request(`/api/encargado/notificaciones/${id}/leer`, {
     method: 'PUT',
-    body: JSON.stringify({ idEstadoEntrega }),
+  });
+}
+
+export async function marcarTodasNotificacionesLeidas() {
+  return request('/api/encargado/notificaciones/leer-todas', {
+    method: 'PUT',
+  });
+}
+
+export async function getReservasEncargado(fecha = '', estado = '') {
+  let path = '/api/encargado/reservas';
+  const params = [];
+  if (fecha) params.push(`fecha=${fecha}`);
+  if (estado) params.push(`estado=${estado}`);
+  if (params.length) path += '?' + params.join('&');
+  return request(path);
+}
+
+export async function actualizarEstadoReservaEncargado(id, datos) {
+  return request(`/api/encargado/reservas/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(datos),
   });
 }

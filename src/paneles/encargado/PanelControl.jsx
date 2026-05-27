@@ -23,16 +23,23 @@ const USUARIOS_ACTIVOS = [
   { id: 3, nombre: "Carlos Muñoz",    av: "CM", entregas: 3, pts: 870  },
 ];
 
-const USUARIOS_MOCK = [
-  { id: 1, nombre: "Elena Santacruz", av: "ES" },
-  { id: 2, nombre: "Carlos Muñoz",    av: "CM" },
-  { id: 3, nombre: "Laura Pérez",     av: "LP" },
-  { id: 4, nombre: "Andrés Torres",   av: "AT" },
-  { id: 5, nombre: "María Gómez",     av: "MG" },
+const USUARIOS_PUNTO = [
+  { id: 1, nombre: "Elena Santacruz", av: "ES", correo: "elena@mail.com", pts: 1240, entregas: 4 },
+  { id: 2, nombre: "Laura Pérez",     av: "LP", correo: "laura@mail.com", pts: 2100, entregas: 7 },
+  { id: 3, nombre: "Carlos Muñoz",    av: "CM", correo: "carlos@mail.com", pts: 870,  entregas: 3 },
+  { id: 4, nombre: "Andrés Torres",   av: "AT", correo: "andres@mail.com", pts: 430,  entregas: 2 },
+  { id: 5, nombre: "María Gómez",     av: "MG", correo: "maria@mail.com", pts: 1560, entregas: 5 },
+  { id: 6, nombre: "Sofía Peña",      av: "SP", correo: "sofia@mail.com", pts: 690,  entregas: 3 },
 ];
 
-const MATERIALES = ["Plástico", "Cartón", "Vidrio", "Metal", "Electrónico", "Papel", "Orgánico", "Textil"];
-const FORM_INIT  = { usuario: "", material: "", kg: "", prioridad: "normal", observacion: "" };
+const ENTREGAS_USUARIO = {
+  1: [{ material: "Plástico", kg: 3.2, pts: 80,  fecha: "2026-05-12" }, { material: "Cartón",   kg: 2.0, pts: 50,  fecha: "2026-05-10" }],
+  2: [{ material: "Vidrio",   kg: 2.1, pts: 60,  fecha: "2026-05-13" }, { material: "Papel",    kg: 4.5, pts: 90,  fecha: "2026-05-11" }, { material: "Plástico", kg: 1.8, pts: 45, fecha: "2026-05-08" }],
+  3: [{ material: "Cartón",   kg: 7.5, pts: 150, fecha: "2026-05-12" }],
+  4: [{ material: "Metal",    kg: 5.0, pts: 120, fecha: "2026-05-11" }, { material: "Vidrio",   kg: 1.2, pts: 30,  fecha: "2026-05-09" }],
+  5: [{ material: "Electrónico", kg: 1.4, pts: 70,  fecha: "2026-05-13" }, { material: "Plástico", kg: 3.0, pts: 75,  fecha: "2026-05-10" }],
+  6: [{ material: "Papel",    kg: 2.5, pts: 50,  fecha: "2026-05-12" }, { material: "Cartón",   kg: 1.8, pts: 45,  fecha: "2026-05-07" }],
+};
 
 const prioColor = {
   alta:   { bg: C.rojo,       text: "#fff",    label: "Alta"   },
@@ -40,13 +47,17 @@ const prioColor = {
   baja:   { bg: C.verde,      text: "#fff",    label: "Baja"   },
 };
 
+const MAT_ICON = {
+  Plástico: "bi-bag", Cartón: "bi-box-seam", Vidrio: "bi-cup-straw",
+  Papel: "bi-file-earmark", Metal: "bi-tools", Electrónico: "bi-cpu",
+};
+
 export default function PanelControl() {
-  const [entregas, setEntregas]       = useState(ENTREGAS_INIT);
-  const [alertas,  setAlertas]        = useState(ALERTAS_INIT);
-  const [mostrarForm, setMostrarForm] = useState(false);
-  const [form, setForm]               = useState(FORM_INIT);
-  const [formError, setFormError]     = useState("");
-  const [toast, setToast]             = useState(null);
+  const [entregas, setEntregas]             = useState(ENTREGAS_INIT);
+  const [alertas,  setAlertas]              = useState(ALERTAS_INIT);
+  const [busqueda, setBusqueda]             = useState("");
+  const [usuarioExpandido, setUsuarioExpandido] = useState(null);
+  const [toast, setToast]                   = useState(null);
 
   const showToast = (msg, tipo = "success") => {
     setToast({ msg, tipo });
@@ -58,34 +69,11 @@ export default function PanelControl() {
     showToast("Entrega procesada correctamente");
   };
 
-  const cambiarPrioridad = (id, nuevaPrio) =>
-    setEntregas(prev => prev.map(e => e.id === id ? { ...e, prioridad: nuevaPrio } : e));
-
   const cerrarAlerta = (id) => setAlertas(prev => prev.filter(a => a.id !== id));
 
-  const handleAgregar = () => {
-    if (!form.usuario || !form.material || !form.kg) {
-      setFormError("Por favor completa usuario, material y kilogramos."); return;
-    }
-    if (isNaN(form.kg) || Number(form.kg) <= 0) {
-      setFormError("Los kilogramos deben ser un número mayor a 0."); return;
-    }
-    const usuario = USUARIOS_MOCK.find(u => u.nombre === form.usuario);
-    const nueva = {
-      id: Date.now(), usuario: form.usuario,
-      av: usuario?.av || form.usuario.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase(),
-      material: form.material, kg: parseFloat(form.kg),
-      hora: new Date().toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" }),
-      prioridad: form.prioridad, observacion: form.observacion,
-    };
-    setEntregas(prev => [nueva, ...prev]);
-    setForm(FORM_INIT); setFormError(""); setMostrarForm(false);
-    showToast("Entrega registrada exitosamente");
-  };
-
-  const handleFormChange = (campo, valor) => {
-    setForm(prev => ({ ...prev, [campo]: valor })); setFormError("");
-  };
+  const usuariosFiltrados = USUARIOS_PUNTO.filter(u =>
+    u.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
   return (
     <div style={{ position: "relative" }}>
@@ -101,92 +89,105 @@ export default function PanelControl() {
 
       {/* KPIs */}
       <div className="row g-3 mb-4">
-        <div className="col-6 col-lg-3"><StatCard icon="bi-people-fill"   label="Usuarios hoy"        value={12}             sub="en este punto"  /></div>
-        <div className="col-6 col-lg-3"><StatCard icon="bi-box-seam-fill" label="Entregas pendientes" value={entregas.length} sub="sin procesar"    /></div>
-        <div className="col-6 col-lg-3"><StatCard icon="bi-gift-fill"     label="Canjes hoy"          value={5}              sub="completados"     /></div>
-        <div className="col-6 col-lg-3"><StatCard icon="bi-star-fill"     label="Puntos entregados"   value="3.2k"           sub="esta semana"     /></div>
+        <div className="col-6 col-lg-3"><StatCard icon="bi-people-fill"   label="Usuarios hoy"        valor={12}             sub="en este punto"  /></div>
+        <div className="col-6 col-lg-3"><StatCard icon="bi-box-seam-fill" label="Entregas pendientes" valor={entregas.length} sub="sin procesar"    /></div>
+        <div className="col-6 col-lg-3"><StatCard icon="bi-gift-fill"     label="Canjes hoy"          valor={5}              sub="completados"     /></div>
+        <div className="col-6 col-lg-3"><StatCard icon="bi-star-fill"     label="Puntos entregados"   valor="3.2k"           sub="esta semana"     /></div>
       </div>
 
       <div className="row g-4">
         <div className="col-lg-8 d-flex flex-column gap-4">
 
-          {/* Formulario nueva entrega */}
+          {/* Usuarios del punto */}
           <div className="card" style={S.card}>
             <div className="card-body p-3">
-              <div className="d-flex align-items-center justify-content-between">
+              <div className="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                 <div className="fw-bold text-dark" style={{ fontSize: 15 }}>
-                  <i className="bi bi-plus-circle-fill me-2" style={{ color: C.verde }} />Registrar nueva entrega
+                  <i className="bi bi-people-fill me-2" style={{ color: C.verde }} />Usuarios del punto
                 </div>
-                <button className="btn fw-bold d-flex align-items-center gap-2" style={{ fontSize: 12, ...(mostrarForm ? S.btnSecundario : S.btnPrimario) }}
-                  onClick={() => { setMostrarForm(v => !v); setFormError(""); setForm(FORM_INIT); }}>
-                  <i className={`bi ${mostrarForm ? "bi-dash-lg" : "bi-plus-lg"}`} />
-                  {mostrarForm ? "Cancelar" : "Nueva entrega"}
-                </button>
+                <div className="input-group" style={{ maxWidth: 240 }}>
+                  <span className="input-group-text bg-white" style={{ border: `1.5px solid ${C.verdeBorde}` }}>
+                    <i className="bi bi-search text-secondary" />
+                  </span>
+                  <input type="text" className="form-control" placeholder="Buscar usuario..."
+                    value={busqueda} onChange={e => { setBusqueda(e.target.value); setUsuarioExpandido(null); }}
+                    style={{ ...S.input, fontSize: 13 }} />
+                </div>
               </div>
 
-              {mostrarForm && (
-                <div className="mt-3 pt-3 border-top" style={{ borderColor: C.verdeBorde }}>
-                  <div className="row g-3">
-                    <div className="col-md-6">
-                      <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: 12 }}>
-                        <i className="bi bi-person-fill me-1" style={{ color: C.verde }} /> Usuario reciclador *
-                      </label>
-                      <select className="form-select fw-semibold" style={S.input} value={form.usuario} onChange={e => handleFormChange("usuario", e.target.value)}>
-                        <option value="">Seleccionar usuario...</option>
-                        {USUARIOS_MOCK.map(u => <option key={u.id} value={u.nombre}>{u.nombre}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-md-6">
-                      <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: 12 }}>
-                        <i className="bi bi-recycle me-1" style={{ color: C.verde }} /> Material *
-                      </label>
-                      <select className="form-select fw-semibold" style={S.input} value={form.material} onChange={e => handleFormChange("material", e.target.value)}>
-                        <option value="">Seleccionar material...</option>
-                        {MATERIALES.map(m => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                    </div>
-                    <div className="col-md-4">
-                      <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: 12 }}>
-                        <i className="bi bi-speedometer2 me-1" style={{ color: C.verde }} /> Kilogramos *
-                      </label>
-                      <input type="number" min="0.1" step="0.1" className="form-control fw-semibold" style={{ ...S.input, fontSize: 13 }}
-                        placeholder="Ej: 3.5" value={form.kg} onChange={e => handleFormChange("kg", e.target.value)} />
-                    </div>
-                    <div className="col-md-8">
-                      <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: 12 }}>
-                        <i className="bi bi-flag-fill me-1" style={{ color: C.verde }} /> Urgencia / Prioridad
-                      </label>
-                      <div className="d-flex gap-2">
-                        {["alta", "normal", "baja"].map(p => (
-                          <button key={p} type="button" onClick={() => handleFormChange("prioridad", p)}
-                            className="btn flex-grow-1 fw-bold" style={{ fontSize: 12, border: `1.5px solid ${C.verdeBorde}`, backgroundColor: form.prioridad === p ? prioColor[p].bg : "#fff", color: form.prioridad === p ? prioColor[p].text : C.negro }}>
-                            <i className="bi bi-circle-fill me-1" style={{ fontSize: 8 }} />{prioColor[p].label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="col-12">
-                      <label className="fw-bold text-dark mb-1 d-block" style={{ fontSize: 12 }}>
-                        <i className="bi bi-chat-left-text-fill me-1" style={{ color: C.verde }} /> Observación (opcional)
-                      </label>
-                      <textarea className="form-control" style={{ ...S.input, fontSize: 13, resize: "none" }} rows={2}
-                        placeholder="Ej: Material en mal estado, requiere revisión..." value={form.observacion} onChange={e => handleFormChange("observacion", e.target.value)} />
-                    </div>
-                    {formError && (
-                      <div className="col-12">
-                        <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-2" style={S.alertaError}>
-                          <i className="bi bi-exclamation-triangle-fill" /><span style={{ fontSize: 13 }}>{formError}</span>
-                        </div>
-                      </div>
-                    )}
-                    <div className="col-12">
-                      <button className="btn fw-bold d-flex align-items-center gap-2 px-4" style={S.btnPrimario} onClick={handleAgregar}>
-                        <i className="bi bi-plus-circle-fill" /> Registrar entrega
-                      </button>
-                    </div>
+              <div className="d-flex flex-column gap-2">
+                {usuariosFiltrados.length === 0 ? (
+                  <div className="text-center py-4 text-secondary" style={{ fontSize: 13 }}>
+                    <i className="bi bi-person-x d-block mb-1" style={{ fontSize: 24 }} />
+                    {busqueda ? `Sin resultados para "${busqueda}"` : "No hay usuarios registrados"}
                   </div>
-                </div>
-              )}
+                ) : (
+                  usuariosFiltrados.map(u => {
+                    const expandido = usuarioExpandido === u.id;
+                    const entregasU = ENTREGAS_USUARIO[u.id] ?? [];
+                    return (
+                      <div key={u.id} className="rounded-2 bg-white overflow-hidden" style={{ border: `1.5px solid ${expandido ? C.verde : C.verdeBorde}` }}>
+                        <div className="d-flex align-items-center gap-3 p-2">
+                          <Av text={u.av} size={38} />
+                          <div className="flex-grow-1">
+                            <div className="fw-bold text-dark" style={{ fontSize: 13 }}>{u.nombre}</div>
+                            <div style={{ fontSize: 11, color: C.grisTexto }}>
+                              <i className="bi bi-star-fill me-1" style={{ color: C.verde }} />{u.pts} pts · {u.entregas} entregas
+                            </div>
+                          </div>
+                          <button onClick={() => setUsuarioExpandido(expandido ? null : u.id)}
+                            className="btn fw-bold d-flex align-items-center gap-1"
+                            style={{ fontSize: 11, border: `1.5px solid ${C.verdeBorde}`, backgroundColor: expandido ? C.verdeClaro : "#fff", color: C.verdeOscuro, padding: "4px 12px" }}>
+                            <i className={`bi ${expandido ? "bi-chevron-up" : "bi-eye"}`} />
+                            {expandido ? "Cerrar" : "Ver más"}
+                          </button>
+                        </div>
+
+                        {expandido && (
+                          <div style={{ borderTop: `1px solid ${C.verdeBorde}`, backgroundColor: C.grisFondo }}>
+                            <div className="p-3">
+                              <div className="d-flex gap-3 mb-3 flex-wrap">
+                                <div className="flex-grow-1 p-2 rounded-2 text-center bg-white" style={{ border: `1px solid ${C.verdeBorde}` }}>
+                                  <div className="fw-bold" style={{ fontSize: 18, color: C.verdeOscuro }}>{u.pts}</div>
+                                  <div style={{ fontSize: 10, color: C.grisTexto }}>Puntos disponibles</div>
+                                </div>
+                                <div className="flex-grow-1 p-2 rounded-2 text-center bg-white" style={{ border: `1px solid ${C.verdeBorde}` }}>
+                                  <div className="fw-bold" style={{ fontSize: 18, color: C.verdeOscuro }}>{u.entregas}</div>
+                                  <div style={{ fontSize: 10, color: C.grisTexto }}>Entregas totales</div>
+                                </div>
+                                <div className="flex-grow-1 p-2 rounded-2 text-center bg-white" style={{ border: `1px solid ${C.verdeBorde}` }}>
+                                  <div className="fw-bold" style={{ fontSize: 18, color: C.verdeOscuro }}>{entregasU.length}</div>
+                                  <div style={{ fontSize: 10, color: C.grisTexto }}>Últimas entregas</div>
+                                </div>
+                              </div>
+
+                              {entregasU.length > 0 && (
+                                <>
+                                  <div className="fw-bold mb-2" style={{ fontSize: 11, color: C.verdeOscuro }}>
+                                    <i className="bi bi-clock-history me-1" />Últimas entregas
+                                  </div>
+                                  {entregasU.map((e, i) => {
+                                    const icono = MAT_ICON[e.material] || "bi-recycle";
+                                    return (
+                                      <div key={i} className="d-flex align-items-center gap-2 py-1 px-2 rounded-1 mb-1 bg-white" style={{ border: `1px solid ${C.verdeBorde}` }}>
+                                        <i className={`bi ${icono}`} style={{ color: C.verde, fontSize: 12 }} />
+                                        <span className="fw-semibold" style={{ fontSize: 12, color: C.negro, flex: 1 }}>{e.material}</span>
+                                        <span style={{ fontSize: 11, color: C.grisTexto }}>{e.kg} kg</span>
+                                        <span className="fw-bold" style={{ fontSize: 11, color: C.verde }}>+{e.pts} pts</span>
+                                        <span style={{ fontSize: 10, color: C.grisTexto }}>{e.fecha}</span>
+                                      </div>
+                                    );
+                                  })}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
 
@@ -228,20 +229,10 @@ export default function PanelControl() {
                           <i className="bi bi-check2" /> Procesar
                         </button>
                       </div>
-                      <div className="d-flex align-items-center gap-2 px-3 py-2" style={{ backgroundColor: C.grisFondo, borderTop: `1px solid ${C.verdeBorde}` }}>
-                        <i className="bi bi-flag-fill" style={{ fontSize: 11, color: C.verde }} />
-                        <span className="fw-bold text-dark" style={{ fontSize: 11 }}>Urgencia:</span>
-                        <div className="d-flex gap-1">
-                          {["alta", "normal", "baja"].map(p => (
-                            <button key={p} type="button" onClick={() => cambiarPrioridad(e.id, p)}
-                              className="btn fw-bold" style={{ fontSize: 10, padding: "2px 10px", border: `1.5px solid ${C.verdeBorde}`, backgroundColor: e.prioridad === p ? prioColor[p].bg : "#fff", color: e.prioridad === p ? prioColor[p].text : C.negro }}>
-                              {prioColor[p].label}
-                            </button>
-                          ))}
-                        </div>
-                        <span className="ms-auto badge fw-bold"
+                      <div className="px-3 py-1" style={{ backgroundColor: C.grisFondo, borderTop: `1px solid ${C.verdeBorde}` }}>
+                        <span className="badge fw-bold"
                           style={{ backgroundColor: prioColor[e.prioridad].bg, color: prioColor[e.prioridad].text, fontSize: 10, border: `1px solid ${C.verdeBorde}` }}>
-                          {prioColor[e.prioridad].label}
+                          <i className="bi bi-flag-fill me-1" />{prioColor[e.prioridad].label}
                         </span>
                       </div>
                     </div>

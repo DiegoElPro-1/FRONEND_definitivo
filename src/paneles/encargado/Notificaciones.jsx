@@ -1,366 +1,261 @@
 import { useState, useRef, useEffect } from "react";
+import { C, S, Av } from "./encargadoTheme";
+import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas } from "../../services/api";
 
-const USUARIOS_SESION = [
-  { av: "AL", bg: "#d1f0e0", txt: "#0d6e3f", nombre: "Andrés López",      hora: "Hace 2 min",  nueva: true  },
-  { av: "CM", bg: "#d1f0e0", txt: "#0d6e3f", nombre: "Carolina Mejía",     hora: "Hace 5 min",  nueva: true  },
-  { av: "JP", bg: "#e8e8e8", txt: "#222",    nombre: "Juan Pablo Ruiz",    hora: "Hace 12 min", nueva: true  },
-  { av: "VT", bg: "#e8e8e8", txt: "#222",    nombre: "Valentina Torres",   hora: "Hace 18 min", nueva: false },
-  { av: "SR", bg: "#e8e8e8", txt: "#222",    nombre: "Santiago Rodríguez", hora: "Hace 25 min", nueva: false },
-  { av: "LD", bg: "#e8e8e8", txt: "#222",    nombre: "Laura Díaz",         hora: "Hace 31 min", nueva: false },
-  { av: "MH", bg: "#e8e8e8", txt: "#222",    nombre: "Miguel Hernández",   hora: "Hace 40 min", nueva: false },
-  { av: "IS", bg: "#e8e8e8", txt: "#222",    nombre: "Isabella Sánchez",   hora: "Hace 52 min", nueva: false },
-  { av: "CF", bg: "#e8e8e8", txt: "#222",    nombre: "Camilo Flores",      hora: "Hace 1 h",    nueva: false },
-  { av: "NS", bg: "#e8e8e8", txt: "#222",    nombre: "Natalia Suárez",     hora: "Hace 1 h",    nueva: false },
-];
+function tiempoRelativo(iso) {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  const seg = Math.floor(diff / 1000);
+  if (seg < 60) return "Ahora";
+  const min = Math.floor(seg / 60);
+  if (min < 60) return `Hace ${min} min`;
+  const hrs = Math.floor(min / 60);
+  if (hrs < 24) return `Hace ${hrs} h`;
+  const dias = Math.floor(hrs / 24);
+  if (dias < 7) return `Hace ${dias} día${dias > 1 ? "s" : ""}`;
+  return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
+}
 
-const CITAS_INIT = [
-  { av: "AL", bg: "#d1f0e0", txt: "#0d6e3f", nombre: "Andrés",     apellido: "López",     fecha: "hoy a las 10:00 am",    material: "Plástico", estado: "pendiente",  nueva: true  },
-  { av: "CM", bg: "#d1f0e0", txt: "#0d6e3f", nombre: "Carolina",   apellido: "Mejía",     fecha: "hoy a las 11:30 am",    material: "Cartón",   estado: "confirmada", nueva: true  },
-  { av: "JP", bg: "#e8e8e8", txt: "#222",    nombre: "Juan Pablo", apellido: "Ruiz",      fecha: "hoy a las 2:00 pm",     material: "Vidrio",   estado: "pendiente",  nueva: false },
-  { av: "VT", bg: "#e8e8e8", txt: "#222",    nombre: "Valentina",  apellido: "Torres",    fecha: "mañana a las 9:00 am",  material: "Plástico", estado: "confirmada", nueva: false },
-  { av: "SR", bg: "#e8e8e8", txt: "#222",    nombre: "Santiago",   apellido: "Rodríguez", fecha: "mañana a las 3:00 pm",  material: "Metal",    estado: "cancelada",  nueva: false },
-  { av: "LD", bg: "#e8e8e8", txt: "#222",    nombre: "Laura",      apellido: "Díaz",      fecha: "22 may a las 10:00 am", material: "Cartón",   estado: "pendiente",  nueva: false },
-];
-
-const NUEVAS_SESIONES = 3;
-const NUEVAS_CITAS    = 2;
-
-const ESTADO_ESTILO = {
-  pendiente:  { bg: "#fff8e1", color: "#b45309", label: "Pendiente"  },
-  confirmada: { bg: "#d1f0e0", color: "#198754", label: "Confirmada" },
-  cancelada:  { bg: "#e8e8e8", color: "#555",    label: "Cancelada"  },
+const TIPO_ICON = {
+  reserva: { icon: "bi-calendar-check-fill", color: C.verde },
+  entrega: { icon: "bi-box-seam-fill", color: "#f9a825" },
+  canje: { icon: "bi-gift-fill", color: C.verdeOscuro },
 };
 
-const MATERIAL_ICON = {
-  Plástico: "bi-cup-straw",
-  Cartón:   "bi-box-seam",
-  Vidrio:   "bi-gem",
-  Metal:    "bi-wrench",
-};
-
-// ── Avatar ────────────────────────────────────────────────
-function Avatar({ av, bg, txt, size = 34 }) {
-  return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%",
-      background: bg, color: txt,
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: size > 32 ? 11 : 10, fontWeight: 700, flexShrink: 0,
-    }}>
-      {av}
-    </div>
-  );
-}
-
-// ── Fila de sesión ────────────────────────────────────────
-function SesionItem({ u, i, isModal = false }) {
-  const esNueva = i < NUEVAS_SESIONES;
-  return (
-    <div
-      className={`d-flex align-items-start gap-2 px-3 py-2 ${esNueva ? "nueva-notif" : ""}`}
-      style={{ borderBottom: "1px solid #f0f0f0", background: esNueva ? "#f0faf4" : "#fff" }}
-    >
-      <Avatar av={u.av} bg={u.bg} txt={u.txt} size={isModal ? 30 : 34} />
-      <div className="flex-grow-1">
-        <div className="d-flex justify-content-between align-items-center">
-          <span style={{ fontSize: 13, fontWeight: 700, color: "#111" }}>{u.nombre}</span>
-          <span style={{ fontSize: 11, color: "#888" }}>{u.hora}</span>
-        </div>
-        <div style={{ fontSize: 12, color: "#666", marginTop: 2 }}>
-          <i className="bi bi-box-arrow-in-right me-1" />
-          Inició sesión
-        </div>
-      </div>
-      {esNueva && (
-        <div style={{ width: 7, height: 7, background: "#198754", borderRadius: "50%", marginTop: 6, flexShrink: 0 }} />
-      )}
-    </div>
-  );
-}
-
-// ── Fila de cita ──────────────────────────────────────────
-function CitaItem({ c, i, isModal = false, onCambiarEstado }) {
-  const est = ESTADO_ESTILO[c.estado];
-  const esNueva = i < NUEVAS_CITAS;
-  const icon = MATERIAL_ICON[c.material] || "bi-recycle";
-  const ml = isModal ? 42 : 44;
-
-  return (
-    <div style={{
-      borderBottom: "1px solid #f0f0f0",
-      padding: isModal ? "10px 20px" : "10px 16px",
-      background: esNueva && !isModal ? "#f0faf4" : "#fff",
-    }}>
-      {/* Encabezado */}
-      <div className="d-flex align-items-center gap-2">
-        <Avatar av={c.av} bg={c.bg} txt={c.txt} size={isModal ? 30 : 34} />
-        <div className="flex-grow-1">
-          <div className="d-flex justify-content-between align-items-center">
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#111" }}>
-              {c.nombre} {c.apellido}
-            </span>
-            <span style={{
-              fontSize: 10, background: est.bg, color: est.color,
-              padding: "2px 8px", borderRadius: 6, fontWeight: 700,
-            }}>
-              {est.label}
-            </span>
-          </div>
-          <div style={{ fontSize: 12, color: "#666", marginTop: 3, display: "flex", gap: 12 }}>
-            <span><i className="bi bi-clock me-1" />{c.fecha}</span>
-            <span><i className={`bi ${icon} me-1`} />{c.material}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Solicitud + acciones (solo pendientes) */}
-      {c.estado === "pendiente" && (
-        <div style={{
-          marginTop: 8,
-          marginLeft: ml,
-          background: "#f8f8f8",
-          border: "1px solid #e0e0e0",
-          borderRadius: 8,
-          padding: "10px 12px",
-        }}>
-          <p style={{ fontSize: 12, color: "#111", margin: "0 0 8px 0", lineHeight: 1.5 }}>
-            <strong>{c.nombre}</strong> quiere agendar una cita para{" "}
-            <strong>{c.fecha}</strong> — material:{" "}
-            <span style={{ color: "#198754", fontWeight: 600 }}>{c.material}</span>.
-          </p>
-          <div className="d-flex gap-2">
-            <button
-              onClick={() => onCambiarEstado(i, "confirmada")}
-              style={{
-                fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer",
-                background: "#d1f0e0", color: "#198754",
-                border: "1px solid #198754", fontWeight: 700,
-              }}
-            >
-              <i className="bi bi-check-lg me-1" />Aceptar
-            </button>
-            <button
-              onClick={() => onCambiarEstado(i, "cancelada")}
-              style={{
-                fontSize: 11, padding: "4px 12px", borderRadius: 6, cursor: "pointer",
-                background: "#fff", color: "#111",
-                border: "1px solid #111", fontWeight: 700,
-              }}
-            >
-              <i className="bi bi-x-lg me-1" />Rechazar
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Componente principal ──────────────────────────────────
 export default function Notificaciones() {
-  const [abierto,  setAbierto]  = useState(false);
-  const [pestaña,  setPestaña]  = useState("sesiones");
-  const [verTodas, setVerTodas] = useState(false);
-  const [modal,    setModal]    = useState(false);
-  const [citas,    setCitas]    = useState(CITAS_INIT);
+  const [abierto, setAbierto] = useState(false);
+  const [modal, setModal] = useState(false);
+  const [notis, setNotis] = useState([]);
+  const [noLeidas, setNoLeidas] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const notifRef = useRef(null);
+
+  const cargar = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await getNotificacionesEncargado();
+      setNotis(data.notificaciones || []);
+      setNoLeidas(data.noLeidas || 0);
+    } catch (e) {
+      setError(e.message || "Error al cargar");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { cargar(); }, []);
 
   useEffect(() => {
     const handler = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setAbierto(false);
-        setVerTodas(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const cambiarEstado = (i, nuevoEstado) => {
-    setCitas(prev => prev.map((c, idx) => idx === i ? { ...c, estado: nuevoEstado } : c));
+  const handleAbrir = () => {
+    setAbierto(v => !v);
+    if (!abierto) cargar();
   };
 
-  const sesionesVis = verTodas ? USUARIOS_SESION : USUARIOS_SESION.slice(0, 5);
-  const citasVis    = verTodas ? citas : citas.slice(0, 4);
+  const handleLeer = async (id) => {
+    try {
+      await marcarNotificacionLeida(id);
+      setNotis(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
+      setNoLeidas(prev => Math.max(0, prev - 1));
+    } catch {}
+  };
+
+  const handleLeerTodas = async () => {
+    try {
+      await marcarTodasNotificacionesLeidas();
+      setNotis(prev => prev.map(n => ({ ...n, leida: true })));
+      setNoLeidas(0);
+    } catch {}
+  };
+
+  const agrupadas = {};
+  for (const n of notis) {
+    const t = n.tipo || "general";
+    if (!agrupadas[t]) agrupadas[t] = [];
+    agrupadas[t].push(n);
+  }
+
+  const TIPO_LABEL = {
+    reserva: "Reservas",
+    entrega: "Entregas",
+    canje: "Canjes",
+    general: "General",
+  };
 
   return (
-    <>
-      <div ref={notifRef} style={{ position: "relative" }}>
+    <div ref={notifRef} style={{ position: "relative" }}>
+      <button onClick={handleAbrir}
+        className="btn d-flex align-items-center justify-content-center p-0 position-relative"
+        style={{ width: 40, height: 40, borderRadius: 8, border: `1.5px solid ${C.grisBorde}`, backgroundColor: C.blanco, color: C.negro }}
+        aria-label="Notificaciones">
+        <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />
+        {noLeidas > 0 && (
+          <span className="position-absolute d-flex align-items-center justify-content-center fw-bold rounded-circle"
+            style={{ width: 18, height: 18, top: -4, right: -4, fontSize: 9, backgroundColor: C.rojo, color: "#fff", border: `2px solid ${C.blanco}` }}>
+            {noLeidas > 9 ? "9+" : noLeidas}
+          </span>
+        )}
+      </button>
 
-        {/* ── Botón campana ── */}
-        <button
-          onClick={() => { setAbierto(v => !v); setVerTodas(false); }}
-          className="btn btn-dark d-flex align-items-center justify-content-center p-0"
-          style={{ width: 40, height: 40, borderRadius: 8, position: "relative", border: "2px solid #111" }}
-          aria-label="Notificaciones"
-        >
-          <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />
-          <span style={{
-            position: "absolute", top: 6, right: 7,
-            width: 8, height: 8, background: "#198754",
-            borderRadius: "50%", border: "2px solid #fff",
-          }} />
-        </button>
+      {abierto && (
+        <div className="position-absolute bg-white rounded-3 shadow-lg overflow-hidden"
+          style={{ top: 48, right: 0, width: 380, zIndex: 9999, border: `1.5px solid ${C.grisBorde}` }}>
 
-        {/* ── Panel desplegable ── */}
-        {abierto && (
-          <div style={{
-            position: "absolute", top: 48, right: 0,
-            width: 370, background: "#fff",
-            border: "1px solid #222", borderRadius: 12,
-            boxShadow: "0 6px 24px rgba(0,0,0,0.13)",
-            zIndex: 9999, overflow: "hidden",
-          }}>
-
-            {/* Cabecera */}
-            <div className="d-flex align-items-center justify-content-between px-3 py-2"
-              style={{ borderBottom: "1px solid #e0e0e0" }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "#111" }}>Notificaciones</span>
-              <div className="d-flex gap-2">
-                <span style={{
-                  fontSize: 11, background: "#d1f0e0", color: "#198754",
-                  padding: "3px 8px", borderRadius: 8, fontWeight: 600,
-                }}>
-                  {NUEVAS_SESIONES} sesiones
-                </span>
-                <span style={{
-                  fontSize: 11, background: "#e8e8e8", color: "#222",
-                  padding: "3px 8px", borderRadius: 8, fontWeight: 600,
-                }}>
-                  {NUEVAS_CITAS} citas
-                </span>
-              </div>
-            </div>
-
-            {/* Pestañas */}
-            <div className="d-flex" style={{ borderBottom: "1px solid #e0e0e0" }}>
-              {[
-                { key: "sesiones", label: "Sesiones",        icon: "bi-person-check-fill"   },
-                { key: "citas",    label: "Citas agendadas", icon: "bi-calendar-check-fill" },
-              ].map(p => (
-                <button
-                  key={p.key}
-                  onClick={() => { setPestaña(p.key); setVerTodas(false); }}
-                  style={{
-                    flex: 1, border: "none", cursor: "pointer",
-                    padding: "10px 0", fontSize: 12, fontWeight: 600,
-                    background: pestaña === p.key ? "#fff" : "#f8f8f8",
-                    borderBottom: pestaña === p.key ? "2px solid #198754" : "2px solid transparent",
-                    color: pestaña === p.key ? "#198754" : "#888",
-                    transition: "all .15s",
-                  }}
-                >
-                  <i className={`bi ${p.icon} me-1`} />
-                  {p.label}
+          <div className="d-flex align-items-center justify-content-between px-3 py-2"
+            style={{ borderBottom: `1px solid ${C.grisBorde}` }}>
+            <span className="fw-bold" style={{ fontSize: 14, color: C.negro }}>Notificaciones</span>
+            <div className="d-flex align-items-center gap-2">
+              {noLeidas > 0 && (
+                <button onClick={handleLeerTodas}
+                  className="btn fw-bold p-0 border-0 bg-transparent"
+                  style={{ fontSize: 11, color: C.verde }}>
+                  <i className="bi bi-check2-all me-1" />Leer todas
                 </button>
-              ))}
-            </div>
-
-            {/* Contenido */}
-            <div style={{ maxHeight: 400, overflowY: "auto" }}>
-              {pestaña === "sesiones" && sesionesVis.map((u, i) => (
-                <SesionItem key={i} u={u} i={i} />
-              ))}
-              {pestaña === "citas" && citasVis.map((c, i) => (
-                <CitaItem key={i} c={c} i={i} onCambiarEstado={cambiarEstado} />
-              ))}
-            </div>
-
-            {/* Footer */}
-            <div className="d-flex justify-content-between align-items-center px-3 py-2"
-              style={{ borderTop: "1px solid #e0e0e0" }}>
-              <button
-                onClick={() => setVerTodas(v => !v)}
-                style={{
-                  background: "none", border: "none",
-                  fontSize: 12, color: "#198754", fontWeight: 600, cursor: "pointer",
-                }}
-              >
-                {verTodas ? "← Mostrar menos" : "Ver todas →"}
-              </button>
-              <button
-                onClick={() => { setAbierto(false); setModal(true); }}
-                style={{
-                  background: "#111", border: "none", color: "#fff",
-                  fontSize: 12, fontWeight: 600,
-                  padding: "5px 14px", borderRadius: 8, cursor: "pointer",
-                }}
-              >
-                <i className="bi bi-arrows-fullscreen me-1" />
-                Ver completo
-              </button>
+              )}
+              <span className="fw-bold rounded-pill px-2 py-0" style={{ fontSize: 10, backgroundColor: C.verdeClaro, color: C.verdeOscuro }}>
+                {noLeidas} sin leer
+              </span>
             </div>
           </div>
-        )}
-      </div>
 
-      {/* ── Modal vista completa ── */}
+          <div style={{ maxHeight: 380, overflowY: "auto" }}>
+            {loading && notis.length === 0 && (
+              <div className="text-center py-4" style={{ color: C.grisTexto, fontSize: 12 }}>
+                <div className="spinner-border spinner-border-sm mb-2" style={{ color: C.verde }} role="status" />
+                <div>Cargando…</div>
+              </div>
+            )}
+
+            {error && (
+              <div className="d-flex align-items-center gap-2 px-3 py-2" style={{ fontSize: 11, color: C.rojo, backgroundColor: C.rojoclaro }}>
+                <i className="bi bi-exclamation-triangle-fill flex-shrink-0" />
+                <span className="flex-grow-1">{error}</span>
+                <button onClick={cargar} className="btn btn-sm fw-bold p-0 border-0 bg-transparent" style={{ fontSize: 11, color: C.rojo, textDecoration: "underline" }}>Reintentar</button>
+              </div>
+            )}
+
+            {!loading && !error && notis.length === 0 && (
+              <div className="text-center py-5">
+                <i className="bi bi-bell-slash d-block mb-2" style={{ fontSize: 28, color: C.grisTexto }} />
+                <span style={{ fontSize: 13, color: C.grisTexto }}>No hay notificaciones</span>
+              </div>
+            )}
+
+            {notis.slice(0, 10).map(n => {
+              const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
+              return (
+                <button key={n.id} onClick={() => handleLeer(n.id)}
+                  className="btn w-100 d-flex align-items-start gap-2 px-3 py-2 border-0 rounded-0 text-start"
+                  style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, fontSize: 12, color: C.negro }}>
+                  <i className={`bi ${info.icon} mt-1`} style={{ color: n.leida ? C.grisTexto : info.color, fontSize: 14 }} />
+                  <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                    <div className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{n.titulo}</div>
+                    <div style={{ fontSize: 11, color: C.grisTexto, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{n.mensaje}</div>
+                    <div style={{ fontSize: 10, color: C.grisTexto, marginTop: 2 }}>{tiempoRelativo(n.createdAt)}</div>
+                  </div>
+                  {!n.leida && <span style={{ width: 7, height: 7, backgroundColor: C.verde, borderRadius: "50%", flexShrink: 0, marginTop: 6 }} />}
+                </button>
+              );
+            })}
+
+            {notis.length > 10 && (
+              <div className="text-center py-2" style={{ borderTop: `1px solid ${C.grisBorde}` }}>
+                <span style={{ fontSize: 11, color: C.grisTexto }}>y {notis.length - 10} más</span>
+              </div>
+            )}
+          </div>
+
+          <div className="d-flex justify-content-between align-items-center px-3 py-2"
+            style={{ borderTop: `1px solid ${C.grisBorde}` }}>
+            <button onClick={() => setModal(true)}
+              className="btn fw-bold p-0 border-0 bg-transparent"
+              style={{ fontSize: 12, color: C.verde }}>
+              <i className="bi bi-arrows-fullscreen me-1" />Ver completo
+            </button>
+          </div>
+        </div>
+      )}
+
       {modal && (
-        <div
-          onClick={() => setModal(false)}
-          style={{
-            position: "fixed", inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            zIndex: 99999,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            style={{
-              background: "#fff", borderRadius: 14,
-              width: "90%", maxWidth: 820,
-              maxHeight: "85vh", overflow: "hidden",
-              display: "flex", flexDirection: "column",
-              border: "1px solid #222",
-            }}
-          >
-            {/* Header modal */}
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={S.modalOverlay} onClick={() => setModal(false)}>
+          <div className="bg-white rounded-3 d-flex flex-column overflow-hidden shadow-lg"
+            style={{ width: "90%", maxWidth: 720, maxHeight: "85vh", border: `1.5px solid ${C.grisBorde}` }}
+            onClick={e => e.stopPropagation()}>
+
             <div className="d-flex align-items-center justify-content-between px-4 py-3"
-              style={{ borderBottom: "1px solid #e0e0e0" }}>
-              <span style={{ fontSize: 16, fontWeight: 700, color: "#111" }}>
-                Centro de notificaciones
+              style={{ borderBottom: `1px solid ${C.grisBorde}` }}>
+              <span className="fw-bold" style={{ fontSize: 16, color: C.negro }}>
+                <i className="bi bi-bell-fill me-2" style={{ color: C.verde }} />Centro de notificaciones
               </span>
-              <button
-                onClick={() => setModal(false)}
-                style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: "#555" }}
-              >
+              <button onClick={() => setModal(false)}
+                className="btn p-0 border-0 bg-transparent" style={{ fontSize: 18, color: C.grisTexto }}>
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            {/* Dos columnas */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", overflowY: "auto", flex: 1 }}>
-
-              {/* Sesiones */}
-              <div style={{ borderRight: "1px solid #e0e0e0" }}>
-                <div className="px-3 py-2" style={{ borderBottom: "1px solid #e0e0e0", background: "#f8f8f8" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#198754" }}>
-                    <i className="bi bi-person-check-fill me-2" />
-                    Sesiones iniciadas
-                  </span>
+            <div style={{ overflowY: "auto", flex: 1 }}>
+              {Object.keys(agrupadas).length === 0 && (
+                <div className="text-center py-5">
+                  <i className="bi bi-bell-slash d-block mb-2" style={{ fontSize: 36, color: C.grisTexto }} />
+                  <span style={{ fontSize: 14, color: C.grisTexto }}>No hay notificaciones</span>
                 </div>
-                {USUARIOS_SESION.map((u, i) => (
-                  <SesionItem key={i} u={u} i={i} isModal />
-                ))}
-              </div>
+              )}
 
-              {/* Citas */}
-              <div>
-                <div className="px-3 py-2" style={{ borderBottom: "1px solid #e0e0e0", background: "#f8f8f8" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#111" }}>
-                    <i className="bi bi-calendar-check-fill me-2" />
-                    Citas agendadas
-                  </span>
+              {Object.entries(agrupadas).map(([tipo, lista]) => (
+                <div key={tipo}>
+                  <div className="px-4 py-2 fw-bold d-flex align-items-center gap-2"
+                    style={{ fontSize: 12, color: C.verdeOscuro, backgroundColor: C.verdeClaro, borderBottom: `1px solid ${C.grisBorde}` }}>
+                    <i className={`bi ${(TIPO_ICON[tipo] || TIPO_ICON.general).icon}`} />
+                    {TIPO_LABEL[tipo] || tipo}
+                    <span className="badge fw-bold ms-auto" style={{ fontSize: 10, backgroundColor: C.blanco, color: C.verdeOscuro, border: `1px solid ${C.verde}` }}>
+                      {lista.filter(n => !n.leida).length} sin leer
+                    </span>
+                  </div>
+                  {lista.map(n => {
+                    const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
+                    return (
+                      <div key={n.id} onClick={() => handleLeer(n.id)}
+                        className="d-flex align-items-start gap-3 px-4 py-3"
+                        style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, cursor: "pointer" }}>
+                        <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
+                          style={{ width: 36, height: 36, backgroundColor: n.leida ? C.grisFondo : C.verdeClaro }}>
+                          <i className={`bi ${info.icon}`} style={{ color: n.leida ? C.grisTexto : info.color, fontSize: 16 }} />
+                        </div>
+                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                          <div className="fw-bold" style={{ fontSize: 13, color: C.negro }}>{n.titulo}</div>
+                          <div style={{ fontSize: 12, color: C.grisTexto, marginTop: 2 }}>{n.mensaje}</div>
+                          <div style={{ fontSize: 10, color: C.grisTexto, marginTop: 4 }}>{tiempoRelativo(n.createdAt)}</div>
+                        </div>
+                        {!n.leida && <span style={{ width: 8, height: 8, backgroundColor: C.verde, borderRadius: "50%", flexShrink: 0, marginTop: 8 }} />}
+                      </div>
+                    );
+                  })}
                 </div>
-                {citas.map((c, i) => (
-                  <CitaItem key={i} c={c} i={i} isModal onCambiarEstado={cambiarEstado} />
-                ))}
-              </div>
+              ))}
             </div>
+
+            {noLeidas > 0 && (
+              <div className="px-4 py-2 text-center" style={{ borderTop: `1px solid ${C.grisBorde}` }}>
+                <button onClick={handleLeerTodas}
+                  className="btn fw-bold" style={{ ...S.btnPrimario, fontSize: 12, padding: "6px 20px" }}>
+                  <i className="bi bi-check2-all me-1" />Marcar todas como leídas
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }

@@ -28,13 +28,13 @@ export const S = {
   // Cards
   card: {
     background: "#fff",
-    border: `1.5px solid ${C.verdeBorde}`,
+    border: `1.5px solid ${C.grisBorde}`,
     borderRadius: 12,
-    padding: 16,
+    padding: 20,
     marginBottom: 12,
   },
   cardBody: {
-    padding: "12px 16px",
+    padding: "16px 20px",
   },
 
   // Botón primario verde
@@ -44,8 +44,8 @@ export const S = {
     border: "none",
     borderRadius: 8,
     fontWeight: 700,
-    fontSize: 13,
-    padding: "8px 16px",
+    fontSize: 14,
+    padding: "10px 20px",
     cursor: "pointer",
   },
 
@@ -53,11 +53,11 @@ export const S = {
   btnSecundario: {
     backgroundColor: "#fff",
     color: C.verde,
-    border: `1.5px solid ${C.verdeBorde}`,
+    border: `1.5px solid ${C.grisBorde}`,
     borderRadius: 8,
     fontWeight: 700,
-    fontSize: 13,
-    padding: "8px 16px",
+    fontSize: 14,
+    padding: "10px 20px",
     cursor: "pointer",
   },
 
@@ -68,48 +68,48 @@ export const S = {
     border: "none",
     borderRadius: 8,
     fontWeight: 700,
-    fontSize: 13,
-    padding: "8px 16px",
+    fontSize: 14,
+    padding: "10px 20px",
     cursor: "pointer",
   },
 
   // Input
   input: {
-    border: `1.5px solid ${C.verdeBorde}`,
+    border: `1.5px solid ${C.grisBorde}`,
     borderRadius: 8,
-    fontSize: 13,
+    fontSize: 14,
   },
 
   // Título de sección
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: 700,
     color: C.negro,
-    marginBottom: 10,
+    marginBottom: 12,
     display: "flex",
     alignItems: "center",
-    gap: 6,
+    gap: 8,
   },
 
   // Badge puntos
   badgePuntos: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
     backgroundColor: C.verdeClaro,
     color: C.verde,
     border: `1px solid ${C.verdeMedio}`,
     borderRadius: 6,
-    padding: "2px 8px",
+    padding: "3px 10px",
   },
 
   // Badge código
   badgeCodigo: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
     backgroundColor: "#f9f9f9",
-    border: `1px solid ${C.verdeBorde}`,
+    border: `1px solid ${C.grisBorde}`,
     borderRadius: 6,
-    padding: "2px 8px",
+    padding: "3px 10px",
     letterSpacing: 1,
   },
 
@@ -120,10 +120,10 @@ export const S = {
   tableHeadTh: {
     fontWeight: 700,
     color: C.verdeOscuro,
-    fontSize: 13,
+    fontSize: 14,
   },
   tableRow: {
-    borderColor: C.verdeClaro,
+    borderColor: C.grisBorde,
   },
 
   // Alerta error
@@ -131,8 +131,8 @@ export const S = {
     backgroundColor: C.rojoclaro,
     border: `1.5px solid ${C.rojoBorde}`,
     borderRadius: 8,
-    padding: "8px 12px",
-    fontSize: 13,
+    padding: "10px 14px",
+    fontSize: 14,
     color: C.rojo,
     display: "flex",
     alignItems: "center",
@@ -145,7 +145,7 @@ export const S = {
     backgroundColor: C.verdeClaro,
     border: `1px solid ${C.verdeMedio}`,
     borderRadius: 8,
-    padding: "8px 12px",
+    padding: "10px 14px",
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
@@ -154,16 +154,16 @@ export const S = {
 
   // Stat box (puntos disponibles / a descontar)
   statBox: {
-    border: `1.5px solid ${C.verdeBorde}`,
+    border: `1.5px solid ${C.grisBorde}`,
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     textAlign: "center",
-    backgroundColor: "#fafafa",
+    backgroundColor: "#fff",
   },
   statBoxActivo: {
-    border: `1.5px solid ${C.verdeBorde}`,
+    border: `1.5px solid ${C.verdeMedio}`,
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     textAlign: "center",
     backgroundColor: C.verdeClaro,
   },
@@ -173,10 +173,10 @@ export const S = {
     backgroundColor: C.verdeHover,
     border: `1.5px solid ${C.verdeMedio}`,
     borderRadius: 10,
-    padding: "10px 12px",
+    padding: "12px 14px",
     display: "flex",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
     marginTop: 10,
   },
 
@@ -198,12 +198,12 @@ export const S = {
     textAlign: "center",
     maxWidth: 320,
     width: "90%",
-    border: `1.5px solid ${C.verdeBorde}`,
+    border: `1.5px solid ${C.grisBorde}`,
   },
 
   // Pestañas
   tabActivo: {
-    fontSize: 13,
+    fontSize: 14,
     border: `1.5px solid ${C.verdeMedio}`,
     borderRadius: 8,
     backgroundColor: C.verdeClaro,
@@ -211,8 +211,8 @@ export const S = {
     fontWeight: 700,
   },
   tabInactivo: {
-    fontSize: 13,
-    border: `1.5px solid ${C.verdeBorde}`,
+    fontSize: 14,
+    border: `1.5px solid ${C.grisBorde}`,
     borderRadius: 8,
     backgroundColor: "#fff",
     color: C.grisTexto,
@@ -234,9 +234,9 @@ export const S = {
   // StatCard (dashboard)
   statCard: {
     background: "#fff",
-    border: `1.5px solid ${C.verdeBorde}`,
+    border: `1.5px solid ${C.grisBorde}`,
     borderRadius: 12,
-    padding: "16px 20px",
+    padding: "18px 22px",
   },
   statCardNumero: {
     fontSize: 28,
@@ -244,11 +244,11 @@ export const S = {
     color: C.negro,
   },
   statCardLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: C.grisTexto,
   },
   statCardTendencia: {
-    fontSize: 12,
+    fontSize: 13,
     color: C.verde,
     fontWeight: 600,
   },
@@ -257,7 +257,7 @@ export const S = {
 // ── COMPONENTES REUTILIZABLES ─────────────────────────────
 
 // Avatar con iniciales
-export function Av({ text, size = 36 }) {
+export function Av({ text, size = 38 }) {
   return (
     <div
       className="d-flex align-items-center justify-content-center rounded-circle fw-bold flex-shrink-0"
@@ -265,8 +265,8 @@ export function Av({ text, size = 36 }) {
         width: size, height: size,
         backgroundColor: C.verdeClaro,
         color: C.verdeOscuro,
-        fontSize: size * 0.36,
-        border: `1.5px solid ${C.verdeMedio}`,
+        fontSize: size * 0.38,
+        border: `2px solid ${C.verdeMedio}`,
       }}
     >
       {text}
@@ -288,7 +288,7 @@ export function BadgeCanje({ estado }) {
   return (
     <span
       className="badge d-inline-flex align-items-center gap-1 fw-bold"
-      style={{ backgroundColor: s.bg, color: s.text, fontSize: 11, border: `1px solid ${s.text}33` }}
+      style={{ backgroundColor: s.bg, color: s.text, fontSize: 12, border: `1px solid ${s.text}44` }}
     >
       <i className={`bi ${s.icon}`} /> {estado}
     </span>
@@ -305,10 +305,10 @@ export function BadgeCita({ estado }) {
   const s = map[estado] || map.Pendiente;
   return (
     <span
-      className="fw-bold rounded-pill px-2 py-0 d-inline-flex align-items-center gap-1"
-      style={{ fontSize: 10, background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
+      className="fw-bold rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1"
+      style={{ fontSize: 11, background: s.bg, color: s.color, border: `1px solid ${s.border}` }}
     >
-      <i className={`bi ${s.icon}`} style={{ fontSize: 9 }} />
+      <i className={`bi ${s.icon}`} style={{ fontSize: 10 }} />
       {estado}
     </span>
   );
@@ -328,7 +328,7 @@ export function BadgeEntrega({ estado }) {
   return (
     <span
       className="badge d-inline-flex align-items-center gap-1 fw-bold"
-      style={{ backgroundColor: s.bg, color: s.text, fontSize: 11, border: `1px solid ${s.text}33` }}
+      style={{ backgroundColor: s.bg, color: s.text, fontSize: 12, border: `1px solid ${s.text}44` }}
     >
       <i className={`bi ${s.icon}`} /> {estado}
     </span>
@@ -346,11 +346,13 @@ export function SectionTitle({ icon, children }) {
 }
 
 // StatCard para dashboard
-export function StatCard({ icon, label, valor, tendencia, colorIcono = C.verde }) {
+export function StatCard({ icon, label, valor, tendencia, colorIcono = C.verde, sub }) {
   return (
     <div style={S.statCard}>
       <div className="d-flex align-items-center gap-2 mb-1">
-        <i className={`bi ${icon}`} style={{ fontSize: 18, color: colorIcono }} />
+        <div className="rounded-2 d-flex align-items-center justify-content-center" style={{ width: 32, height: 32, backgroundColor: C.verdeClaro }}>
+          <i className={`bi ${icon}`} style={{ fontSize: 16, color: colorIcono }} />
+        </div>
         <span style={S.statCardLabel}>{label}</span>
       </div>
       <div style={S.statCardNumero}>{valor}</div>
@@ -358,6 +360,9 @@ export function StatCard({ icon, label, valor, tendencia, colorIcono = C.verde }
         <div style={S.statCardTendencia} className="mt-1">
           <i className="bi bi-arrow-up me-1" />{tendencia}
         </div>
+      )}
+      {sub && (
+        <div style={{ fontSize: 12, color: C.grisTexto, marginTop: 2 }}>{sub}</div>
       )}
     </div>
   );

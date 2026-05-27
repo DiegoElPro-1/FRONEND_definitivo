@@ -51,16 +51,16 @@ export default function Calendario({ onSelectDay, selectedDay, entregasPorDia })
         </div>
 
         {/* Días semana */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, marginBottom: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, marginBottom: 1, backgroundColor: "#d1d5db" }}>
           {DIAS_SEMANA.map(d => (
-            <div key={d} className="text-center fw-bold text-secondary" style={{ fontSize: 10 }}>{d}</div>
+            <div key={d} className="text-center fw-bold text-secondary" style={{ fontSize: 10, padding: "4px 0", backgroundColor: "#fff" }}>{d}</div>
           ))}
         </div>
 
         {/* Celdas */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 3 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, backgroundColor: "#d1d5db" }}>
           {celdas.map((d, i) => {
-            if (!d) return <div key={i} />;
+            if (!d) return <div key={i} style={{ backgroundColor: "#f3f4f6", minHeight: 44 }} />;
             const key         = toKey(anio, mes, d);
             const tieneEntregas = !!entregasPorDia[key];
             const esHoy       = d === hoy.getDate() && mes === hoy.getMonth() && anio === hoy.getFullYear();
@@ -69,19 +69,19 @@ export default function Calendario({ onSelectDay, selectedDay, entregasPorDia })
               ? entregasPorDia[key].filter(e => e.estado === "Pendiente").length
               : 0;
 
-            let bg = "transparent", border = "1px solid transparent", textColor = "#374151", fw = 500;
-            if (seleccionado) { bg = "#ffc107"; border = "2px solid #000"; textColor = "#000"; fw = 800; }
-            else if (esHoy)   { bg = "#000";    border = "2px solid #ffc107"; textColor = "#ffc107"; fw = 700; }
-            else if (tieneEntregas) { bg = "#f8f9fa"; border = "1px solid #198754"; }
+            let bg = "#fff", textColor = "#374151", fw = 500;
+            if (seleccionado) { bg = "#ffc107"; textColor = "#000"; fw = 800; }
+            else if (esHoy)   { bg = "#1f2937"; textColor = "#ffc107"; fw = 700; }
+            else if (tieneEntregas) { bg = "#dcfce7"; }
 
             return (
               <div
                 key={i}
                 onClick={() => tieneEntregas && onSelectDay(key)}
                 style={{
-                  borderRadius: 8, padding: "5px 2px", textAlign: "center",
+                  padding: "8px 2px", textAlign: "center", minHeight: 44,
                   cursor: tieneEntregas ? "pointer" : "default",
-                  background: bg, border, transition: "all .15s",
+                  backgroundColor: bg, transition: "all .15s",
                 }}
               >
                 <div style={{ fontSize: 12, fontWeight: fw, color: textColor }}>{d}</div>
@@ -101,9 +101,9 @@ export default function Calendario({ onSelectDay, selectedDay, entregasPorDia })
         {/* Leyenda */}
         <div className="d-flex flex-wrap gap-3 mt-3">
           {[
-            { bg: "#000",    border: "1px solid #ffc107", label: "Hoy"            },
-            { bg: "#f8f9fa", border: "1px solid #198754", label: "Con entregas"   },
-            { bg: "#ffc107", border: "2px solid #000",    label: "Seleccionado"   },
+            { bg: "#1f2937", border: "none",                label: "Hoy"            },
+            { bg: "#dcfce7", border: "1px solid #16a34a",   label: "Con entregas"   },
+            { bg: "#ffc107", border: "2px solid #000",      label: "Seleccionado"   },
           ].map(l => (
             <span key={l.label} className="d-flex align-items-center gap-1 text-secondary" style={{ fontSize: 10 }}>
               <span style={{ width: 10, height: 10, borderRadius: 3, background: l.bg, border: l.border, display: "inline-block" }} />

@@ -1,45 +1,50 @@
 // src/paneles/encargado/VistaDashboard.jsx
-import { useState, useRef } from "react";
+import { useState, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
+import { getReservasEncargado, actualizarEstadoReservaEncargado } from "../../services/api";
 
-const MATERIALES = [
-  { idMaterial: 1, nombre: "Plástico", descripcion: "Botellas y envases plásticos", puntosPorKg: 30, icon: "bi-droplet-fill",     bg: C.verdeClaro,  color: C.verdeOscuro },
-  { idMaterial: 2, nombre: "Papel",    descripcion: "Papel y periódico",             puntosPorKg: 15, icon: "bi-file-earmark-fill", bg: "#fff3cd",     color: "#856404"     },
-  { idMaterial: 3, nombre: "Cartón",   descripcion: "Cajas y cartón corrugado",      puntosPorKg: 20, icon: "bi-box-fill",          bg: C.grisFondo,   color: "#41464b"     },
-  { idMaterial: 4, nombre: "Vidrio",   descripcion: "Botellas y frascos de vidrio",  puntosPorKg: 25, icon: "bi-cup-fill",          bg: C.negro,       color: C.verde       },
-];
+function getIniciales(nombre = "") {
+  return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
+}
 
-const CITAS_INICIALES = {
-  "2026-05-05": [
-    { id: 1, nombre: "Diego Tamayo",     av: "DT", materiales: [1, 3], estado: "Aceptada",  nota: "", foto: null },
-    { id: 2, nombre: "Carlos Jaramillo", av: "CJ", materiales: [1],    estado: "Pendiente", nota: "", foto: null },
-    { id: 3, nombre: "Elena Santacruz",  av: "ES", materiales: [2, 4], estado: "Rechazada", nota: "Día completo", foto: null },
-  ],
-  "2026-05-14": [
-    { id: 4, nombre: "Luisa Perdomo",    av: "LP", materiales: [4],    estado: "Pendiente", nota: "", foto: null },
-    { id: 5, nombre: "Andrés Torres",    av: "AT", materiales: [3, 1], estado: "Aceptada",  nota: "", foto: null },
-  ],
-  "2026-05-22": [
-    { id: 6, nombre: "Sofía Muñoz",      av: "SM", materiales: [2],    estado: "Pendiente", nota: "", foto: null },
-    { id: 7, nombre: "Diego Tamayo",     av: "DT", materiales: [1, 2], estado: "Pendiente", nota: "", foto: null },
-  ],
-};
+function transformarReservas(reservas) {
+  const agrupadas = {};
+  for (const r of reservas) {
+    const fecha = r.fecha;
+    if (!agrupadas[fecha]) agrupadas[fecha] = [];
+    agrupadas[fecha].push({
+      id: r.idReserva,
+      idReserva: r.idReserva,
+      idUsuario: r.idUsuario,
+      nombre: r.usuario?.nombre || "Sin nombre",
+      av: getIniciales(r.usuario?.nombre),
+      materiales: [],
+      estado: r.estado === "confirmada" ? "Aceptada" : r.estado === "cancelada" ? "Rechazada" : r.estado === "completada" ? "Completada" : "Pendiente",
+      nota: r.notas || "",
+      foto: null,
+      hora: r.hora,
+    });
+  }
+  return agrupadas;
+}
 
 const ENCARGADO   = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
 const DIAS_SEMANA = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MESES       = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 const TABS = [
-  { key: "Pendiente", icon: "bi-clock-fill",        color: "#856404",     bg: "#fff3cd",    border: "#ffc107" },
-  { key: "Aceptada",  icon: "bi-check-circle-fill", color: C.verdeOscuro, bg: C.verdeClaro, border: C.verde   },
-  { key: "Rechazada", icon: "bi-x-circle-fill",     color: "#842029",     bg: "#f8d7da",    border: "#dc3545" },
+  { key: "Pendiente",  icon: "bi-clock-fill",        color: "#856404",     bg: "#fff3cd",    border: "#ffc107" },
+  { key: "Aceptada",   icon: "bi-check-circle-fill", color: C.verdeOscuro, bg: C.verdeClaro, border: C.verde   },
+  { key: "Completada", icon: "bi-check2-all",        color: "#1b5e20",     bg: "#c8e6c9",    border: "#388e3c" },
+  { key: "Rechazada",  icon: "bi-x-circle-fill",     color: "#842029",     bg: "#f8d7da",    border: "#dc3545" },
 ];
 
 function BadgeEstado({ estado }) {
   const map = {
-    Pendiente: { bg: "#fff3cd",    color: "#856404",     border: "#ffc107",  icon: "bi-clock-fill"        },
-    Aceptada:  { bg: C.verdeClaro, color: C.verdeOscuro, border: C.verde,    icon: "bi-check-circle-fill" },
-    Rechazada: { bg: "#f8d7da",    color: "#842029",     border: "#dc3545",  icon: "bi-x-circle-fill"     },
+    Pendiente:  { bg: "#fff3cd",    color: "#856404",     border: "#ffc107",  icon: "bi-clock-fill"        },
+    Aceptada:   { bg: C.verdeClaro, color: C.verdeOscuro, border: C.verde,    icon: "bi-check-circle-fill" },
+    Completada: { bg: "#c8e6c9",    color: "#1b5e20",     border: "#388e3c",  icon: "bi-check2-all"        },
+    Rechazada:  { bg: "#f8d7da",    color: "#842029",     border: "#dc3545",  icon: "bi-x-circle-fill"     },
   };
   const s = map[estado] || map.Pendiente;
   return (
@@ -52,31 +57,36 @@ function BadgeEstado({ estado }) {
   );
 }
 
-function ChipMaterial({ nombre }) {
-  const mat = MATERIALES.find(m => m.nombre === nombre);
-  if (!mat) return null;
-  return (
-    <span
-      className="rounded-pill px-2 fw-bold me-1 d-inline-flex align-items-center gap-1"
-      style={{ fontSize: 10, background: mat.bg, color: mat.color, marginBottom: 2 }}
-    >
-      <i className={`bi ${mat.icon}`} style={{ fontSize: 9 }} />{nombre}
-    </span>
-  );
-}
-
 export default function VistaDashboard() {
   const today = new Date();
   const [year, setYear]               = useState(today.getFullYear());
   const [month, setMonth]             = useState(today.getMonth());
   const [selectedDay, setSelectedDay] = useState(null);
-  const [citas, setCitas]             = useState(CITAS_INICIALES);
+  const [citas, setCitas]             = useState({});
   const [panel, setPanel]             = useState("lista");
   const [tabActivo, setTabActivo]     = useState("Pendiente");
   const [citaActiva, setCitaActiva]   = useState(null);
   const [notaRechazo, setNotaRechazo] = useState("");
   const [fotoPreview, setFotoPreview] = useState(null);
-  const inputFotoRef = useRef(null);
+  const [loading, setLoading]         = useState(true);
+  const [error, setError]             = useState("");
+
+  useEffect(() => {
+    const cargar = async () => {
+      try {
+        setLoading(true);
+        setError("");
+        const data = await getReservasEncargado();
+        const agrupadas = transformarReservas(data.reservas || []);
+        setCitas(agrupadas);
+      } catch (e) {
+        setError(e.message || "Error al cargar reservas");
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargar();
+  }, []);
 
   const toKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 
@@ -100,29 +110,50 @@ export default function VistaDashboard() {
   const citasFiltradas = citasDelDia.filter(c => c.estado === tabActivo);
   const conteoTab      = (tab) => citasDelDia.filter(c => c.estado === tab).length;
 
-  const handleAceptar = () => {
-    setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Aceptada", nota: "" } : c); return copia; });
-    setCitaActiva(c => ({ ...c, estado: "Aceptada" }));
+  const handleAceptar = async () => {
+    try {
+      await actualizarEstadoReservaEncargado(citaActiva.idReserva, { estado: "confirmada" });
+      setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Aceptada", nota: "" } : c); return copia; });
+      setCitaActiva(c => ({ ...c, estado: "Aceptada" }));
+    } catch (e) { console.error("Error al aceptar:", e); }
   };
 
-  const handleRechazar = () => {
-    setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Rechazada", nota: notaRechazo } : c); return copia; });
-    setCitaActiva(c => ({ ...c, estado: "Rechazada", nota: notaRechazo }));
-    setPanel("detalle"); setNotaRechazo("");
+  const handleRechazar = async () => {
+    try {
+      await actualizarEstadoReservaEncargado(citaActiva.idReserva, { estado: "cancelada", notas: notaRechazo || null });
+      setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Rechazada", nota: notaRechazo } : c); return copia; });
+      setCitaActiva(c => ({ ...c, estado: "Rechazada", nota: notaRechazo }));
+      setPanel("detalle"); setNotaRechazo("");
+    } catch (e) { console.error("Error al rechazar:", e); }
   };
 
-  const handleFotoUpload = (e, citaId) => {
-    const file = e.target.files[0]; if (!file) return;
-    const url = URL.createObjectURL(file);
-    setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaId ? { ...c, foto: url } : c); return copia; });
-    if (citaActiva?.id === citaId) setCitaActiva(c => ({ ...c, foto: url }));
-  };
-
-  const nombreMateriales = (ids) => ids.map(id => MATERIALES.find(m => m.idMaterial === id)?.nombre).filter(Boolean);
+  const tieneMateriales = (cita) => cita.materiales && cita.materiales.length > 0;
   const totalPendientes  = Object.values(citas).flat().filter(c => c.estado === "Pendiente").length;
 
   return (
     <div style={{ backgroundColor: C.grisFondo, minHeight: "100vh", padding: 24 }}>
+
+      {/* Loading */}
+      {loading && (
+        <div className="d-flex align-items-center justify-content-center py-5">
+          <div className="spinner-border" style={{ color: C.verde }} role="status" />
+          <span className="fw-bold ms-3" style={{ color: C.grisTexto }}>Cargando reservas…</span>
+        </div>
+      )}
+
+      {/* Error */}
+      {error && (
+        <div className="d-flex align-items-center gap-2 px-3 py-2 rounded-2 mb-3" style={S.alertaError}>
+          <i className="bi bi-exclamation-triangle-fill" />
+          {error}
+          <button className="btn btn-sm fw-bold ms-auto" style={{ ...S.btnSecundario, fontSize: 11 }} onClick={() => window.location.reload()}>
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      {!loading && (
+      <>
 
       {/* Modal foto ampliada */}
       {fotoPreview && (
@@ -179,28 +210,27 @@ export default function VistaDashboard() {
               </div>
 
               {/* Días de semana */}
-              <div className="d-grid mb-2" style={{ gridTemplateColumns: "repeat(7,1fr)", gap: 2 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, marginBottom: 1, backgroundColor: "#d1d5db" }}>
                 {DIAS_SEMANA.map(d => (
-                  <div key={d} className="text-center fw-bold" style={{ fontSize: 10, color: C.grisTexto }}>{d}</div>
+                  <div key={d} className="text-center fw-bold" style={{ fontSize: 10, color: C.grisTexto, padding: "4px 0", backgroundColor: "#fff" }}>{d}</div>
                 ))}
               </div>
 
               {/* Celdas */}
-              <div className="d-grid" style={{ gridTemplateColumns: "repeat(7,1fr)", gap: 3 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 1, backgroundColor: "#d1d5db" }}>
                 {celdas.map((d, i) => {
-                  if (!d) return <div key={`e-${i}`} />;
+                  if (!d) return <div key={`e-${i}`} style={{ minHeight: 44, backgroundColor: "#f3f4f6" }} />;
                   const cnt  = totalDia(d);
                   const pend = pendientesDia(d);
                   const sel  = selectedDay === d;
                   const hoy  = esHoy(d);
                   return (
                     <button key={d} onClick={() => selectDia(d)}
-                      className="border-0 rounded-2 d-flex flex-column align-items-center justify-content-center position-relative fw-bold"
+                      className="border-0 d-flex flex-column align-items-center justify-content-center position-relative fw-bold"
                       style={{
-                        aspectRatio: "1", fontSize: 12, cursor: "pointer",
-                        background: sel ? C.verde : hoy ? C.verdeClaro : cnt > 0 ? C.grisFondo : "transparent",
-                        color:      sel ? C.blanco : hoy ? C.verdeOscuro : C.negro,
-                        border: sel ? `2px solid ${C.verdeOscuro}` : hoy ? `2px solid ${C.verde}` : cnt > 0 ? `1.5px solid ${C.verdeBorde}` : "none",
+                        minHeight: 44, fontSize: 12, cursor: "pointer",
+                        backgroundColor: sel ? C.verde : hoy ? C.verdeClaro : cnt > 0 ? "#f0fdf4" : "#fff",
+                        color: sel ? C.blanco : hoy ? C.verdeOscuro : C.negro,
                         transition: "all 0.15s",
                       }}
                     >
@@ -221,7 +251,7 @@ export default function VistaDashboard() {
               <div className="d-flex flex-wrap gap-3 mt-3 pt-2" style={{ borderTop: `1px solid ${C.verdeBorde}` }}>
                 {[
                   { bg: C.verdeClaro, border: `1px solid ${C.verde}`,      label: "Hoy"          },
-                  { bg: C.grisFondo,  border: `1px solid ${C.verdeBorde}`,  label: "Con citas"    },
+                  { bg: "#f0fdf4",   border: "1px solid #16a34a",          label: "Con citas"    },
                   { bg: C.verde,      border: `2px solid ${C.verdeOscuro}`, label: "Seleccionado" },
                 ].map(l => (
                   <span key={l.label} className="d-flex align-items-center gap-1 fw-semibold" style={{ fontSize: 10, color: C.grisTexto }}>
@@ -326,9 +356,15 @@ export default function VistaDashboard() {
                         <Av text={cita.av} size={40} />
                         <div className="flex-grow-1 overflow-hidden">
                           <div className="fw-bold" style={{ fontSize: 13, color: C.negro }}>{cita.nombre}</div>
-                          <div className="mt-1 d-flex flex-wrap gap-1">
-                            {nombreMateriales(cita.materiales).map(n => <ChipMaterial key={n} nombre={n} />)}
-                          </div>
+                          {tieneMateriales(cita) && (
+                            <div className="mt-1 d-flex flex-wrap gap-1">
+                              {cita.materiales.map(id => (
+                                <span key={id} className="rounded-pill px-2 fw-bold" style={{ fontSize: 10, backgroundColor: C.verdeClaro, color: C.verdeOscuro }}>
+                                  Material #{id}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                           {cita.foto && (
                             <div className="mt-1 d-flex align-items-center gap-1" style={{ fontSize: 10, color: C.verde }}>
                               <i className="bi bi-image-fill" /><span className="fw-bold">Foto adjunta</span>
@@ -373,67 +409,21 @@ export default function VistaDashboard() {
                   </div>
                 </div>
 
-                <div>
-                  <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
-                    <i className="bi bi-recycle" style={{ color: C.verde }} />Materiales a entregar
-                  </div>
-                  <div className="d-flex flex-column gap-2">
-                    {citaActiva.materiales.map(id => {
-                      const mat = MATERIALES.find(m => m.idMaterial === id);
-                      if (!mat) return null;
-                      return (
+                {tieneMateriales(citaActiva) && (
+                  <div>
+                    <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+                      <i className="bi bi-recycle" style={{ color: C.verde }} />Materiales a entregar
+                    </div>
+                    <div className="d-flex flex-column gap-2">
+                      {citaActiva.materiales.map(id => (
                         <div key={id} className="d-flex align-items-center gap-3 px-3 py-2 rounded-3"
-                          style={{ backgroundColor: mat.bg, border: `1.5px solid ${C.verdeBorde}` }}>
-                          <div className="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                            style={{ width: 36, height: 36, background: C.blanco, border: `1.5px solid ${C.verdeBorde}` }}>
-                            <i className={`bi ${mat.icon}`} style={{ fontSize: 18, color: mat.color }} />
-                          </div>
-                          <div className="flex-grow-1">
-                            <div className="fw-bold" style={{ fontSize: 13, color: mat.color }}>{mat.nombre}</div>
-                            <div className="fw-semibold" style={{ fontSize: 10, color: mat.color, opacity: 0.8 }}>{mat.descripcion}</div>
-                          </div>
-                          <span className="badge fw-bold d-flex align-items-center gap-1"
-                            style={{ backgroundColor: C.verdeClaro, color: C.verdeOscuro, fontSize: 11, border: `1px solid ${C.verdeMedio}` }}>
-                            <i className="bi bi-star-fill" style={{ fontSize: 9 }} />{mat.puntosPorKg} pts/kg
-                          </span>
+                          style={{ backgroundColor: C.verdeClaro, border: `1.5px solid ${C.grisBorde}` }}>
+                          <span className="fw-bold" style={{ fontSize: 13, color: C.verdeOscuro }}>Material #{id}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
-                    <i className="bi bi-camera-fill" style={{ color: C.verde }} />Foto del material
-                    <span className="fw-normal" style={{ fontSize: 10, color: C.grisTexto }}>(adjuntada por el usuario)</span>
-                  </div>
-                  {citaActiva.foto ? (
-                    <div className="position-relative rounded-3 overflow-hidden"
-                      style={{ cursor: "pointer", border: `1.5px solid ${C.verdeBorde}` }}
-                      onClick={() => setFotoPreview(citaActiva.foto)}>
-                      <img src={citaActiva.foto} alt="Material"
-                        style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
-                      <div className="position-absolute bottom-0 start-0 end-0 d-flex align-items-center justify-content-center gap-2 py-2"
-                        style={{ background: "rgba(0,0,0,0.55)" }}>
-                        <i className="bi bi-zoom-in" style={{ fontSize: 14, color: C.verde }} />
-                        <span className="fw-bold text-white" style={{ fontSize: 11 }}>Ver en grande</span>
-                      </div>
+                      ))}
                     </div>
-                  ) : (
-                    <div className="rounded-3 d-flex flex-column align-items-center justify-content-center py-3"
-                      style={{ backgroundColor: C.grisFondo, border: `1.5px solid ${C.verdeBorde}`, minHeight: 100 }}>
-                      <i className="bi bi-image" style={{ fontSize: 28, color: C.grisTexto }} />
-                      <div className="fw-semibold mt-1" style={{ fontSize: 11, color: C.grisTexto }}>Sin foto adjunta</div>
-                      <input type="file" accept="image/*" ref={inputFotoRef} style={{ display: "none" }}
-                        onChange={e => handleFotoUpload(e, citaActiva.id)} />
-                      <button className="btn btn-sm fw-bold mt-2 d-flex align-items-center gap-1"
-                        style={{ ...S.btnSecundario, fontSize: 10 }}
-                        onClick={() => inputFotoRef.current?.click()}>
-                        <i className="bi bi-upload" /> Cargar foto de prueba
-                      </button>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
 
                 {citaActiva.estado === "Rechazada" && citaActiva.nota && (
                   <div className="rounded-3 p-2 d-flex align-items-start gap-2"
@@ -501,9 +491,13 @@ export default function VistaDashboard() {
                     <div className="d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.grisTexto }}>
                       <i className="bi bi-calendar3" />{selectedDay} de {MESES[month]} {year}
                     </div>
-                    <div className="mt-1 d-flex flex-wrap gap-1">
-                      {nombreMateriales(citaActiva.materiales).map(n => <ChipMaterial key={n} nombre={n} />)}
-                    </div>
+                    {tieneMateriales(citaActiva) && (
+                      <div className="mt-1 d-flex flex-wrap gap-1">
+                        {citaActiva.materiales.map(id => (
+                          <span key={id} className="rounded-pill px-2 fw-bold" style={{ fontSize: 10, backgroundColor: C.verdeClaro, color: C.verdeOscuro }}>Material #{id}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -544,6 +538,8 @@ export default function VistaDashboard() {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 }
