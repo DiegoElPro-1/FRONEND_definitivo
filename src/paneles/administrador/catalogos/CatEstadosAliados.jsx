@@ -8,9 +8,7 @@ const CAMPOS = [
 
 const DATOS_INICIALES = [
   { id: 1, nombre: "Activo",      descripcion: "Aliado habilitado en la plataforma" },
-  { id: 2, nombre: "Inactivo",    descripcion: "Aliado deshabilitado temporalmente" },
-  { id: 3, nombre: "Pendiente",   descripcion: "Aliado en proceso de verificación" },
-  { id: 4, nombre: "Suspendido",  descripcion: "Aliado suspendido por incumplimiento" },
+ 
 ];
 
 export default function CatEstadosAliados() {
