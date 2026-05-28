@@ -222,11 +222,17 @@ export default function Administradores({
   // ===============================
   // EDITAR
   // ===============================
-  const handleSave = (u) => {
-    dispatch({
-      type: "UPDATE_USER",
-      payload: u,
-    });
+  const handleSave = async (u) => {
+    try {
+      await actualizarAdmin(u.id, {
+        nombre: u.nombre,
+        telefono: u.telefono,
+        correo: u.email,
+      });
+      dispatch({ type: "UPDATE_USER", payload: u });
+    } catch (err) {
+      showToast("Error al actualizar: " + err.message, "error");
+    }
   };
 
   // ===============================

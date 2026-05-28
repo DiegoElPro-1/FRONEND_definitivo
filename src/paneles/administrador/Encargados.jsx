@@ -5,6 +5,7 @@ import {
   crearEncargado,
   actualizarEncargado,
   eliminarEncargado,
+  asignarPuntoEncargado,
 } from "../../services/api";
 
 function Toggle({ checked, onChange }) {
@@ -34,7 +35,6 @@ function ModalDetalle({ user, onClose, onSave, showToast }) {
   const handleSave = () => {
     if (!form.nombre?.trim()) { showToast("El nombre es obligatorio", "error"); return; }
     onSave(form);
-    showToast("Encargado actualizado");
     onClose();
   };
   return (
@@ -90,7 +90,7 @@ function ModalDetalle({ user, onClose, onSave, showToast }) {
   );
 }
 
-function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
+function TablaEncargados({ lista, onToggle, onVer, onEliminar, onAsignarPunto }) {
   if (lista.length === 0) {
     return (
       <div style={{ padding: "40px 20px", textAlign: "center", color: "#bbb", fontSize: "0.85rem" }}>
@@ -139,6 +139,11 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
                 <button className="btn-icon" title={u.activo ? "Desactivar" : "Activar"} onClick={() => onToggle(u.id, u.nombre, u.activo)}>
                   <i className={`bi bi-${u.activo ? "pause" : "play"}`} />
                 </button>
+                {!u.puntoAsignado && (
+                  <button className="btn-icon" title="Asignar punto" onClick={() => onAsignarPunto(u.id, u.nombre)} style={{ color: 'var(--verde)' }}>
+                    <i className="bi bi-geo-alt" />
+                  </button>
+                )}
                 <button className="btn-icon del" title="Eliminar" onClick={() => onEliminar(u.id)}><i className="bi bi-trash" /></button>
               </div>
             </td>
@@ -171,7 +176,7 @@ export default function Encargados({ state, dispatch, showToast }) {
           email: u.correo || "",
           telefono: u.telefono || "",
           zona: u.zona || "",
-          puntoAsignado: u.puntoAsignado || "",
+          puntoAsignado: u.puntoACargo?.nombre || "",
           activo: u.idEstadoUsuario === 1,
           av: (u.nombre || "").trim().split(" ").slice(0, 2).map((w) => w?.[0]?.toUpperCase() || "").join(""),
           fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
@@ -235,13 +240,32 @@ export default function Encargados({ state, dispatch, showToast }) {
 
   const handleToggle = async (id, nombre, estadoActual) => {
     try {
-      await actualizarEncargado(id, { idEstado: estadoActual ? 2 : 1 });
+      await actualizarEncargado(id, { idEstadoUsuario: estadoActual ? 2 : 1 });
       dispatch({ type: "TOGGLE_ENCARGADO", payload: id });
       showToast(estadoActual ? `${nombre} ha sido desactivado` : `${nombre} ha sido activado`, estadoActual ? "error" : "success");
     } catch (err) { showToast("Error al cambiar estado: " + err.message, "error"); }
   };
 
-  const handleSave = (u) => { dispatch({ type: "UPDATE_ENCARGADO", payload: u }); };
+  const handleSave = async (u) => {
+    try {
+      await actualizarEncargado(u.id, { nombre: u.nombre, telefono: u.telefono, correo: u.email });
+      dispatch({ type: "UPDATE_ENCARGADO", payload: u });
+      showToast("Encargado actualizado correctamente");
+    } catch (err) { showToast("Error al actualizar: " + err.message, "error"); }
+  };
+
+  const handleAsignarPunto = async (id, nombre) => {
+    try {
+      const resp = await asignarPuntoEncargado(id);
+      const encargados = state?.encargados || [];
+      const idx = encargados.findIndex((e) => e.id === id);
+      if (idx !== -1) {
+        const updated = { ...encargados[idx], puntoAsignado: resp.punto?.nombre || "Asignado" };
+        dispatch({ type: "UPDATE_ENCARGADO", payload: updated });
+      }
+      showToast(`Punto asignado a ${nombre}`);
+    } catch (err) { showToast("Error al asignar punto: " + err.message, "error"); }
+  };
 
   const handleEliminar = async (id) => {
     try {
@@ -295,7 +319,7 @@ export default function Encargados({ state, dispatch, showToast }) {
       </div>
 
       <div className="panel-table-wrap">
-        <TablaEncargados lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} />
+        <TablaEncargados lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} onAsignarPunto={handleAsignarPunto} />
       </div>
 
       <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} />
