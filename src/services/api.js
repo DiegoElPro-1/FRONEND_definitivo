@@ -191,48 +191,6 @@ export async function eliminarEstadoMaterial(id) {
   });
 }
 
-// --- Catalogos: Estados Usuarios ---
-export async function getEstadosUsuarios()               { return request('/api/admin/estados-usuarios'); }
-export async function crearEstadoUsuario(datos)          { return request('/api/admin/estados-usuarios', { method: 'POST', body: JSON.stringify(datos) }); }
-export async function actualizarEstadoUsuario(id, datos) { return request(`/api/admin/estados-usuarios/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
-export async function eliminarEstadoUsuario(id)          { return request(`/api/admin/estados-usuarios/${id}`, { method: 'DELETE' }); }
-
-// --- Catalogos: Estados Entregas ---
-export async function getEstadosEntregas()                { return request('/api/admin/estados-entregas'); }
-export async function crearEstadoEntrega(datos)           { return request('/api/admin/estados-entregas', { method: 'POST', body: JSON.stringify(datos) }); }
-export async function actualizarEstadoEntregaCat(id, datos) { return request(`/api/admin/estados-entregas/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
-export async function eliminarEstadoEntregaCat(id)        { return request(`/api/admin/estados-entregas/${id}`, { method: 'DELETE' }); }
-
-// --- Catalogos: Estados Canjes ---
-export async function getEstadosCanjes()                  { return request('/api/admin/estados-canjes'); }
-export async function crearEstadoCanje(datos)             { return request('/api/admin/estados-canjes', { method: 'POST', body: JSON.stringify(datos) }); }
-export async function actualizarEstadoCanje(id, datos)    { return request(`/api/admin/estados-canjes/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
-export async function eliminarEstadoCanje(id)             { return request(`/api/admin/estados-canjes/${id}`, { method: 'DELETE' }); }
-
-// --- Catalogos: Estados Aliados ---
-export async function getEstadosAliados()                 { return request('/api/admin/estados-aliados'); }
-export async function crearEstadoAliado(datos)            { return request('/api/admin/estados-aliados', { method: 'POST', body: JSON.stringify(datos) }); }
-export async function actualizarEstadoAliado(id, datos)   { return request(`/api/admin/estados-aliados/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
-export async function eliminarEstadoAliado(id)            { return request(`/api/admin/estados-aliados/${id}`, { method: 'DELETE' }); }
-
-// --- Catalogos: Estados Puntos ---
-export async function getEstadosPuntos()                  { return request('/api/admin/estados-puntos'); }
-export async function crearEstadoPunto(datos)             { return request('/api/admin/estados-puntos', { method: 'POST', body: JSON.stringify(datos) }); }
-export async function actualizarEstadoPunto(id, datos)    { return request(`/api/admin/estados-puntos/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
-export async function eliminarEstadoPunto(id)             { return request(`/api/admin/estados-puntos/${id}`, { method: 'DELETE' }); }
-
-// --- Catalogos: Estados Recompensas ---
-export async function getEstadosRecompensas()                 { return request('/api/admin/estados-recompensas'); }
-export async function crearEstadoRecompensa(datos)            { return request('/api/admin/estados-recompensas', { method: 'POST', body: JSON.stringify(datos) }); }
-export async function actualizarEstadoRecompensa(id, datos)   { return request(`/api/admin/estados-recompensas/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
-export async function eliminarEstadoRecompensa(id)            { return request(`/api/admin/estados-recompensas/${id}`, { method: 'DELETE' }); }
-
-// --- Catalogos: Tipos Recompensa ---
-export async function getTiposRecompensa()                    { return request('/api/admin/tipos-recompensas'); }
-export async function crearTipoRecompensa(datos)              { return request('/api/admin/tipos-recompensas', { method: 'POST', body: JSON.stringify(datos) }); }
-export async function actualizarTipoRecompensa(id, datos)     { return request(`/api/admin/tipos-recompensas/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
-export async function eliminarTipoRecompensa(id)              { return request(`/api/admin/tipos-recompensas/${id}`, { method: 'DELETE' }); }
-
 export async function getClasificaciones() {
   return request('/api/aliado/clasificaciones');
 }
@@ -286,7 +244,6 @@ export async function getEncargado(id)               { return request(`/api/admi
 export async function crearEncargado(datos)          { return request('/api/admin/encargados', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarEncargado(id, datos) { return request(`/api/admin/encargados/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarEncargado(id)          { return request(`/api/admin/encargados/${id}`, { method: 'DELETE' }); }
-export async function asignarPuntoEncargado(id)      { return request(`/api/admin/encargados/${id}/asignar-punto`, { method: 'POST' }); }
 
 export async function getEntregasAdmin()                        { return request('/api/admin/entregas'); }
 export async function getEntregaAdmin(id)                       { return request(`/api/admin/entregas/${id}`); }
@@ -367,14 +324,6 @@ export async function marcarTodasNotificacionesLeidas() {
   return request('/api/encargado/notificaciones/leer-todas', {
     method: 'PUT',
   });
-}
-
-export async function getRecompensasEncargado() {
-  return request('/api/encargado/recompensas');
-}
-
-export async function getEntregasEncargadoPorUsuario(usuarioId) {
-  return request(`/api/encargado/entregas?usuario_id=${usuarioId}`);
 }
 
 export async function getReservasEncargado(fecha = '', estado = '') {

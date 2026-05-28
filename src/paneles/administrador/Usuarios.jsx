@@ -104,18 +104,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
     }
   };
 
-  const handleSave = async (u) => {
-    try {
-      await actualizarUsuario(u.id, {
-        nombre: u.nombre,
-        telefono: u.telefono,
-        correo: u.email,
-      });
-      dispatch({ type: "UPDATE_USER", payload: u });
-    } catch (err) {
-      showToast("Error al actualizar: " + err.message, "error");
-    }
-  };
+  const handleSave = (u) => dispatch({ type: "UPDATE_USER", payload: u });
 
   const handleEliminar = async (id) => {
     try {

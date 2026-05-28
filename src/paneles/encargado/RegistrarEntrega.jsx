@@ -86,8 +86,8 @@ export default function RegistrarEntrega() {
     setLoading(true); setError("");
     try {
       const materialesPayload = filas.filter(f => f.kg > 0).map(f => ({ idMaterial: f.idMaterial, peso: f.kg, puntosGenerados: f.pts }));
-      const data = await registrarEntregaEncargado({ idUsuario: usuarioSeleccionado.idUsuario, materiales: materialesPayload, prioridad: formExtra.prioridad, estadoMaterial: formExtra.estadoMaterial, observacion: formExtra.observacion });
-      setResumen({ idEntrega: data?.idEntrega, usuario: usuarioSeleccionado.nombre, filas: filas.filter(f => f.kg > 0), totalKg, totalPts, prioridad: prioSel, estadoMaterial: estadoSel, observacion: formExtra.observacion });
+      await registrarEntregaEncargado({ idUsuario: usuarioSeleccionado.idUsuario, materiales: materialesPayload, prioridad: formExtra.prioridad, estadoMaterial: formExtra.estadoMaterial, observacion: formExtra.observacion });
+      setResumen({ usuario: usuarioSeleccionado.nombre, filas: filas.filter(f => f.kg > 0), totalKg, totalPts, prioridad: prioSel, estadoMaterial: estadoSel, observacion: formExtra.observacion });
       setEnviado(true);
     } catch (e) { setError(e.message || "Error al registrar la entrega"); }
     finally { setLoading(false); }
@@ -101,7 +101,6 @@ export default function RegistrarEntrega() {
 
   // Vista éxito
   if (enviado && resumen) {
-    const codigoEntrega = `ENT-${resumen.idEntrega}`;
     return (
       <div className="card text-center p-5" style={S.card}>
         <div className="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style={{ width: 72, height: 72, backgroundColor: C.verde }}>
@@ -109,14 +108,6 @@ export default function RegistrarEntrega() {
         </div>
         <h4 className="fw-bold text-dark mb-1">¡Entrega registrada!</h4>
         <p className="text-secondary mb-4" style={{ fontSize: 14 }}>La entrega de <strong>{resumen.usuario}</strong> fue guardada correctamente.</p>
-        <div className="d-flex align-items-center justify-content-center gap-4 mb-4 flex-wrap">
-          <div className="rounded-2 p-3 text-center" style={{ backgroundColor: C.verdeClaro, border: `1.5px solid ${C.verdeMedio}`, minWidth: 180 }}>
-            <div className="fw-bold mb-1" style={{ fontSize: 11, color: C.verde, letterSpacing: 1 }}>CÓDIGO DE ENTREGA</div>
-            <div className="fw-bold" style={{ fontSize: 22, letterSpacing: 3, color: C.verdeOscuro }}>{codigoEntrega}</div>
-          </div>
-          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${codigoEntrega}`}
-            alt="QR de entrega" style={{ borderRadius: 8, border: `1.5px solid ${C.verdeBorde}` }} />
-        </div>
         <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
           {resumen.prioridad && (
             <span className="badge fw-bold px-3 py-2" style={{ backgroundColor: resumen.prioridad.bg, color: resumen.prioridad.text, fontSize: 12, border: `1.5px solid ${C.verdeBorde}` }}>
