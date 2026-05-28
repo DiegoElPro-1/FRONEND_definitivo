@@ -21,6 +21,7 @@ import Administradores  from "./paneles/administrador/Administradores";
 import Aliados          from "./paneles/administrador/Aliados";
 import Encargados       from "./paneles/administrador/Encargados";
 import Materiales       from "./paneles/administrador/Materiales";
+import Recompensas      from "./paneles/administrador/Recompensas";
 import Perfil           from "./paneles/administrador/Perfil";
 
 import CatRoles               from "./paneles/administrador/catalogos/CatRoles";
@@ -181,6 +182,7 @@ export default function App() {
             <Route path="/aliados"                       element={<Aliados         {...shared} />} />
             <Route path="/encargados"                    element={<Encargados      {...shared} />} />
             <Route path="/materiales"                    element={<Materiales      {...shared} />} />
+            <Route path="/recompensas"                   element={<Recompensas     {...shared} />} />
             <Route path="/perfil"                        element={<Perfil state={state} showToast={showToast} user={user} />} />
             <Route path="/catalogos/roles"               element={<CatRoles              {...shared} />} />
             <Route path="/catalogos/estados-puntos"      element={<CatEstadosPuntos      {...shared} />} />

@@ -11,6 +11,9 @@ import {
   crearAliado,
   actualizarAliado,
   eliminarAliado,
+  getMateriales,
+  getMaterialesPorAliado,
+  sincronizarMaterialesAliado,
 } from "../../services/api";
 
 const EMPTY_FORM = {
@@ -21,6 +24,7 @@ const EMPTY_FORM = {
   rol: "Afiliado",
   zona: "",
   activo: true,
+  materiales: [],
 };
 
 export default function Aliados({
@@ -44,6 +48,27 @@ export default function Aliados({
 
   const [loading, setLoading] =
     useState(true);
+
+  const [todosMateriales, setTodosMateriales] = useState([]);
+  const [todosMaterialesEdit, setTodosMaterialesEdit] = useState();
+
+  // =====================================
+  // CARGAR MATERIALES PARA EDITAR
+  // =====================================
+  useEffect(() => {
+    if (viewUser && viewUser.rol === "Afiliado") {
+      getMateriales().then(data => {
+        setTodosMaterialesEdit((data.materiales ?? []).filter(m => m.idEstadoMaterial === 1));
+      }).catch(() => setTodosMaterialesEdit([]));
+      getMaterialesPorAliado(viewUser.id).then(data => {
+        const ids = (data.materiales ?? []).map(m => m.idMaterial);
+        setViewUser(prev => prev?.id === viewUser.id ? { ...prev, materialesIds: ids } : prev);
+      }).catch(() => {});
+    } else {
+      setTodosMaterialesEdit(undefined);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewUser?.id]);
 
   // =====================================
   // CARGAR ALIADOS
@@ -116,6 +141,15 @@ export default function Aliados({
         setLoading(false);
       });
   }, [dispatch, showToast]);
+
+  useEffect(() => {
+    if (modal) {
+      getMateriales().then((data) => {
+        const mats = (data.materiales ?? []).filter((m) => m.idEstadoMaterial === 1);
+        setTodosMateriales(mats);
+      }).catch(() => {});
+    }
+  }, [modal]);
 
   // =====================================
   // HELPERS
@@ -224,6 +258,11 @@ export default function Aliados({
             form.zona ||
             undefined,
         });
+
+      const aliadoId = resp.aliado?.idAliado ?? resp.usuario?.idUsuario;
+      if (aliadoId && form.materiales.length > 0) {
+        await sincronizarMaterialesAliado(aliadoId, form.materiales);
+      }
 
       const initials =
         form.nombre
@@ -344,6 +383,9 @@ export default function Aliados({
         telefono: u.telefono,
         correo: u.email,
       });
+      if (Array.isArray(u.materialesIds)) {
+        await sincronizarMaterialesAliado(u.id, u.materialesIds);
+      }
       dispatch({ type: "UPDATE_USER", payload: u });
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
@@ -514,6 +556,7 @@ export default function Aliados({
         }
         onSave={handleSave}
         showToast={showToast}
+        todosMateriales={todosMaterialesEdit}
       />
 
       {/* MODAL */}
@@ -761,6 +804,41 @@ export default function Aliados({
                       )
                     )}
                   </select>
+                </div>
+
+                {/* MATERIALES */}
+                <div className="full">
+                  <label className="panel-label">
+                    Materiales que acepta
+                  </label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "8px 0" }}>
+                    {todosMateriales.map((m) => {
+                      const selected = form.materiales.includes(m.idMaterial);
+                      return (
+                        <div key={m.idMaterial}
+                          onClick={() => {
+                            const next = selected
+                              ? form.materiales.filter((id) => id !== m.idMaterial)
+                              : [...form.materiales, m.idMaterial];
+                            set("materiales", next);
+                          }}
+                          style={{
+                            padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontSize: "0.8rem", fontWeight: 600,
+                            border: `1.5px solid ${selected ? "var(--verde)" : "var(--gris-borde)"}`,
+                            backgroundColor: selected ? "var(--verde-claro)" : "#fff",
+                            color: selected ? "var(--verde)" : "var(--gris-texto)",
+                            transition: "all 0.15s",
+                          }}>
+                          {m.nombre}
+                        </div>
+                      );
+                    })}
+                    {todosMateriales.length === 0 && (
+                      <span style={{ fontSize: "0.75rem", color: "var(--gris-texto)" }}>
+                        No hay materiales disponibles
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* ESTADO */}

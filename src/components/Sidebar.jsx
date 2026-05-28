@@ -81,6 +81,20 @@ export default function Sidebar({ onLogout }) {
 
 {/* ── Supermercados ── */}
 
+        {/* ── Recompensas ── */}
+        <NavLink
+          to="/recompensas"
+          className={({ isActive }) =>
+            `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${
+              isActive ? "fw-semibold" : "btn-light text-secondary"
+            }`
+          }
+          style={({ isActive }) => isActive ? { background: "#16a34a", color: "#fff", fontSize: 13 } : { fontSize: 13 }}
+        >
+          <i className="bi bi-gift-fill" style={{ fontSize: 15, width: 18 }} />
+          <span>Recompensas</span>
+        </NavLink>
+
         {/* ── Supermercados (ítem independiente) ── */}
         <NavLink
           to="/aliados"
@@ -205,7 +219,6 @@ export default function Sidebar({ onLogout }) {
       {/* Salir */}
       <div className="px-2 py-2 pb-3">
         <button
-          onClick={handleLogout}
           className="btn d-flex align-items-center gap-2 w-100 px-3 py-2 rounded-2 border-0"
           style={{ fontSize: 13, background: "#fff3f3", color: "#dc2626" }}
           onClick={onLogout}

@@ -1,7 +1,7 @@
 // ============================================================
 // Configuración base
 // ============================================================
-const BASE_URL = 'https://backend-rp-arreglado-n8p8.onrender.com';
+const BASE_URL = 'http://localhost:3333';
 
 export function setToken(t)  { localStorage.setItem("token", t); }
 export function getToken()   { return localStorage.getItem("token"); }
@@ -264,6 +264,12 @@ export async function crearAliado(datos)           { return request('/api/admin/
 export async function actualizarAliado(id, datos) { return request(`/api/admin/aliados/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarAliado(id)          { return request(`/api/admin/aliados/${id}`, { method: 'DELETE' }); }
 
+// Aliados - Materiales (gestión de materiales por aliado)
+export async function getMaterialesPorAliado(id)          { return request(`/api/admin/aliados/${id}/materiales`); }
+export async function asignarMaterialAAliado(id, idMaterial) { return request(`/api/admin/aliados/${id}/materiales`, { method: 'POST', body: JSON.stringify({ id_material: idMaterial }) }); }
+export async function quitarMaterialDeAliado(id, idMaterial) { return request(`/api/admin/aliados/${id}/materiales`, { method: 'DELETE', body: JSON.stringify({ id_material: idMaterial }) }); }
+export async function sincronizarMaterialesAliado(id, materiales) { return request(`/api/admin/aliados/${id}/materiales`, { method: 'PUT', body: JSON.stringify({ materiales }) }); }
+
 export async function getMateriales()               { return request('/api/admin/materiales'); }
 export async function getMaterial(id)               { return request(`/api/admin/materiales/${id}`); }
 export async function crearMaterial(datos)          { return request('/api/admin/materiales', { method: 'POST', body: JSON.stringify(datos) }); }
@@ -371,6 +377,13 @@ export async function marcarTodasNotificacionesLeidas() {
 
 export async function getRecompensasEncargado() {
   return request('/api/encargado/recompensas');
+}
+
+export async function crearRecompensaEncargado(datos) {
+  return request('/api/encargado/recompensas', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
 }
 
 export async function getEntregasEncargadoPorUsuario(usuarioId) {

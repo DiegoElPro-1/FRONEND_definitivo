@@ -1,14 +1,17 @@
 // src/components/RegistrarEntrega.jsx
 import { useState, useEffect, useRef } from "react";
 import { C, S } from "./encargadoTheme";
-import { buscarUsuariosEncargado, registrarEntregaEncargado } from "../../services/api";
+import { buscarUsuariosEncargado, registrarEntregaEncargado, getMaterialesEncargado } from "../../services/api";
 
-const MATERIALES = [
-  { key: "papel",    idMaterial: 2, label: "Papel",    icon: "bi-file-earmark-text", ptsPorKg: 15, color: C.verde,       colorText: "#fff"        },
-  { key: "carton",   idMaterial: 3, label: "Cartón",   icon: "bi-box-seam",          ptsPorKg: 20, color: C.verdeOscuro, colorText: "#fff"        },
-  { key: "vidrio",   idMaterial: 4, label: "Vidrio",   icon: "bi-cup-straw",         ptsPorKg: 25, color: C.negro,       colorText: C.verde       },
-  { key: "plastico", idMaterial: 1, label: "Plástico", icon: "bi-bag",               ptsPorKg: 30, color: C.verdeMedio,  colorText: C.verdeOscuro },
-];
+const MATERIAL_ICON_MAP = {
+  "papel": "bi-file-earmark-text",
+  "cartón": "bi-box-seam",
+  "vidrio": "bi-cup-straw",
+  "plástico": "bi-bag",
+  "plastico": "bi-bag",
+};
+
+const COLORS = [C.verde, C.verdeOscuro, C.negro, C.verdeMedio, "#0d6efd", "#6f42c1", "#fd7e14", "#20c997"];
 
 const ESTADOS_MATERIAL = [
   { id: 1, label: "Bueno",   icon: "bi-check-circle-fill", bg: C.verde,       text: "#fff",          descBg: C.verdeClaro  },
@@ -28,16 +31,16 @@ const PRIORIDADES = [
   { key: "baja",   label: "Baja",   bg: C.verde,      text: "#fff"    },
 ];
 
-const PESOS_INICIAL   = { papel: "", carton: "", vidrio: "", plastico: "" };
 const FORM_EXTRA_INIT = { prioridad: "normal", estadoMaterial: null, observacion: "" };
 
 export default function RegistrarEntrega() {
+  const [materiales,           setMateriales]           = useState([]);
   const [usuarioBusqueda,     setUsuarioBusqueda]     = useState("");
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
   const [sugerencias,         setSugerencias]         = useState([]);
   const [buscando,            setBuscando]            = useState(false);
   const [mostrarSugerencias,  setMostrarSugerencias]  = useState(false);
-  const [pesos,     setPesos]     = useState(PESOS_INICIAL);
+  const [pesos,     setPesos]     = useState({});
   const [formExtra, setFormExtra] = useState(FORM_EXTRA_INIT);
   const [enviado,   setEnviado]   = useState(false);
   const [loading,   setLoading]   = useState(false);
@@ -45,6 +48,25 @@ export default function RegistrarEntrega() {
   const [resumen,   setResumen]   = useState(null);
   const debounceRef = useRef(null);
   const wrapperRef  = useRef(null);
+
+  useEffect(() => {
+    getMaterialesEncargado().then((data) => {
+      const mats = (data.materiales ?? []).map((m, i) => ({
+        idMaterial: m.idMaterial,
+        nombre: m.nombre,
+        label: m.nombre,
+        icon: MATERIAL_ICON_MAP[m.nombre.toLowerCase()] || "bi-recycle",
+        ptsPorKg: m.puntosPorKg,
+        color: COLORS[i % COLORS.length],
+        colorText: "#fff",
+        key: m.nombre.toLowerCase().replace(/[^a-z]/g, ""),
+      }));
+      setMateriales(mats);
+      const pesosInit = {};
+      mats.forEach((m) => { pesosInit[m.key] = ""; });
+      setPesos(pesosInit);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handler = (e) => { if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setMostrarSugerencias(false); };
@@ -74,7 +96,7 @@ export default function RegistrarEntrega() {
   const limpiarUsuario     = ()  => { setUsuarioSeleccionado(null); setUsuarioBusqueda(""); setSugerencias([]); };
   const setExtra = (campo, valor) => setFormExtra(prev => ({ ...prev, [campo]: valor }));
 
-  const filas    = MATERIALES.map(m => { const kg = parseFloat(pesos[m.key]) || 0; return { ...m, kg, pts: Math.round(kg * m.ptsPorKg) }; });
+  const filas    = materiales.map(m => { const kg = parseFloat(pesos[m.key]) || 0; return { ...m, kg, pts: Math.round(kg * m.ptsPorKg) }; });
   const totalKg  = filas.reduce((a, f) => a + f.kg,  0);
   const totalPts = filas.reduce((a, f) => a + f.pts, 0);
   const hayAlgo  = filas.some(f => f.kg > 0);
@@ -95,7 +117,10 @@ export default function RegistrarEntrega() {
 
   const handleNuevo = () => {
     setUsuarioBusqueda(""); setUsuarioSeleccionado(null);
-    setPesos(PESOS_INICIAL); setFormExtra(FORM_EXTRA_INIT);
+    const pesosInit = {};
+    materiales.forEach((m) => { pesosInit[m.key] = ""; });
+    setPesos(pesosInit);
+    setFormExtra(FORM_EXTRA_INIT);
     setEnviado(false); setResumen(null); setError("");
   };
 
@@ -296,7 +321,12 @@ export default function RegistrarEntrega() {
               <i className="bi bi-recycle me-1" style={{ color: C.verde }} />Peso por material (kg)
             </div>
             <div className="d-flex flex-column gap-2 mb-3">
-              {MATERIALES.map(m => {
+              {materiales.length === 0 && (
+                <div className="text-center py-4" style={{ fontSize: 13, color: C.grisTexto }}>
+                  <i className="bi bi-inbox d-block mb-1" style={{ fontSize: 22 }} />No hay materiales disponibles para tu supermercado
+                </div>
+              )}
+              {materiales.map(m => {
                 const kg  = parseFloat(pesos[m.key]) || 0;
                 const pts = Math.round(kg * m.ptsPorKg);
                 return (
