@@ -49,12 +49,13 @@ export function Toggle({ checked, onChange }) {
 }
 
 // ── Modal editable ─────────────────────────────────────────────────────────────
-export function ModalDetalle({ user, onClose, onSave, showToast }) {
+export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales }) {
   const [form,   setForm]   = useState(null);
   const [errors, setErrors] = useState({});
+  const [materialesSel, setMaterialesSel] = useState([]);
 
   useEffect(() => {
-    if (user) { setForm({ ...user }); setErrors({}); }
+    if (user) { setForm({ ...user }); setMaterialesSel(user.materialesIds || []); setErrors({}); }
   }, [user]);
 
   if (!user || !form) return null;
@@ -88,6 +89,7 @@ export function ModalDetalle({ user, onClose, onSave, showToast }) {
       email:  form.email.trim(),
       pts:    Number(form.pts) || 0,
       av:     form.nombre.trim().split(" ").slice(0, 2).map(w => w[0].toUpperCase()).join(""),
+      ...(todosMateriales !== undefined ? { materialesIds: materialesSel } : {}),
     };
     if (onSave) onSave(updatedUser);
     if (showToast) showToast(`${updatedUser.nombre} actualizado correctamente`);
@@ -239,6 +241,42 @@ export function ModalDetalle({ user, onClose, onSave, showToast }) {
                 </div>
               </div>
             </div>
+
+            {/* Materiales que acepta (solo Afiliado) */}
+            {todosMateriales !== undefined && user.rol === "Afiliado" && (
+              <>
+                <p className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: 11, letterSpacing: 1 }}>
+                  <i className="bi bi-box-seam me-1"></i>Materiales que acepta
+                </p>
+                <div className="d-flex flex-wrap gap-2 mb-4" style={{ padding: "4px 0" }}>
+                  {todosMateriales.map((m) => {
+                    const selected = materialesSel.includes(m.idMaterial);
+                    return (
+                      <div key={m.idMaterial}
+                        onClick={() => {
+                          setMaterialesSel(prev =>
+                            selected ? prev.filter(id => id !== m.idMaterial) : [...prev, m.idMaterial]
+                          );
+                        }}
+                        style={{
+                          padding: "6px 14px", borderRadius: 20, cursor: "pointer", fontSize: "0.8rem", fontWeight: 600,
+                          border: `1.5px solid ${selected ? "var(--verde)" : "var(--gris-borde)"}`,
+                          backgroundColor: selected ? "var(--verde-claro)" : "#fff",
+                          color: selected ? "var(--verde)" : "var(--gris-texto)",
+                          transition: "all 0.15s",
+                        }}>
+                        {m.nombre}
+                      </div>
+                    );
+                  })}
+                  {todosMateriales.length === 0 && (
+                    <span style={{ fontSize: "0.75rem", color: "var(--gris-texto)" }}>
+                      No hay materiales disponibles
+                    </span>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Estado */}
             <p className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: 11, letterSpacing: 1 }}>

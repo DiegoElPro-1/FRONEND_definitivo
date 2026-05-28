@@ -184,6 +184,7 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
               style={{ fontSize: 13, resize: "none" }}
             />
           </div>
+          //un comentario para render 
 
           <div className="d-flex gap-2">
             <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">Cancelar</button>
