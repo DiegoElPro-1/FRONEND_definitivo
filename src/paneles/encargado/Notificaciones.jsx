@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
 import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas } from "../../services/api";
+import { io } from 'socket.io-client'
 
 function tiempoRelativo(iso) {
   if (!iso) return "";
@@ -46,6 +47,54 @@ export default function Notificaciones() {
   };
 
   useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+  // El usuario encargado se guarda como objeto en localStorage con clave 'usuario'
+  const usuarioRaw = localStorage.getItem('usuario')
+  if (!usuarioRaw) return
+
+  let userId
+  try {
+    const usuario = JSON.parse(usuarioRaw)
+    userId = usuario.idUsuario || usuario.id
+  } catch {
+    return
+  }
+
+  if (!userId) return
+
+  const socket = io('http://localhost:3333', {
+    auth: { userId },
+    withCredentials: true,
+  })
+
+  socket.on('connect', () => {
+    console.log('🔌 Socket conectado al panel encargado — userId:', userId)
+  })
+
+  socket.on('notificacion', (nueva) => {
+    const notiFormateada = {
+      id: nueva.reserva?.idReserva || Date.now(),
+      tipo: 'reserva',
+      titulo: nueva.tipo === 'nueva_reserva'
+        ? `Nueva reserva de ${nueva.reserva.nombreUsuario}`
+        : `Reserva #${nueva.idReserva} cancelada`,
+      mensaje: nueva.tipo === 'nueva_reserva'
+        ? `En ${nueva.reserva.nombrePunto} — ${nueva.reserva.fecha} a las ${nueva.reserva.hora}`
+        : nueva.mensaje,
+      leida: false,
+      createdAt: new Date().toISOString(),
+    }
+
+    setNotis(prev => [notiFormateada, ...prev])
+    setNoLeidas(prev => prev + 1)
+  })
+
+  socket.on('connect_error', (err) => {
+    console.error('❌ Error socket:', err.message)
+  })
+
+  return () => socket.disconnect()
+}, [])
 
   useEffect(() => {
     const handler = (e) => {
