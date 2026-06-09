@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { C, S } from "./encargadoTheme";
 import { getPerfil, actualizarPerfil } from "../../services/api";
 
-const PERFIL_DEFAULT = { nombre: "", email: "", telefono: "", ciudad: "", bio: "", punto: "", zona: "", rol: "", fechaAlta: "", foto: "" };
+const PERFIL_DEFAULT = { nombre: "", email: "", telefono: "", punto: "", aliadoNombre: "", rol: "", fechaAlta: "", foto: "" };
 
 export default function PerfilEncargado() {
   const [editMode, setEditMode] = useState(false);
@@ -25,7 +25,7 @@ export default function PerfilEncargado() {
         if (!usuario?.idUsuario) return;
         const data = await getPerfil(usuario.idUsuario);
         const foto = localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || data?.foto || "";
-        const perfil = { nombre: data?.nombre || "", email: data?.correo || "", telefono: data?.telefono || "", ciudad: data?.ciudad || "", bio: data?.bio || "", punto: data?.punto || "", zona: data?.zona || "", rol: data?.rol || "Encargado", fechaAlta: data?.fechaAlta || "", foto };
+        const perfil = { nombre: data?.nombre || "", email: data?.correo || "", telefono: data?.telefono || "", punto: data?.punto || "", aliadoNombre: data?.aliadoNombre || "", rol: data?.rol || "Encargado", fechaAlta: data?.fechaAlta || "", foto };
         setSaved(perfil); setForm(perfil);
       } catch (e) { console.log("Error cargando perfil:", e); }
     };
@@ -35,8 +35,7 @@ export default function PerfilEncargado() {
   const guardar = async () => {
     if (!form.nombre.trim()) { showToast("El nombre es obligatorio", "error"); return; }
     try {
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
-      await actualizarPerfil(usuario.idUsuario, form);
+      await actualizarPerfil(form);
       setSaved({ ...form }); setEditMode(false);
       showToast("Perfil actualizado correctamente");
     } catch { showToast("Error actualizando perfil", "error"); }
@@ -80,17 +79,11 @@ export default function PerfilEncargado() {
             <span className="badge fw-bold mb-3" style={{ fontSize: 11, backgroundColor: C.verdeClaro, color: C.verdeOscuro, border: `1px solid ${C.verdeMedio}` }}>
               <i className="bi bi-person-badge me-1" />{saved.rol || "Encargado"}
             </span>
-            {saved.bio && (
-              <div className="text-start small mb-3 py-2 px-3 rounded-2" style={{ backgroundColor: C.verdeClaro, border: `1px solid ${C.verdeBorde}` }}>
-                <i className="bi bi-chat-quote me-1" style={{ color: C.verde }} />{saved.bio}
-              </div>
-            )}
             <ul className="list-group list-group-flush text-start mb-4">
               {[
-                ["bi-geo-alt-fill",   "Ciudad",        saved.ciudad    || "No registrado"],
+                ["bi-building",       "Supermercado",  saved.aliadoNombre || "No asignado"],
                 ["bi-telephone-fill", "Teléfono",      saved.telefono  || "No registrado"],
                 ["bi-shop",           "Punto",         saved.punto     || "No registrado"],
-                ["bi-map",            "Zona",          saved.zona      || "No registrado"],
                 ["bi-calendar-check", "Miembro desde", saved.fechaAlta || "No registrado"],
               ].map(([ic, lb, val]) => (
                 <li key={lb} className="list-group-item px-0 border-0 small d-flex gap-2 align-items-center">
@@ -126,7 +119,7 @@ export default function PerfilEncargado() {
             </div>
             {editMode ? (
               <div className="row g-3">
-                {[["nombre","Nombre completo","text"],["email","Correo electrónico","email"],["telefono","Teléfono","text"],["ciudad","Ciudad","text"]].map(([key, label, type]) => (
+                {[["nombre","Nombre completo","text"],["email","Correo electrónico","email"],["telefono","Teléfono","text"]].map(([key, label, type]) => (
                   <div key={key} className="col-md-6">
                     <label className="form-label fw-bold small text-muted">{label}</label>
                     <input type={type} value={form[key] || ""} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
@@ -136,14 +129,14 @@ export default function PerfilEncargado() {
               </div>
             ) : (
               <div className="row g-3">
-                {[
-                  ["Nombre completo", saved.nombre || "No registrado"],
-                  ["Correo",          saved.email  || "No registrado"],
-                  ["Teléfono",        saved.telefono || "No registrado"],
-                  ["Ciudad",          saved.ciudad   || "No registrado"],
-                  ["Punto de recolección", saved.punto || "No registrado"],
-                  ["Rol",             saved.rol    || "No registrado"],
-                ].map(([lb, val]) => (
+                  {[
+                    ["Nombre completo", saved.nombre || "No registrado"],
+                    ["Correo",          saved.email  || "No registrado"],
+                    ["Teléfono",        saved.telefono || "No registrado"],
+                    ["Supermercado",    saved.aliadoNombre || "No asignado"],
+                    ["Punto de recolección", saved.punto || "No registrado"],
+                    ["Rol",             saved.rol    || "No registrado"],
+                  ].map(([lb, val]) => (
                   <div key={lb} className="col-md-6">
                     <div className="rounded-3 p-3" style={{ backgroundColor: C.grisFondo, border: `1px solid ${C.verdeBorde}` }}>
                       <div className="text-muted small mb-1">{lb}</div>

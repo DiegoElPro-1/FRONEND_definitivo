@@ -5,7 +5,6 @@ import {
   crearEncargado,
   actualizarEncargado,
   eliminarEncargado,
-  asignarPuntoEncargado,
   getAliados,
 } from "../../services/api";
 
@@ -100,7 +99,7 @@ function ModalDetalle({ user, onClose, onSave, showToast, aliadosList }) {
   );
 }
 
-function TablaEncargados({ lista, onToggle, onVer, onEliminar, onAsignarPunto }) {
+function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
   if (lista.length === 0) {
     return (
       <div style={{ padding: "40px 20px", textAlign: "center", color: "#bbb", fontSize: "0.85rem" }}>
@@ -150,11 +149,6 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar, onAsignarPunto })
                 <button className="btn-icon" title={u.activo ? "Desactivar" : "Activar"} onClick={() => onToggle(u.id, u.nombre, u.activo)}>
                   <i className={`bi bi-${u.activo ? "pause" : "play"}`} />
                 </button>
-                {!u.puntoAsignado && (
-                  <button className="btn-icon" title="Asignar punto" onClick={() => onAsignarPunto(u.id, u.nombre)} style={{ color: 'var(--verde)' }}>
-                    <i className="bi bi-geo-alt" />
-                  </button>
-                )}
                 <button className="btn-icon del" title="Eliminar" onClick={() => onEliminar(u.id)}><i className="bi bi-trash" /></button>
               </div>
             </td>
@@ -170,7 +164,7 @@ const EMPTY_FORM = {
   puntoAsignado: "", activo: true, idAliado: "",
 };
 
-export default function Encargados({ state, dispatch, showToast }) {
+export default function Encargados({ state, dispatch, showToast, user }) {
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
@@ -210,8 +204,17 @@ export default function Encargados({ state, dispatch, showToast }) {
   useEffect(() => { cargarAliados(); }, []);
 
   useEffect(() => {
-    if (modal || viewUser) cargarAliados();
-  }, [modal, viewUser]);
+    if (modal) {
+      cargarAliados();
+      if (user && !user.esSuperAdmin && user.idAliado) {
+        setForm((f) => ({ ...f, idAliado: user.idAliado }));
+      }
+    }
+  }, [modal, user]);
+
+  useEffect(() => {
+    if (viewUser) cargarAliados();
+  }, [viewUser]);
 
   const encargados = state?.encargados || [];
   const set = (k, v) => { setForm((f) => ({ ...f, [k]: v })); setErrors((e) => ({ ...e, [k]: "" })); };
@@ -244,7 +247,6 @@ export default function Encargados({ state, dispatch, showToast }) {
         correo: form.email.trim(),
         telefono: form.telefono.trim(),
         zona: form.zona,
-        puntoAsignado: form.puntoAsignado,
         idAliado: form.idAliado || undefined,
       });
       const av = form.nombre.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("");
@@ -285,19 +287,6 @@ export default function Encargados({ state, dispatch, showToast }) {
       dispatch({ type: "UPDATE_ENCARGADO", payload: { ...u, aliado: aliadoNombre } });
       showToast("Encargado actualizado correctamente");
     } catch (err) { showToast("Error al actualizar: " + err.message, "error"); }
-  };
-
-  const handleAsignarPunto = async (id, nombre) => {
-    try {
-      const resp = await asignarPuntoEncargado(id);
-      const encargados = state?.encargados || [];
-      const idx = encargados.findIndex((e) => e.id === id);
-      if (idx !== -1) {
-        const updated = { ...encargados[idx], puntoAsignado: resp.punto?.nombre || "Asignado" };
-        dispatch({ type: "UPDATE_ENCARGADO", payload: updated });
-      }
-      showToast(`Punto asignado a ${nombre}`);
-    } catch (err) { showToast("Error al asignar punto: " + err.message, "error"); }
   };
 
   const handleEliminar = async (id) => {
@@ -352,7 +341,7 @@ export default function Encargados({ state, dispatch, showToast }) {
       </div>
 
       <div className="panel-table-wrap">
-        <TablaEncargados lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} onAsignarPunto={handleAsignarPunto} />
+        <TablaEncargados lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} />
       </div>
 
       <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} aliadosList={aliadosList} />
@@ -410,17 +399,14 @@ export default function Encargados({ state, dispatch, showToast }) {
 
                 <div>
                   <label className="panel-label">Supermercado (aliado)</label>
-                  <select className="panel-input" value={form.idAliado} onChange={(e) => set("idAliado", e.target.value ? Number(e.target.value) : "")}>
-                    <option value="">Sin asignar</option>
+                  <select className="panel-input" value={form.idAliado}
+                    onChange={(e) => set("idAliado", e.target.value ? Number(e.target.value) : "")}
+                    disabled={user && !user.esSuperAdmin}>
+                    <option value="">{user && !user.esSuperAdmin ? "Asignado automáticamente" : "Sin asignar"}</option>
                     {aliadosList.map((a) => (
                       <option key={a.idAliado} value={a.idAliado}>{a.nombre}</option>
                     ))}
                   </select>
-                </div>
-
-                <div>
-                  <label className="panel-label">Punto asignado</label>
-                  <input className="panel-input" value={form.puntoAsignado} onChange={(e) => set("puntoAsignado", e.target.value)} placeholder="Ej: Punto 3" />
                 </div>
 
                 <div className="full">

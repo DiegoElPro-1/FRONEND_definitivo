@@ -1,23 +1,21 @@
 import { useState, useEffect } from "react";
-
-const API_URL = "https://tu-backend.com/api/materiales";
+import {
+  getMateriales,
+  crearMaterial,
+  actualizarMaterial,
+  eliminarMaterial,
+} from "../../services/api";
 
 const ZONAS     = ["Norte", "Sur", "Centro", "Oriente", "Occidente"];
 const UNIDADES  = ["kg", "g", "tonelada", "unidad"];
 const CATEGORIAS = ["Organico", "Electronico", "Textil"];
-
-// FIX: antes no existía y lo estabas usando en el código
 const COLORES_CANECA = ["Verde", "Amarillo", "Azul", "Rojo"];
 
 const EMPTY_FORM = {
   nombre: "", categoria: "", descripcion: "",
-  peso_minimo: "", peso_maximo: "", unidad: "kg",
-  zona: "", puntos_por_kg: "", activo: true,
+  pesoMinimo: "", pesoMaximo: "", unidad: "kg",
+  zona: "", puntosPorKg: "", activo: true,
 };
-
-const MOCK_MATERIALES = [
-  { id: 1, nombre: "Botella PET", categoria: "Plastico", descripcion: "Botellas plasticas tipo PET limpias", peso_minimo: 0.1, peso_maximo: 50, unidad: "kg", zona: "Centro", puntos_por_kg: 30, activo: true },
-];
 
 export default function VistaMateriales() {
   const [materiales, setMateriales] = useState([]);
@@ -37,72 +35,86 @@ export default function VistaMateriales() {
   async function cargarMateriales() {
     setLoading(true);
     try {
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error();
-      setMateriales(await res.json());
+      const res = await getMateriales();
+      setMateriales(res.materiales ?? []);
     } catch {
-      setMateriales(MOCK_MATERIALES);
+      showToastMsg("Error al cargar materiales");
     } finally {
       setLoading(false);
     }
   }
 
-  async function crearMaterial(payload) {
-    try {
-      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error();
-      const nuevo = await res.json();
-      setMateriales(prev => [nuevo, ...prev]);
-    } catch {
-      setMateriales(prev => [{ ...payload, id: Date.now() }, ...prev]);
-    }
-  }
-
-  async function editarMaterial(id, payload) {
-    try {
-      const res = await fetch(`${API_URL}/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (!res.ok) throw new Error();
-      setMateriales(prev => prev.map(m => m.id === id ? { ...m, ...payload } : m));
-    } catch {
-      setMateriales(prev => prev.map(m => m.id === id ? { ...m, ...payload } : m));
-    }
-  }
-
-  async function eliminarMaterial(id) {
-    try { await fetch(`${API_URL}/${id}`, { method: "DELETE" }); } catch {}
-    setMateriales(prev => prev.filter(m => m.id !== id));
-  }
-
   function abrirNuevo()   { setEditItem(null); setForm(EMPTY_FORM); setShowModal(true); }
-  function abrirEditar(m) { setEditItem(m);    setForm({ ...m });   setShowModal(true); }
+  function abrirEditar(m) { setEditItem(m);    setForm(mapearForm(m)); setShowModal(true); }
+
+  function mapearForm(m) {
+    return {
+      nombre: m.nombre || "",
+      categoria: m.categoria || "",
+      descripcion: m.descripcion || "",
+      pesoMinimo: m.pesoMinimo ?? m.peso_minimo ?? "",
+      pesoMaximo: m.pesoMaximo ?? m.peso_maximo ?? "",
+      unidad: m.unidad || "kg",
+      zona: m.zona || "",
+      puntosPorKg: m.puntosPorKg ?? m.puntos_por_kg ?? "",
+      activo: m.activo ?? true,
+    };
+  }
+
+  function mapearPayload(form) {
+    return {
+      nombre: form.nombre,
+      categoria: form.categoria,
+      descripcion: form.descripcion,
+      pesoMinimo: parseFloat(form.pesoMinimo) || 0,
+      pesoMaximo: parseFloat(form.pesoMaximo) || 0,
+      unidad: form.unidad,
+      zona: form.zona,
+      puntosPorKg: parseInt(form.puntosPorKg) || 0,
+      activo: form.activo,
+    };
+  }
 
   async function guardar() {
-    if (!form.nombre || !form.categoria || !form.zona || !form.puntos_por_kg) {
+    if (!form.nombre || !form.categoria || !form.zona || !form.puntosPorKg) {
       showToastMsg("Completa los campos obligatorios"); return;
     }
     setSaving(true);
-    const payload = {
-      ...form,
-      peso_minimo:   parseFloat(form.peso_minimo)  || 0,
-      peso_maximo:   parseFloat(form.peso_maximo)  || 0,
-      puntos_por_kg: parseInt(form.puntos_por_kg)  || 0,
-    };
-    if (editItem) { await editarMaterial(editItem.id, payload); showToastMsg("Material actualizado"); }
-    else          { await crearMaterial(payload);               showToastMsg("Material creado correctamente"); }
-    setSaving(false); setShowModal(false);
+    const payload = mapearPayload(form);
+    try {
+      if (editItem) {
+        await actualizarMaterial(editItem.idMaterial ?? editItem.id, payload);
+        showToastMsg("Material actualizado");
+      } else {
+        await crearMaterial(payload);
+        showToastMsg("Material creado correctamente");
+      }
+      setShowModal(false);
+      cargarMateriales();
+    } catch {
+      showToastMsg("Error al guardar material");
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function confirmarEliminar() {
-    await eliminarMaterial(confirmDel.id);
-    showToastMsg(`"${confirmDel.nombre}" eliminado`);
-    setConfirmDel(null);
+    try {
+      await eliminarMaterial(confirmDel.idMaterial ?? confirmDel.id);
+      showToastMsg(`"${confirmDel.nombre}" eliminado`);
+      setConfirmDel(null);
+      cargarMateriales();
+    } catch {
+      showToastMsg("Error al eliminar material", "error");
+    }
   }
 
   function showToastMsg(msg) { setToast(msg); setTimeout(() => setToast(null), 3000); }
   function setF(key, val)    { setForm(f => ({ ...f, [key]: val })); }
 
   const filtrados = materiales.filter(m => {
-    const matchB = m.nombre.toLowerCase().includes(busqueda.toLowerCase()) || m.descripcion?.toLowerCase().includes(busqueda.toLowerCase());
+    const matchB = (m.nombre || "").toLowerCase().includes(busqueda.toLowerCase()) ||
+                   (m.descripcion || "").toLowerCase().includes(busqueda.toLowerCase());
     const matchZ = filtroZona === "todos" || m.zona === filtroZona;
     const matchC = filtroCat  === "todos" || m.categoria === filtroCat;
     return matchB && matchZ && matchC;
@@ -111,7 +123,6 @@ export default function VistaMateriales() {
   return (
     <div className="panel-page">
 
-      {/* ── ENCABEZADO ── */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
         <div>
           <h4 className="panel-title">Materiales</h4>
@@ -122,7 +133,6 @@ export default function VistaMateriales() {
         </button>
       </div>
 
-      {/* ── CHIPS DE CATEGORÍA ── */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
         {CATEGORIAS.map(cat => {
           const cnt = materiales.filter(m => m.categoria === cat).length;
@@ -140,7 +150,6 @@ export default function VistaMateriales() {
         })}
       </div>
 
-      {/* ── BARRA DE FILTROS ── */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
         <div className="search-box">
           <i className="bi bi-search"></i>
@@ -163,7 +172,6 @@ export default function VistaMateriales() {
         </button>
       </div>
 
-      {/* ── TABLA ── */}
       <div className="panel-table-wrap">
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px 0", color: "var(--verde)", fontSize: "0.82rem", fontWeight: 600 }}>
@@ -195,8 +203,8 @@ export default function VistaMateriales() {
                   </td>
                 </tr>
               ) : filtrados.map(m => (
-                <tr key={m.id}>
-                  <td style={{ color: "#aaa", fontSize: "0.75rem" }}>#{m.id}</td>
+                <tr key={m.idMaterial ?? m.id}>
+                  <td style={{ color: "#aaa", fontSize: "0.75rem" }}>#{m.idMaterial ?? m.id}</td>
                   <td style={{ fontWeight: 600 }}>{m.nombre}</td>
                   <td>
                     <span
@@ -207,8 +215,8 @@ export default function VistaMateriales() {
                     </span>
                   </td>
                   <td style={{ color: "var(--gris-texto)", fontSize: "0.78rem" }}>{m.descripcion}</td>
-                  <td style={{ fontSize: "0.78rem" }}>{m.peso_minimo} {m.unidad}</td>
-                  <td style={{ fontSize: "0.78rem" }}>{m.peso_maximo} {m.unidad}</td>
+                  <td style={{ fontSize: "0.78rem" }}>{m.pesoMinimo ?? m.peso_minimo} {m.unidad}</td>
+                  <td style={{ fontSize: "0.78rem" }}>{m.pesoMaximo ?? m.peso_maximo} {m.unidad}</td>
                   <td style={{ fontSize: "0.78rem" }}>{m.unidad}</td>
                   <td style={{ fontSize: "0.78rem" }}>
                     <i className="bi bi-geo-alt-fill" style={{ color: "var(--verde)", marginRight: 3 }}></i>
@@ -216,10 +224,10 @@ export default function VistaMateriales() {
                   </td>
                   <td style={{ fontWeight: 700, color: "var(--verde)", fontSize: "0.82rem" }}>
                     <i className="bi bi-star-fill" style={{ color: "var(--mostaza)", marginRight: 3 }}></i>
-                    {m.puntos_por_kg}
+                    {m.puntosPorKg ?? m.puntos_por_kg}
                   </td>
                   <td>
-                    {m.activo
+                    {(m.activo ?? m.idEstadoMaterial === 1)
                       ? <span className="estado-dot activo"><span className="dot"></span>Activo</span>
                       : <span className="estado-dot inactivo"><span className="dot"></span>Inactivo</span>
                     }
@@ -241,7 +249,6 @@ export default function VistaMateriales() {
         )}
       </div>
 
-      {/* ── MODAL CREAR / EDITAR ── */}
       {showModal && (
         <div
           className="panel-modal-bg"
@@ -288,12 +295,12 @@ export default function VistaMateriales() {
 
                 <div>
                   <label className="panel-label">Peso mínimo</label>
-                  <input type="number" className="panel-input" placeholder="0.1" min="0" step="0.1" value={form.peso_minimo} onChange={e => setF("peso_minimo", e.target.value)} />
+                  <input type="number" className="panel-input" placeholder="0.1" min="0" step="0.1" value={form.pesoMinimo} onChange={e => setF("pesoMinimo", e.target.value)} />
                 </div>
 
                 <div>
                   <label className="panel-label">Peso máximo</label>
-                  <input type="number" className="panel-input" placeholder="100" min="0" step="0.1" value={form.peso_maximo} onChange={e => setF("peso_maximo", e.target.value)} />
+                  <input type="number" className="panel-input" placeholder="100" min="0" step="0.1" value={form.pesoMaximo} onChange={e => setF("pesoMaximo", e.target.value)} />
                 </div>
 
                 <div>
@@ -305,7 +312,7 @@ export default function VistaMateriales() {
 
                 <div>
                   <label className="panel-label">Puntos por kg *</label>
-                  <input type="number" className="panel-input" placeholder="30" min="0" value={form.puntos_por_kg} onChange={e => setF("puntos_por_kg", e.target.value)} />
+                  <input type="number" className="panel-input" placeholder="30" min="0" value={form.puntosPorKg} onChange={e => setF("puntosPorKg", e.target.value)} />
                 </div>
 
                 <div>
@@ -341,7 +348,6 @@ export default function VistaMateriales() {
         </div>
       )}
 
-      {/* ── MODAL CONFIRMAR ELIMINAR ── */}
       {confirmDel && (
         <div className="panel-modal-bg">
           <div className="panel-modal sm">
@@ -362,7 +368,6 @@ export default function VistaMateriales() {
         </div>
       )}
 
-      {/* ── TOAST ── */}
       {toast && (
         <div className="panel-toast">
           <i className="bi bi-check2-circle"></i>

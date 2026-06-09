@@ -7,9 +7,16 @@ function detectarRol(usuario) {
   const idRol = usuario?.id_rol ?? usuario?.idRol ?? usuario?.rol?.id_rol ?? usuario?.rol?.idRol;
   const rolNombre = (usuario?.rol ?? "").toString().toLowerCase();
 
+  if (rolNombre === "superadmin" || idRol === 5) return "administrador";
   if (idRol === 1 || rolNombre === "administrador" || rolNombre === "admin") return "administrador";
-  if (idRol === 4 || rolNombre === "encargado") return "encargado";
+  if (idRol === 4 || idRol === 2 || rolNombre === "encargado") return "encargado";
   return "usuario";
+}
+
+function esSuperAdminUsuario(usuario) {
+  const idRol = usuario?.id_rol ?? usuario?.idRol ?? usuario?.rol?.id_rol ?? usuario?.rol?.idRol;
+  const rolNombre = (usuario?.rol ?? "").toString().toLowerCase();
+  return rolNombre === "superadmin" || idRol === 5;
 }
 
 export default function Login({ onLogin }) {
@@ -41,11 +48,12 @@ export default function Login({ onLogin }) {
       const usuario = data.usuario ?? data;
 
       const rolSeleccionado = rolDev || detectarRol(usuario);
+      const esSuperAdmin = esSuperAdminUsuario(usuario);
 
       localStorage.setItem("usuario",  JSON.stringify(usuario));
-      sessionStorage.setItem("user",   JSON.stringify({ ...usuario, rolSeleccionado }));
+      sessionStorage.setItem("user",   JSON.stringify({ ...usuario, rolSeleccionado, esSuperAdmin }));
 
-      if (onLogin) onLogin({ ...usuario, rolSeleccionado });
+      if (onLogin) onLogin({ ...usuario, rolSeleccionado, esSuperAdmin });
 
     } catch (err) {
       setError(err.message || "Correo o contraseña incorrectos");

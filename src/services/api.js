@@ -68,18 +68,30 @@ export async function restablecerPassword(datos) {
 // ============================================================
 
 export async function getPerfil() {
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+  if (usuario?.idRol === 4 || usuario?.id_rol === 4) {
+    return request('/api/encargado/perfil');
+  }
   return request('/api/usuario/perfil');
 }
 
 export async function actualizarPerfil(datos) {
-  return request('/api/usuario/perfil', {
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+  const basePath = (usuario?.idRol === 4 || usuario?.id_rol === 4)
+    ? '/api/encargado'
+    : '/api/usuario';
+  return request(`${basePath}/perfil`, {
     method: 'PUT',
     body: JSON.stringify(datos),
   });
 }
 
 export async function cambiarPassword(passwordActual, passwordNuevo) {
-  return request('/api/usuario/perfil/cambiar-password', {
+  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+  const basePath = (usuario?.idRol === 4 || usuario?.id_rol === 4)
+    ? '/api/encargado'
+    : '/api/usuario';
+  return request(`${basePath}/perfil/cambiar-password`, {
     method: 'PUT',
     body: JSON.stringify({ passwordActual, passwordNuevo }),
   });

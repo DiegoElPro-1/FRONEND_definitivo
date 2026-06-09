@@ -27,7 +27,7 @@ const NAV = [
 
 const USUARIOS_PATHS = USUARIOS_SUB.map(u => u.path);
 
-export default function Sidebar({ onLogout }) {
+export default function Sidebar({ user, onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -95,19 +95,20 @@ export default function Sidebar({ onLogout }) {
           <span>Recompensas</span>
         </NavLink>
 
-        {/* ── Supermercados (ítem independiente) ── */}
-        <NavLink
-          to="/aliados"
-          className={({ isActive }) =>
-            `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${
-              isActive ? "fw-semibold" : "btn-light text-secondary"
-            }`
-          }
-          style={({ isActive }) => isActive ? { background: "#16a34a", color: "#fff", fontSize: 13 } : { fontSize: 13 }}
-        >
-          <i className="bi bi-shop" style={{ fontSize: 15, width: 18 }} />
-          <span>Supermercados</span>
-        </NavLink>
+        {(!user || user.esSuperAdmin) && (
+          <NavLink
+            to="/aliados"
+            className={({ isActive }) =>
+              `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${
+                isActive ? "fw-semibold" : "btn-light text-secondary"
+              }`
+            }
+            style={({ isActive }) => isActive ? { background: "#16a34a", color: "#fff", fontSize: 13 } : { fontSize: 13 }}
+          >
+            <i className="bi bi-shop" style={{ fontSize: 15, width: 18 }} />
+            <span>Supermercados</span>
+          </NavLink>
+        )}
 
         {/* ── Usuarios desplegable ── */}
         <div>
