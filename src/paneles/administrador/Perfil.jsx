@@ -38,10 +38,8 @@ export default function Perfil({ state, showToast }) {
           nombre: data?.nombre || "No registrado",
           email: data?.correo || "No registrado",
           telefono: data?.telefono || "No registrado",
-          ciudad: data?.ciudad || "No registrado",
-          bio: data?.bio || "No registrado",
           punto: data?.punto || "No registrado",
-          zona: data?.zona || "No registrado",
+          aliadoNombre: data?.aliadoNombre || "No registrado",
           rol: data?.rol || "No registrado",
           fechaAlta: data?.fechaAlta || "No registrado",
           foto: fotoGuardada || data?.foto || ADMIN_PROFILE.foto
@@ -103,7 +101,7 @@ export default function Perfil({ state, showToast }) {
 
       const usuario = JSON.parse(localStorage.getItem("usuario"));
 
-      await actualizarPerfil(usuario.idUsuario, form);
+      await actualizarPerfil(form);
 
       setSaved({ ...form });
 
@@ -191,15 +189,10 @@ export default function Perfil({ state, showToast }) {
                 <RolBadge rol={saved.rol || "No registrado"} />
               </div>
 
-              <div className="alert alert-success text-start small mb-3 py-2">
-                <i className="bi bi-chat-quote me-1"></i>
-                {saved.bio || "No registrado"}
-              </div>
-
               <ul className="list-group list-group-flush text-start mb-4">
 
                 {[
-                  ["bi-geo-alt-fill", "Ciudad", saved.ciudad || "No registrado"],
+                  ["bi-building", "Supermercado", saved.aliadoNombre || "No asignado"],
                   ["bi-telephone-fill", "Telefono", saved.telefono || "No registrado"],
                   ["bi-shop", "Punto", saved.punto || "No registrado"],
                   ["bi-calendar-check", "Miembro desde", saved.fechaAlta || "No registrado"],
@@ -282,7 +275,6 @@ export default function Perfil({ state, showToast }) {
                     ["nombre", "Nombre completo", "text"],
                     ["email", "Correo electronico", "email"],
                     ["telefono", "Telefono", "text"],
-                    ["ciudad", "Ciudad", "text"],
                   ].map(([key, label, type]) => (
 
                     <div key={key} className="col-md-6">
@@ -306,26 +298,6 @@ export default function Perfil({ state, showToast }) {
                     </div>
                   ))}
 
-                  <div className="col-12">
-
-                    <label className="form-label fw-bold small text-muted">
-                      Biografia
-                    </label>
-
-                    <textarea
-                      value={form.bio || ""}
-                      onChange={e =>
-                        setForm(f => ({
-                          ...f,
-                          bio: e.target.value
-                        }))
-                      }
-                      className="form-control form-control-sm bg-light"
-                      rows={3}
-                    />
-
-                  </div>
-
                 </div>
 
               ) : (
@@ -336,8 +308,7 @@ export default function Perfil({ state, showToast }) {
                     ["Nombre completo", saved.nombre || "No registrado"],
                     ["Correo", saved.email || "No registrado"],
                     ["Telefono", saved.telefono || "No registrado"],
-                    ["Ciudad", saved.ciudad || "No registrado"],
-                    ["Zona asignada", saved.zona || "No registrado"],
+                    ["Supermercado", saved.aliadoNombre || "No asignado"],
                     ["Punto asignado", saved.punto || "No registrado"],
                     ["Rol", saved.rol || "No registrado"],
                     ["Miembro desde", saved.fechaAlta || "No registrado"],
@@ -363,22 +334,6 @@ export default function Perfil({ state, showToast }) {
 
                     </div>
                   ))}
-
-                  <div className="col-12">
-
-                    <div className="bg-light rounded-3 p-3">
-
-                      <div className="text-muted small mb-1">
-                        Biografia
-                      </div>
-
-                      <div className="fw-semibold small">
-                        {saved.bio || "No registrado"}
-                      </div>
-
-                    </div>
-
-                  </div>
 
                 </div>
 

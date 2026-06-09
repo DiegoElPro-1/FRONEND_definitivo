@@ -3,9 +3,6 @@ import { useState, useEffect } from "react";
 import CrudCatalogo from "./CrudCatalogo";
 import { getRoles, crearRol, actualizarRol, eliminarRol } from '../../../services/api'
 
-const BASE_URL = "http://localhost:3333/api/admin";
-const getToken= () => localStorage.getItem("token")
-
 const CAMPOS = [
   { key: "nombre",      label: "Nombre del rol",  placeholder: "Ej: Administrador" },
   { key: "descripcion", label: "Descripción",      placeholder: "Describe el rol", type: "textarea", fullWidth: true },

@@ -202,6 +202,20 @@ export default function Recompensas({ showToast }) {
                         <button className="btn btn-sm rounded-3 fw-semibold d-flex align-items-center gap-1" style={{ fontSize: 11, padding: "4px 10px", background: "#dbeafe", color: "#1e40af", border: "none" }} onClick={() => abrirEditar(r)}>
                           <i className="bi bi-pencil-square"></i>Editar
                         </button>
+                        <button className="btn btn-sm rounded-3 d-flex align-items-center justify-content-center"
+                          style={{ width: 30, height: 30, fontSize: 13, padding: 0, background: r.idEstadoRecompensa === 1 ? "#fef3c7" : "#d1fae5", color: r.idEstadoRecompensa === 1 ? "#92400e" : "#065f46", border: "none" }}
+                          onClick={async () => {
+                            try {
+                              await actualizarRecompensa(r.idRecompensa, { idEstadoRecompensa: r.idEstadoRecompensa === 1 ? 2 : 1 });
+                              showToast(r.idEstadoRecompensa === 1 ? "Recompensa desactivada" : "Recompensa activada");
+                              cargar();
+                            } catch (err) {
+                              showToast("Error: " + err.message, "error");
+                            }
+                          }}
+                          title={r.idEstadoRecompensa === 1 ? "Desactivar" : "Activar"}>
+                          <i className={`bi ${r.idEstadoRecompensa === 1 ? "bi-pause-fill" : "bi-play-fill"}`}></i>
+                        </button>
                         <button className="btn btn-outline-danger btn-sm rounded-3 d-flex align-items-center justify-content-center" style={{ width: 30, height: 30, fontSize: 13, padding: 0 }} onClick={() => setConfirmDel(r)}>
                           <i className="bi bi-trash3"></i>
                         </button>

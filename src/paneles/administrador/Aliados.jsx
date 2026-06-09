@@ -386,7 +386,7 @@ export default function Aliados({
       if (Array.isArray(u.materialesIds)) {
         await sincronizarMaterialesAliado(u.id, u.materialesIds);
       }
-      dispatch({ type: "UPDATE_USER", payload: u });
+      dispatch({ type: "UPDATE_ALIADO", payload: u });
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
     }
