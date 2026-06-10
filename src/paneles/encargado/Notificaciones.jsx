@@ -62,14 +62,16 @@ export default function Notificaciones() {
 
   if (!userId) return
 
-  const socket = io('http://localhost:3333', {
-    auth: { userId },
-    withCredentials: true,
-  })
+  const socket = io('https://backend-rp-arreglado-n8p8.onrender.com', {
+  auth: { userId },
+  transports: ['websocket'],
+})
 
   socket.on('connect', () => {
     console.log('🔌 Socket conectado al panel encargado — userId:', userId)
   })
+
+
 
   socket.on('notificacion', (nueva) => {
     const notiFormateada = {
