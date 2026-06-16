@@ -7,7 +7,7 @@ function detectarRol(usuario) {
   const idRol = usuario?.id_rol ?? usuario?.idRol ?? usuario?.rol?.id_rol ?? usuario?.rol?.idRol;
   const rolNombre = (usuario?.rol ?? "").toString().toLowerCase();
 
-  if (rolNombre === "superadmin" || idRol === 5) return "administrador";
+  if (rolNombre === "superadmin" || idRol === 5) return "superadmin";
   if (idRol === 1 || rolNombre === "administrador" || rolNombre === "admin") return "administrador";
   if (idRol === 4 || idRol === 2 || rolNombre === "encargado") return "encargado";
   return "usuario";
