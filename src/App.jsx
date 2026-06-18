@@ -35,6 +35,7 @@ import CatEstadosMateriales   from "./paneles/administrador/catalogos/CatEstados
 import CatEstadosEntregas     from "./paneles/administrador/catalogos/CatEstadosEntregas";
 
 import PanelEncargado  from "./paneles/encargado/PanelEncargado";
+import PanelSuperadmin from "./paneles/superadmin/PanelSuperadmin";
 
 function reducer(state, { type, payload }) {
   switch (type) {
@@ -131,6 +132,8 @@ export default function App() {
 
     if (usuarioData.rolSeleccionado === "encargado") {
       navigate("/encargado/dashboard");
+    } else if (usuarioData.rolSeleccionado === "superadmin") {
+      navigate("/superadmin/dashboard");
     } else if (usuarioData.rolSeleccionado === "administrador") {
       navigate("/dashboard");
     } else {
@@ -161,8 +164,17 @@ export default function App() {
   if (user.rolSeleccionado === "encargado") {
     return (
       <Routes>
-        <Route path="/encargado/*" element={<PanelEncargado user={user} onLogout={handleLogout} />} />
+        <Route path="/encargado/*" element={<PanelEncargado user={user} onLogout={handleLogout} showToast={showToast} />} />
         <Route path="*"            element={<Navigate to="/encargado/dashboard" replace />} />
+      </Routes>
+    );
+  }
+
+  if (user.rolSeleccionado === "superadmin") {
+    return (
+      <Routes>
+        <Route path="/superadmin/*" element={<PanelSuperadmin user={user} onLogout={handleLogout} state={state} dispatch={dispatch} showToast={showToast} navigate={navigate} />} />
+        <Route path="*"             element={<Navigate to="/superadmin/dashboard" replace />} />
       </Routes>
     );
   }
@@ -180,7 +192,7 @@ export default function App() {
             <Route path="/dashboard"                     element={<Dashboard       {...shared} />} />
             <Route path="/usuarios"                      element={<Usuarios        {...shared} />} />
             <Route path="/administradores"               element={<Administradores {...shared} />} />
-            <Route path="/aliados"                       element={<Aliados         {...shared} />} />
+            <Route path="/aliados"                       element={user?.esSuperAdmin ? <Aliados {...shared} /> : <Navigate to="/dashboard" replace />} />
             <Route path="/encargados"                    element={<Encargados      {...shared} />} />
             <Route path="/materiales"                    element={<Materiales      {...shared} />} />
             <Route path="/recompensas"                   element={<Recompensas     {...shared} />} />

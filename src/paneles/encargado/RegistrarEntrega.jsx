@@ -1,5 +1,6 @@
 // src/components/RegistrarEntrega.jsx
 import { useState, useEffect, useRef } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { C, S } from "./encargadoTheme";
 import { buscarUsuariosEncargado, registrarEntregaEncargado, getMaterialesEncargado } from "../../services/api";
 
@@ -31,9 +32,9 @@ const PRIORIDADES = [
   { key: "baja",   label: "Baja",   bg: C.verde,      text: "#fff"    },
 ];
 
-const FORM_EXTRA_INIT = { prioridad: "normal", estadoMaterial: null, observacion: "" };
+const FORM_EXTRA_INIT = { prioridad: "normal", estadoMaterial: null, observacion: "", fechaVencimientoPuntos: "" };
 
-export default function RegistrarEntrega() {
+export default function RegistrarEntrega({ showToast }) {
   const [materiales,           setMateriales]           = useState([]);
   const [usuarioBusqueda,     setUsuarioBusqueda]     = useState("");
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
@@ -108,9 +109,10 @@ export default function RegistrarEntrega() {
     setLoading(true); setError("");
     try {
       const materialesPayload = filas.filter(f => f.kg > 0).map(f => ({ idMaterial: f.idMaterial, peso: f.kg, puntosGenerados: f.pts }));
-      const data = await registrarEntregaEncargado({ idUsuario: usuarioSeleccionado.idUsuario, materiales: materialesPayload, prioridad: formExtra.prioridad, estadoMaterial: formExtra.estadoMaterial, observacion: formExtra.observacion });
-      setResumen({ idEntrega: data?.idEntrega, usuario: usuarioSeleccionado.nombre, filas: filas.filter(f => f.kg > 0), totalKg, totalPts, prioridad: prioSel, estadoMaterial: estadoSel, observacion: formExtra.observacion });
+      const data = await registrarEntregaEncargado({ idUsuario: usuarioSeleccionado.idUsuario, materiales: materialesPayload, prioridad: formExtra.prioridad, estadoMaterial: formExtra.estadoMaterial, observacion: formExtra.observacion, fechaVencimientoPuntos: formExtra.fechaVencimientoPuntos || undefined });
+      setResumen({ idEntrega: data?.idEntrega, usuario: usuarioSeleccionado.nombre, filas: filas.filter(f => f.kg > 0), totalKg, totalPts, prioridad: prioSel, estadoMaterial: estadoSel, observacion: formExtra.observacion, fechaVencimientoPuntos: formExtra.fechaVencimientoPuntos });
       setEnviado(true);
+      showToast?.(`Entrega registrada: ${totalPts} pts para ${usuarioSeleccionado.nombre}`);
     } catch (e) { setError(e.message || "Error al registrar la entrega"); }
     finally { setLoading(false); }
   };
@@ -123,6 +125,8 @@ export default function RegistrarEntrega() {
     setFormExtra(FORM_EXTRA_INIT);
     setEnviado(false); setResumen(null); setError("");
   };
+
+  if (loading) return <LoadingSpinner overlay text="Registrando entrega" />;
 
   // Vista éxito
   if (enviado && resumen) {
@@ -183,6 +187,15 @@ export default function RegistrarEntrega() {
                 <div className="fw-bold text-secondary text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>Observación</div>
                 <div className="text-dark fst-italic mt-1" style={{ fontSize: 12 }}>
                   <i className="bi bi-chat-left-text-fill me-1" style={{ color: C.verde }} />{resumen.observacion}
+                </div>
+              </div>
+            )}
+            {resumen.fechaVencimientoPuntos && (
+              <div className="mt-2">
+                <div className="fw-bold text-secondary text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>Vencimiento de puntos</div>
+                <div className="mt-1 d-flex align-items-center gap-1" style={{ fontSize: 12, color: C.verdeOscuro }}>
+                  <i className="bi bi-clock-fill" />
+                  Puntos válidos hasta el {new Date(resumen.fechaVencimientoPuntos).toLocaleDateString("es-CO")}
                 </div>
               </div>
             )}
@@ -351,13 +364,31 @@ export default function RegistrarEntrega() {
             </div>
 
             {/* Observación */}
-            <div className="mb-4">
+            <div className="mb-3">
               <label className="fw-bold text-dark text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
                 <i className="bi bi-chat-left-text-fill me-1" style={{ color: C.verde }} />Observación
                 <span className="text-secondary fw-normal ms-1" style={{ fontSize: 10 }}>(opcional)</span>
               </label>
               <textarea className="form-control" style={{ ...S.input, fontSize: 13, resize: "none" }} rows={2}
                 placeholder="Ej: Material en mal estado, requiere revisión..." value={formExtra.observacion} onChange={e => setExtra("observacion", e.target.value)} />
+            </div>
+
+            {/* Vencimiento de puntos */}
+            <div className="mb-4">
+              <label className="fw-bold text-dark text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
+                <i className="bi bi-clock-fill me-1" style={{ color: C.verde }} />Vencimiento de puntos
+                <span className="text-secondary fw-normal ms-1" style={{ fontSize: 10 }}>(opcional)</span>
+              </label>
+              <input type="date" className="form-control" style={{ ...S.input, fontSize: 13 }}
+                value={formExtra.fechaVencimientoPuntos}
+                onChange={e => setExtra("fechaVencimientoPuntos", e.target.value)}
+                min={new Date().toISOString().split("T")[0]} />
+              {formExtra.fechaVencimientoPuntos && (
+                <div className="mt-1 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.grisTexto }}>
+                  <i className="bi bi-info-circle" />
+                  Los puntos vencerán el {new Date(formExtra.fechaVencimientoPuntos).toLocaleDateString("es-CO")}
+                </div>
+              )}
             </div>
 
             {/* Totales */}

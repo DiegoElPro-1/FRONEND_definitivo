@@ -18,6 +18,7 @@ export default function CrudCatalogo({
   idKey = "id",
   onGuardar,
   onEliminar,
+  showToast,
 }) {
   const campoVacio = () =>
     campos.reduce((acc, c) => ({ ...acc, [c.key]: "" }), {});
@@ -55,12 +56,18 @@ export default function CrudCatalogo({
   // ── Guardar (crear o editar) ─────────────────────────────────────────────
 const guardar = async () => {
   if (!validar()) return;
-  if (editandoId !== null) {
-    await onGuardar?.({ ...form, [idKey]: editandoId });
-  } else {
-    await onGuardar?.(form);
+  try {
+    if (editandoId !== null) {
+      await onGuardar?.({ ...form, [idKey]: editandoId });
+      showToast?.(`${titulo.replace(/s$/, "")} actualizado correctamente`);
+    } else {
+      await onGuardar?.(form);
+      showToast?.(`${titulo.replace(/s$/, "")} creado correctamente`);
+    }
+    cancelar();
+  } catch (err) {
+    showToast?.(err.message || "Error al guardar", "error");
   }
-  cancelar();
 };
 
   // ── Editar ───────────────────────────────────────────────────────────────
@@ -73,7 +80,12 @@ const guardar = async () => {
 
   // ── Eliminar ─────────────────────────────────────────────────────────────
   const eliminar = async id => {
-    await onEliminar?.(id);
+    try {
+      await onEliminar?.(id);
+      showToast?.("Registro eliminado correctamente");
+    } catch (err) {
+      showToast?.(err.message || "Error al eliminar", "error");
+    }
     setConfirmDelete(null);
   };
 

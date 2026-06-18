@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Badge from "./Badge";
 import Av    from "./Av";
 import { C, S } from "./encargadoTheme";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   getEntregasEncargado,
   getEntregaEncargado,
@@ -282,8 +283,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
   if (loadingDetalle) {
     return (
       <div className="text-center py-5">
-        <span className="spinner-border" style={SH.spinnerColor} />
-        <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando detalle...</div>
+        <LoadingSpinner text="Cargando detalle..." />
       </div>
     );
   }
@@ -428,7 +428,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
 // ══════════════════════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
-export default function HistorialdeEntregas() {
+export default function HistorialdeEntregas({ showToast }) {
   const [entregas,     setEntregas]     = useState([]);
   const [materiales,   setMateriales]   = useState([]);
   const [seleccionado, setSeleccionado] = useState(null);
@@ -461,19 +461,22 @@ export default function HistorialdeEntregas() {
       await actualizarEstadoEntregaEncargado(id, idEstado);
       setEntregas(prev => prev.map(e => e.id === id ? { ...e, estado: nuevoEstado } : e));
       setSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
+      showToast?.("success", `Estado actualizado a "${nuevoEstado}" correctamente`);
     } catch (err) {
-      alert("Error al actualizar el estado: " + err.message);
+      showToast?.("error", "Error al actualizar el estado: " + err.message);
     }
   };
 
   const handleCorregirPts = (id, nuevosPts) => {
     setEntregas(prev => prev.map(e => e.id === id ? { ...e, pts: nuevosPts } : e));
     setSeleccionado(prev => prev ? { ...prev, pts: nuevosPts } : prev);
+    showToast?.("success", "Puntos corregidos correctamente");
   };
 
   const handleEditar = (id, cambios) => {
     setEntregas(prev => prev.map(e => e.id === id ? { ...e, ...cambios } : e));
     setSeleccionado(prev => prev ? { ...prev, ...cambios } : prev);
+    showToast?.("success", "Entrega actualizada correctamente");
   };
 
   const verDetalle = async (e) => {
@@ -611,8 +614,7 @@ export default function HistorialdeEntregas() {
                 {loading ? (
                   <tr>
                     <td colSpan={9} className="text-center py-5">
-                      <span className="spinner-border" style={SH.spinnerColor} />
-                      <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando entregas...</div>
+                      <LoadingSpinner text="Cargando entregas..." />
                     </td>
                   </tr>
                 ) : filtradas.length === 0 ? (

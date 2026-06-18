@@ -46,6 +46,7 @@ if (cargando) return <p className="p-4 text-muted">Cargando roles...</p>
       idKey="idRol"
       onGuardar={onGuardar}
       onEliminar={onEliminar}
+      showToast={props.showToast}
     />
   )
 }

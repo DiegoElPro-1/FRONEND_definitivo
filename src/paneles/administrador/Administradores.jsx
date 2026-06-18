@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { Toggle, ModalDetalle, TablaUsuarios } from "../../components/UserShared";
 import {
   getAdmins,
@@ -29,6 +30,7 @@ export default function Administradores({
   const [search, setSearch] = useState("");
   const [viewUser, setViewUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [aliados, setAliados] = useState([]);
   const esSuperAdmin = user?.esSuperAdmin;
 
@@ -105,6 +107,7 @@ export default function Administradores({
   const guardar = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
+    setSaving(true);
 
     try {
       const payload = {
@@ -140,6 +143,8 @@ export default function Administradores({
       cerrarModal();
     } catch (err) {
       showToast("Error al crear administrador: " + err.message, "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -163,8 +168,10 @@ export default function Administradores({
     try {
       await actualizarAdmin(u.id, { nombre: u.nombre, telefono: u.telefono, correo: u.email });
       dispatch({ type: "UPDATE_USER", payload: u });
+      showToast(`${u.nombre} actualizado correctamente`);
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
+      throw err;
     }
   };
 
@@ -213,9 +220,8 @@ export default function Administradores({
       </div>
 
       {loading && (
-        <div className="text-center py-3 text-muted small">
-          <div className="spinner-border spinner-border-sm text-success me-2"></div>
-          Cargando administradores...
+        <div className="text-center py-3">
+          <LoadingSpinner size="sm" text="Cargando administradores" />
         </div>
       )}
 
@@ -296,7 +302,10 @@ export default function Administradores({
 
             <div className="panel-modal-foot">
               <button className="btn-panel ghost" onClick={cerrarModal}><i className="bi bi-x"></i> Cancelar</button>
-              <button className="btn-panel primary" onClick={guardar}><i className="bi bi-check-lg"></i> Crear administrador</button>
+              <button className="btn-panel primary" onClick={guardar} disabled={saving}>
+                {saving ? <span className="spinner-border spinner-border-sm me-2" /> : <i className="bi bi-check-lg me-1" />}
+                {saving ? "Creando..." : "Crear administrador"}
+              </button>
             </div>
           </div>
         </div>

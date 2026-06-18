@@ -8,7 +8,7 @@ const CAMPOS = [
   { key: "descripcion", label: "Descripción",        placeholder: "Describe el estado", type: "textarea", fullWidth: true },
 ];
 
-export default function CatEstadosMateriales() {
+export default function CatEstadosMateriales({ showToast }) {
   const [datos, setDatos] = useState([]);
   const [cargando, setCargando] = useState(true);
   
@@ -47,6 +47,7 @@ export default function CatEstadosMateriales() {
       idKey="idEstadoMaterial"
       onGuardar={onGuardar}
       onEliminar={onEliminar}
+      showToast={showToast}
     />
   );
 }
