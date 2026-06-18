@@ -421,3 +421,7 @@ export async function actualizarEstadoReservaEncargado(id, datos) {
 export async function getReportesEncargado(periodo = 'Este mes') {
   return request(`/api/encargado/reportes?periodo=${encodeURIComponent(periodo)}`);
 }
+
+export async function getPuntosReciclaje() {
+  return request('/api/puntos-reciclaje');
+}

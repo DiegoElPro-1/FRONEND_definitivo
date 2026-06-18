@@ -1,12 +1,14 @@
-// src/paneles/admin/Encargados.jsx
 import { useEffect, useState } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   getEncargados,
   crearEncargado,
   actualizarEncargado,
   eliminarEncargado,
   getAliados,
+  getPuntosReciclaje,
 } from "../../services/api";
+import { ZONAS } from "../../constants/data";
 
 function Toggle({ checked, onChange }) {
   return (
@@ -27,14 +29,14 @@ function Toggle({ checked, onChange }) {
   );
 }
 
-function ModalDetalle({ user, onClose, onSave, showToast, aliadosList }) {
+function ModalDetalle({ user, onClose, onSave, showToast, aliadosList, puntosList, saving }) {
   const [form, setForm] = useState(null);
   useEffect(() => { if (user) setForm({ ...user }); }, [user]);
   if (!user || !form) return null;
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nombre?.trim()) { showToast("El nombre es obligatorio", "error"); return; }
-    onSave(form);
+    await onSave(form);
     onClose();
   };
   return (
@@ -82,17 +84,26 @@ function ModalDetalle({ user, onClose, onSave, showToast, aliadosList }) {
             </div>
             <div>
               <label className="panel-label">Zona</label>
-              <input className="panel-input" value={form.zona} placeholder="Ej. Norte" onChange={(e) => set("zona", e.target.value)} />
+              <select className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)}>
+                <option value="">Sin zona</option>
+                {ZONAS.map((z) => <option key={z}>{z}</option>)}
+              </select>
             </div>
             <div>
               <label className="panel-label">Punto asignado</label>
-              <input className="panel-input" value={form.puntoAsignado} placeholder="Ej. Punto 3" onChange={(e) => set("puntoAsignado", e.target.value)} />
+              <select className="panel-input" value={form.puntoAsignado || ""} onChange={(e) => set("puntoAsignado", e.target.value)}>
+                <option value="">Sin asignar</option>
+                {puntosList.map((p) => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+              </select>
             </div>
           </div>
         </div>
         <div className="panel-modal-foot">
           <button className="btn-panel ghost" onClick={onClose}><i className="bi bi-x" /> Cancelar</button>
-          <button className="btn-panel primary" onClick={handleSave}><i className="bi bi-check-lg" /> Guardar cambios</button>
+          <button className="btn-panel primary" onClick={handleSave} disabled={saving}>
+            {saving ? <span className="spinner-border spinner-border-sm me-2" /> : <i className="bi bi-check-lg me-1" />}
+            {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
         </div>
       </div>
     </div>
@@ -171,7 +182,9 @@ export default function Encargados({ state, dispatch, showToast, user }) {
   const [search, setSearch] = useState("");
   const [viewUser, setViewUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [aliadosList, setAliadosList] = useState([]);
+  const [puntosList, setPuntosList] = useState([]);
 
   useEffect(() => {
     getEncargados()
@@ -183,6 +196,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
           telefono: u.telefono || "",
           zona: u.zona || "",
           puntoAsignado: u.puntoACargo?.nombre || "",
+          idPunto: u.puntoACargo?.idPunto || null,
           aliado: u.aliado?.nombre || "",
           idAliado: u.aliado?.idAliado || null,
           activo: u.idEstadoUsuario === 1,
@@ -201,11 +215,18 @@ export default function Encargados({ state, dispatch, showToast, user }) {
     }).catch(() => {});
   };
 
+  const cargarPuntos = () => {
+    getPuntosReciclaje().then((data) => {
+      setPuntosList(data.puntos ?? []);
+    }).catch(() => {});
+  };
+
   useEffect(() => { cargarAliados(); }, []);
 
   useEffect(() => {
     if (modal) {
       cargarAliados();
+      cargarPuntos();
       if (user && !user.esSuperAdmin && user.idAliado) {
         setForm((f) => ({ ...f, idAliado: user.idAliado }));
       }
@@ -213,7 +234,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
   }, [modal, user]);
 
   useEffect(() => {
-    if (viewUser) cargarAliados();
+    if (viewUser) { cargarAliados(); cargarPuntos(); }
   }, [viewUser]);
 
   const encargados = state?.encargados || [];
@@ -241,6 +262,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
   const guardar = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
+    setSaving(true);
     try {
       const resp = await crearEncargado({
         nombre: form.nombre.trim(),
@@ -249,6 +271,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
         zona: form.zona,
         idAliado: form.idAliado || undefined,
       });
+      const punto = puntosList.find((p) => p.nombre === form.puntoAsignado);
       const av = form.nombre.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("");
       dispatch({
         type: "ADD_ENCARGADO",
@@ -256,7 +279,8 @@ export default function Encargados({ state, dispatch, showToast, user }) {
           id: resp?.encargado?.idUsuario || Date.now(),
           nombre: form.nombre.trim(), email: form.email.trim(),
           telefono: form.telefono.trim(), zona: form.zona,
-          puntoAsignado: form.puntoAsignado, activo: form.activo, av,
+          puntoAsignado: form.puntoAsignado, idPunto: punto?.id || null,
+          activo: form.activo, av,
           fechaAlta: new Date().toLocaleDateString("es-CO"),
         },
       });
@@ -264,6 +288,8 @@ export default function Encargados({ state, dispatch, showToast, user }) {
       cerrarModal();
     } catch (err) {
       showToast("Error al crear encargado: " + err.message, "error");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -276,17 +302,20 @@ export default function Encargados({ state, dispatch, showToast, user }) {
   };
 
   const handleSave = async (u) => {
+    setSaving(true);
     try {
       const resp = await actualizarEncargado(u.id, {
-        nombre: u.nombre, telefono: u.telefono, correo: u.email,
+        nombre: u.nombre, telefono: u.telefono, correo: u.correo,
         idAliado: u.idAliado || null,
       });
       const aliadoNombre = u.idAliado
         ? (aliadosList.find((a) => a.idAliado === u.idAliado)?.nombre || "")
         : "";
-      dispatch({ type: "UPDATE_ENCARGADO", payload: { ...u, aliado: aliadoNombre } });
+      const punto = puntosList.find((p) => p.nombre === u.puntoAsignado);
+      dispatch({ type: "UPDATE_ENCARGADO", payload: { ...u, aliado: aliadoNombre, idPunto: punto?.id || null } });
       showToast("Encargado actualizado correctamente");
     } catch (err) { showToast("Error al actualizar: " + err.message, "error"); }
+    finally { setSaving(false); }
   };
 
   const handleEliminar = async (id) => {
@@ -308,9 +337,8 @@ export default function Encargados({ state, dispatch, showToast, user }) {
   if (loading) {
     return (
       <div className="panel-page">
-        <div className="text-center py-3 text-muted small">
-          <div className="spinner-border spinner-border-sm text-success me-2" />
-          Cargando encargados...
+        <div className="text-center py-3">
+          <LoadingSpinner size="sm" text="Cargando encargados" />
         </div>
       </div>
     );
@@ -344,7 +372,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
         <TablaEncargados lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} />
       </div>
 
-      <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} aliadosList={aliadosList} />
+      <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} aliadosList={aliadosList} puntosList={puntosList} saving={saving} />
 
       {modal && (
         <div className="panel-modal-bg" onClick={(ev) => { if (ev.target === ev.currentTarget) cerrarModal(); }}>
@@ -394,18 +422,36 @@ export default function Encargados({ state, dispatch, showToast, user }) {
 
                 <div>
                   <label className="panel-label">Zona</label>
-                  <input className="panel-input" value={form.zona} onChange={(e) => set("zona", e.target.value)} placeholder="Ej: Norte, Sur, Centro" />
+                  <select className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)}>
+                    <option value="">Sin zona</option>
+                    {ZONAS.map((z) => <option key={z}>{z}</option>)}
+                  </select>
                 </div>
 
                 <div>
                   <label className="panel-label">Supermercado (aliado)</label>
-                  <select className="panel-input" value={form.idAliado}
-                    onChange={(e) => set("idAliado", e.target.value ? Number(e.target.value) : "")}
-                    disabled={user && !user.esSuperAdmin}>
-                    <option value="">{user && !user.esSuperAdmin ? "Asignado automáticamente" : "Sin asignar"}</option>
-                    {aliadosList.map((a) => (
-                      <option key={a.idAliado} value={a.idAliado}>{a.nombre}</option>
-                    ))}
+                  {user && !user.esSuperAdmin ? (
+                    <div className="panel-input" style={{ padding: "8px 12px", background: "#f5f5f5", borderRadius: 6, color: "#666", cursor: "not-allowed" }}>
+                      {user.aliadoNombre || "Sin supermercado asignado"}
+                    </div>
+                  ) : (
+                    <select className="panel-input" value={form.idAliado}
+                      onChange={(e) => set("idAliado", e.target.value ? Number(e.target.value) : "")}>
+                      <option value="">Sin asignar</option>
+                      {aliadosList.map((a) => (
+                        <option key={a.idAliado} value={a.idAliado}>{a.nombre}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label className="panel-label">Punto asignado</label>
+                  <select className="panel-input" value={form.puntoAsignado || ""} onChange={(e) => set("puntoAsignado", e.target.value)}>
+                    <option value="">Sin asignar</option>
+                    {puntosList
+                      .filter((p) => !form.idAliado || p.aliado?.nombre === aliadosList.find((a) => a.idAliado === Number(form.idAliado))?.nombre)
+                      .map((p) => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
                   </select>
                 </div>
 
@@ -429,7 +475,10 @@ export default function Encargados({ state, dispatch, showToast, user }) {
 
             <div className="panel-modal-foot">
               <button className="btn-panel ghost" onClick={cerrarModal}><i className="bi bi-x" /> Cancelar</button>
-              <button className="btn-panel primary" onClick={guardar}><i className="bi bi-check-lg" /> Crear encargado</button>
+              <button className="btn-panel primary" onClick={guardar} disabled={saving}>
+                {saving ? <span className="spinner-border spinner-border-sm me-2" /> : <i className="bi bi-check-lg me-1" />}
+                {saving ? "Creando..." : "Crear encargado"}
+              </button>
             </div>
           </div>
         </div>

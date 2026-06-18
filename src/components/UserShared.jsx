@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { ALL_POINTS, ZONAS, ROLES_CFG } from "../constants/data";
+import { ZONAS, ROLES_CFG } from "../constants/data";
+import { getPuntosReciclaje } from "../services/api";
 
 export const rolDesc = {
   "Admin":     "Acceso total al sistema, puede gestionar usuarios y configuración.",
@@ -53,9 +54,17 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
   const [form,   setForm]   = useState(null);
   const [errors, setErrors] = useState({});
   const [materialesSel, setMaterialesSel] = useState([]);
+  const [puntosList, setPuntosList] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (user) { setForm({ ...user }); setMaterialesSel(user.materialesIds || []); setErrors({}); }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.rol === "Encargado") {
+      getPuntosReciclaje().then(data => setPuntosList(data.puntos ?? [])).catch(() => {});
+    }
   }, [user]);
 
   if (!user || !form) return null;
@@ -77,12 +86,16 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
     if (!form.email.trim())  e.email  = "El correo es obligatorio";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Correo inválido";
     if (form.pts !== "" && isNaN(Number(form.pts))) e.pts = "Debe ser un número válido";
+    if (todosMateriales !== undefined && user.rol === "Afiliado" && materialesSel.length === 0) {
+      e.materiales = "Debes seleccionar al menos un material";
+    }
     return e;
   };
 
-  const guardar = () => {
+  const guardar = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
+    setSaving(true);
     const updatedUser = {
       ...form,
       nombre: form.nombre.trim(),
@@ -91,9 +104,14 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
       av:     form.nombre.trim().split(" ").slice(0, 2).map(w => w[0].toUpperCase()).join(""),
       ...(todosMateriales !== undefined ? { materialesIds: materialesSel } : {}),
     };
-    if (onSave) onSave(updatedUser);
-    if (showToast) showToast(`${updatedUser.nombre} actualizado correctamente`);
-    onClose();
+    try {
+      if (onSave) await onSave(updatedUser);
+      onClose();
+    } catch {
+      // error handled by parent
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -203,50 +221,54 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
               </div>
             </div>
 
-            {/* Asignación y puntos */}
-            <p className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: 11, letterSpacing: 1 }}>
-              <i className="bi bi-pin-map me-1"></i>Asignación y puntos
-            </p>
-            <div className="row g-3 mb-4">
-              <div className="col-md-8">
-                <label className="form-label fw-semibold small text-secondary mb-1">
-                  <i className="bi bi-geo-fill me-1"></i>Punto asignado
-                </label>
-                <select
-                  className="form-select form-select-sm bg-light rounded-3"
-                  value={form.puntoAsignado || ""}
-                  onChange={e => set("puntoAsignado", e.target.value)}
-                >
-                  <option value="">Sin asignar</option>
-                  {ALL_POINTS.map(p => <option key={p.id}>{p.name}</option>)}
-                </select>
-              </div>
+            {/* Asignación y puntos (solo Encargado) */}
+            {user.rol === "Encargado" && (
+              <>
+                <p className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: 11, letterSpacing: 1 }}>
+                  <i className="bi bi-pin-map me-1"></i>Asignación y puntos
+                </p>
+                <div className="row g-3 mb-4">
+                  <div className="col-md-8">
+                    <label className="form-label fw-semibold small text-secondary mb-1">
+                      <i className="bi bi-geo-fill me-1"></i>Punto asignado
+                    </label>
+                    <select
+                      className="form-select form-select-sm bg-light rounded-3"
+                      value={form.puntoAsignado || ""}
+                      onChange={e => set("puntoAsignado", e.target.value)}
+                    >
+                      <option value="">Sin asignar</option>
+                      {puntosList.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
+                    </select>
+                  </div>
 
-              <div className="col-md-4">
-                <label className="form-label fw-semibold small text-secondary mb-1">
-                  <i className="bi bi-star-fill text-warning me-1"></i>Puntos acumulados
-                </label>
-                <div className="input-group input-group-sm">
-                  <input
-                    type="number"
-                    min="0"
-                    className={`form-control bg-light rounded-start-3 ${errors.pts ? "is-invalid" : ""}`}
-                    value={form.pts ?? 0}
-                    onChange={e => set("pts", e.target.value)}
-                  />
-                  <span className="input-group-text rounded-end-3 bg-success-subtle text-success fw-bold border-0">
-                    pts
-                  </span>
-                  {errors.pts && <div className="invalid-feedback">{errors.pts}</div>}
+                  <div className="col-md-4">
+                    <label className="form-label fw-semibold small text-secondary mb-1">
+                      <i className="bi bi-star-fill text-warning me-1"></i>Puntos acumulados
+                    </label>
+                    <div className="input-group input-group-sm">
+                      <input
+                        type="number"
+                        min="0"
+                        className={`form-control bg-light rounded-start-3 ${errors.pts ? "is-invalid" : ""}`}
+                        value={form.pts ?? 0}
+                        onChange={e => set("pts", e.target.value)}
+                      />
+                      <span className="input-group-text rounded-end-3 bg-success-subtle text-success fw-bold border-0">
+                        pts
+                      </span>
+                      {errors.pts && <div className="invalid-feedback">{errors.pts}</div>}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
 
             {/* Materiales que acepta (solo Afiliado) */}
             {todosMateriales !== undefined && user.rol === "Afiliado" && (
               <>
                 <p className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: 11, letterSpacing: 1 }}>
-                  <i className="bi bi-box-seam me-1"></i>Materiales que acepta
+                  <i className="bi bi-box-seam me-1"></i>Materiales que acepta *
                 </p>
                 <div className="d-flex flex-wrap gap-2 mb-4" style={{ padding: "4px 0" }}>
                   {todosMateriales.map((m) => {
@@ -275,6 +297,11 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
                     </span>
                   )}
                 </div>
+                {errors.materiales && (
+                  <div className="text-danger small mb-3">
+                    <i className="bi bi-exclamation-circle me-1"></i>{errors.materiales}
+                  </div>
+                )}
               </>
             )}
 
@@ -328,8 +355,14 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
               className="btn fw-bold rounded-3 flex-fill"
               style={{ background: cfg.color, color: "#fff" }}
               onClick={guardar}
+              disabled={saving}
             >
-              <i className={`bi ${cfg.icon} me-1`}></i>Guardar cambios
+              {saving ? (
+                <span className="spinner-border spinner-border-sm me-2" />
+              ) : (
+                <i className={`bi ${cfg.icon} me-1`}></i>
+              )}
+              {saving ? "Guardando..." : "Guardar cambios"}
             </button>
           </div>
 

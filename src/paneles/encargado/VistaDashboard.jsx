@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
 import { getReservasEncargado, actualizarEstadoReservaEncargado } from "../../services/api";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 function getIniciales(nombre = "") {
   return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
@@ -57,7 +58,7 @@ function BadgeEstado({ estado }) {
   );
 }
 
-export default function VistaDashboard() {
+export default function VistaDashboard({ showToast }) {
   const today = new Date();
   const [year, setYear]               = useState(today.getFullYear());
   const [month, setMonth]             = useState(today.getMonth());
@@ -115,7 +116,8 @@ export default function VistaDashboard() {
       await actualizarEstadoReservaEncargado(citaActiva.idReserva, { estado: "confirmada" });
       setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Aceptada", nota: "" } : c); return copia; });
       setCitaActiva(c => ({ ...c, estado: "Aceptada" }));
-    } catch (e) { console.error("Error al aceptar:", e); }
+      showToast?.("success", "Cita aceptada correctamente");
+    } catch (e) { showToast?.("error", "Error al aceptar la cita"); }
   };
 
   const handleRechazar = async () => {
@@ -124,7 +126,8 @@ export default function VistaDashboard() {
       setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Rechazada", nota: notaRechazo } : c); return copia; });
       setCitaActiva(c => ({ ...c, estado: "Rechazada", nota: notaRechazo }));
       setPanel("detalle"); setNotaRechazo("");
-    } catch (e) { console.error("Error al rechazar:", e); }
+      showToast?.("success", "Cita rechazada correctamente");
+    } catch (e) { showToast?.("error", "Error al rechazar la cita"); }
   };
 
   const tieneMateriales = (cita) => cita.materiales && cita.materiales.length > 0;
@@ -133,11 +136,9 @@ export default function VistaDashboard() {
   return (
     <div style={{ backgroundColor: C.grisFondo, minHeight: "100vh", padding: 24 }}>
 
-      {/* Loading */}
       {loading && (
         <div className="d-flex align-items-center justify-content-center py-5">
-          <div className="spinner-border" style={{ color: C.verde }} role="status" />
-          <span className="fw-bold ms-3" style={{ color: C.grisTexto }}>Cargando reservas…</span>
+          <LoadingSpinner text="Cargando reservas…" />
         </div>
       )}
 

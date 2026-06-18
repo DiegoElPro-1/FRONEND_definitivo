@@ -22,7 +22,7 @@ const NAV = [
   { key: "perfil",     path: "perfil",     label: "Mi perfil"          },
 ];
 
-export default function PanelEncargado({ user, onLogout }) {
+export default function PanelEncargado({ user, onLogout, showToast }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,11 +49,11 @@ export default function PanelEncargado({ user, onLogout }) {
         </div>
 
         <Routes>
-          <Route path="dashboard" element={<VistaDashboard />}    />
+          <Route path="dashboard" element={<VistaDashboard showToast={showToast} />}    />
           <Route path="control"   element={<PanelControl />}      />
-          <Route path="registrar" element={<RegistrarEntrega />}  />
-          <Route path="historial" element={<HistorialEntregas />} />
-          <Route path="canjes"    element={<Canjes />}            />
+          <Route path="registrar" element={<RegistrarEntrega showToast={showToast} />}  />
+          <Route path="historial" element={<HistorialEntregas showToast={showToast} />} />
+          <Route path="canjes"    element={<Canjes showToast={showToast} />}            />
           <Route path="reportes"  element={<Reportes />}          />
           <Route path="perfil"    element={<PerfilEncargado />}   />
           <Route path="*"         element={<Navigate to="/encargado/dashboard" replace />} />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   getMateriales,
   crearMaterial,
@@ -17,7 +18,7 @@ const EMPTY_FORM = {
   zona: "", puntosPorKg: "", activo: true,
 };
 
-export default function VistaMateriales() {
+export default function VistaMateriales({ showToast }) {
   const [materiales, setMateriales] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [busqueda, setBusqueda]     = useState("");
@@ -27,7 +28,6 @@ export default function VistaMateriales() {
   const [editItem, setEditItem]     = useState(null);
   const [form, setForm]             = useState(EMPTY_FORM);
   const [saving, setSaving]         = useState(false);
-  const [toast, setToast]           = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
 
   useEffect(() => { cargarMateriales(); }, []);
@@ -109,7 +109,15 @@ export default function VistaMateriales() {
     }
   }
 
-  function showToastMsg(msg) { setToast(msg); setTimeout(() => setToast(null), 3000); }
+  const [toast, setToast] = useState(null);
+  function showToastMsg(msg, type) {
+    if (showToast) {
+      showToast(msg, type || "success");
+    } else {
+      setToast(msg);
+      setTimeout(() => setToast(null), 3000);
+    }
+  }
   function setF(key, val)    { setForm(f => ({ ...f, [key]: val })); }
 
   const filtrados = materiales.filter(m => {
@@ -174,9 +182,8 @@ export default function VistaMateriales() {
 
       <div className="panel-table-wrap">
         {loading ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--verde)", fontSize: "0.82rem", fontWeight: 600 }}>
-            <div className="spinner-border spinner-border-sm mb-2"></div>
-            <br />Cargando materiales...
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <LoadingSpinner size="md" text="Cargando materiales" />
           </div>
         ) : (
           <table className="panel-table">

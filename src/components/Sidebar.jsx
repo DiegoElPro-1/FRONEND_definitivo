@@ -89,6 +89,22 @@ export default function Sidebar({ user, onLogout }) {
           <span>Recompensas</span>
         </NavLink>
 
+{/* ── Supermercados (solo superadmin) ── */}
+        {user?.esSuperAdmin && (
+          <NavLink
+            to="/aliados"
+            className={({ isActive }) =>
+              `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${
+                isActive ? "fw-semibold" : "btn-light text-secondary"
+              }`
+            }
+            style={({ isActive }) => isActive ? { background: "#16a34a", color: "#fff", fontSize: 13 } : { fontSize: 13 }}
+          >
+            <i className="bi bi-shop" style={{ fontSize: 15, width: 18 }} />
+            <span>Supermercados</span>
+          </NavLink>
+        )}
+
 {/* ── Usuarios desplegable ── */}
         <div>
           <button
@@ -187,10 +203,10 @@ export default function Sidebar({ user, onLogout }) {
             className="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
             style={{ width: 28, height: 28, background: "#16a34a", fontSize: 11 }}
           >
-            AD
+            {user?.esSuperAdmin ? "SA" : "AD"}
           </div>
           <div className="d-flex flex-column lh-1">
-            <span className="fw-semibold" style={{ fontSize: 13, color: "#111111" }}>Administrador</span>
+            <span className="fw-semibold" style={{ fontSize: 13, color: "#111111" }}>{user?.esSuperAdmin ? "Superadmin" : "Administrador"}</span>
             <span className="text-muted" style={{ fontSize: 11 }}>Ver perfil</span>
           </div>
         </NavLink>

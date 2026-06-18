@@ -7,7 +7,7 @@ const CAMPOS = [
   { key: "descripcion", label: "Descripción",        placeholder: "Describe el estado", type: "textarea", fullWidth: true },
 ];
 
-export default function CatEstadosAliados() {
+export default function CatEstadosAliados({ showToast }) {
   const [datos, setDatos] = useState([]);
   const [cargando, setCargando] = useState(true);
 
@@ -43,6 +43,7 @@ export default function CatEstadosAliados() {
       idKey="idEstadoAliado"
       onGuardar={onGuardar}
       onEliminar={onEliminar}
+      showToast={showToast}
     />
   );
 }

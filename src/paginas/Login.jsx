@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { iniciarSesion } from "../services/api";
+import LoadingSpinner from "../components/LoadingSpinner";
 import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png';
 
 function detectarRol(usuario) {
@@ -64,6 +65,7 @@ export default function Login({ onLogin }) {
 
   return (
     <div className="container-fluid">
+      {loading && <LoadingSpinner overlay text="Iniciando sesión" />}
       <div className="row min-vh-100">
 
         <div

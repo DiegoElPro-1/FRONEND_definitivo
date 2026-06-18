@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { ZONAS } from "../../constants/data";
 import {
   Toggle,
@@ -48,6 +49,8 @@ export default function Aliados({
 
   const [loading, setLoading] =
     useState(true);
+
+  const [saving, setSaving] = useState(false);
 
   const [todosMateriales, setTodosMateriales] = useState([]);
   const [todosMaterialesEdit, setTodosMaterialesEdit] = useState();
@@ -221,6 +224,10 @@ export default function Aliados({
         "El teléfono debe tener exactamente 10 dígitos";
     }
 
+    if (form.materiales.length === 0) {
+      e.materiales = "Debes seleccionar al menos un material";
+    }
+
     return e;
   };
 
@@ -234,6 +241,7 @@ export default function Aliados({
       setErrors(e);
       return;
     }
+    setSaving(true);
 
     try {
       const resp =
@@ -325,6 +333,8 @@ export default function Aliados({
           err.message,
         "error"
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -387,8 +397,10 @@ export default function Aliados({
         await sincronizarMaterialesAliado(u.id, u.materialesIds);
       }
       dispatch({ type: "UPDATE_ALIADO", payload: u });
+      showToast(`${u.nombreEntidad || u.nombre} actualizado correctamente`);
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
+      throw err;
     }
   };
 
@@ -523,12 +535,9 @@ export default function Aliados({
         </div>
       </div>
 
-      {/* LOADING */}
       {loading && (
-        <div className="text-center py-3 text-muted small">
-          <div className="spinner-border spinner-border-sm text-success me-2"></div>
-
-          Cargando supermercados...
+        <div className="text-center py-3">
+          <LoadingSpinner size="sm" text="Cargando supermercados" />
         </div>
       )}
 
@@ -809,7 +818,7 @@ export default function Aliados({
                 {/* MATERIALES */}
                 <div className="full">
                   <label className="panel-label">
-                    Materiales que acepta
+                    Materiales que acepta *
                   </label>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 8, padding: "8px 0" }}>
                     {todosMateriales.map((m) => {
@@ -839,6 +848,7 @@ export default function Aliados({
                       </span>
                     )}
                   </div>
+                  {errors.materiales && <span className="text-danger small">{errors.materiales}</span>}
                 </div>
 
                 {/* ESTADO */}
@@ -888,8 +898,10 @@ export default function Aliados({
               <button
                 className="btn-panel primary"
                 onClick={guardar}
+                disabled={saving}
               >
-                Registrar aliado
+                {saving ? <span className="spinner-border spinner-border-sm me-2" /> : <i className="bi bi-check-lg me-1" />}
+                {saving ? "Registrando..." : "Registrar aliado"}
               </button>
             </div>
           </div>

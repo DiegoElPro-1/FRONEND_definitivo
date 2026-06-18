@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { ALL_POINTS, ZONAS } from "../../constants/data";
 import { getRolCfg, Toggle, rolDesc, ModalDetalle, TablaUsuarios } from "../../components/UserShared";
 import { getUsuarios, actualizarUsuario, eliminarUsuario } from "../../services/api";
@@ -171,9 +172,8 @@ export default function Usuarios({ state, dispatch, showToast }) {
       </div>
 
       {loading && (
-        <div style={{ textAlign: "center", padding: "12px 0", fontSize: "0.78rem", color: "var(--gris-texto)" }}>
-          <span className="spinner-border spinner-border-sm" style={{ color: "var(--verde)", marginRight: 6 }}></span>
-          Cargando usuarios del servidor...
+        <div style={{ textAlign: "center", padding: "12px 0" }}>
+          <LoadingSpinner size="sm" text="Cargando usuarios" />
         </div>
       )}
 

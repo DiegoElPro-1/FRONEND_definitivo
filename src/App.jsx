@@ -164,7 +164,7 @@ export default function App() {
   if (user.rolSeleccionado === "encargado") {
     return (
       <Routes>
-        <Route path="/encargado/*" element={<PanelEncargado user={user} onLogout={handleLogout} />} />
+        <Route path="/encargado/*" element={<PanelEncargado user={user} onLogout={handleLogout} showToast={showToast} />} />
         <Route path="*"            element={<Navigate to="/encargado/dashboard" replace />} />
       </Routes>
     );
@@ -192,7 +192,7 @@ export default function App() {
             <Route path="/dashboard"                     element={<Dashboard       {...shared} />} />
             <Route path="/usuarios"                      element={<Usuarios        {...shared} />} />
             <Route path="/administradores"               element={<Administradores {...shared} />} />
-            <Route path="/aliados"                       element={<Aliados         {...shared} />} />
+            <Route path="/aliados"                       element={user?.esSuperAdmin ? <Aliados {...shared} /> : <Navigate to="/dashboard" replace />} />
             <Route path="/encargados"                    element={<Encargados      {...shared} />} />
             <Route path="/materiales"                    element={<Materiales      {...shared} />} />
             <Route path="/recompensas"                   element={<Recompensas     {...shared} />} />
