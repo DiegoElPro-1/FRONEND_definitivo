@@ -7,6 +7,8 @@ import {
   TablaUsuarios,
 }  from "../../components/UserShared";
 
+import MapPicker from "../../components/MapPicker";
+
 import {
   getAliados,
   crearAliado,
@@ -26,6 +28,9 @@ const EMPTY_FORM = {
   zona: "",
   activo: true,
   materiales: [],
+  latitud: null,
+  longitud: null,
+  ubicacionDireccion: "",
 };
 
 export default function Aliados({
@@ -51,6 +56,7 @@ export default function Aliados({
     useState(true);
 
   const [saving, setSaving] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const [todosMateriales, setTodosMateriales] = useState([]);
   const [todosMaterialesEdit, setTodosMaterialesEdit] = useState();
@@ -228,6 +234,10 @@ export default function Aliados({
       e.materiales = "Debes seleccionar al menos un material";
     }
 
+    if (!form.latitud || !form.longitud) {
+      e.ubicacion = "La ubicación en el mapa es obligatoria";
+    }
+
     return e;
   };
 
@@ -265,6 +275,9 @@ export default function Aliados({
           zona:
             form.zona ||
             undefined,
+          ubicacionDireccion: form.ubicacionDireccion || undefined,
+          latitud: form.latitud,
+          longitud: form.longitud,
         });
 
       const aliadoId = resp.aliado?.idAliado ?? resp.usuario?.idUsuario;
@@ -851,6 +864,33 @@ export default function Aliados({
                   {errors.materiales && <span className="text-danger small">{errors.materiales}</span>}
                 </div>
 
+                {/* UBICACION */}
+                <div className="full">
+                  <label className="panel-label">Ubicación en el mapa *</label>
+                  <button
+                    className="btn btn-outline-success btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+                    onClick={() => setShowMap(true)}
+                    style={{
+                      padding: "8px 14px", borderRadius: 6,
+                      border: `1.5px solid ${errors.ubicacion ? "var(--rojo)" : form.latitud ? "var(--verde)" : "var(--gris-borde)"}`
+                    }}
+                  >
+                    {form.latitud && form.longitud ? (
+                      <>
+                        <i className="bi bi-check-circle-fill text-success"></i>
+                        Ubicación seleccionada
+                        <span className="text-muted small">({form.latitud.toFixed(4)}, {form.longitud.toFixed(4)})</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="bi bi-geo-alt"></i>
+                        Agregar ubicación
+                      </>
+                    )}
+                  </button>
+                  {errors.ubicacion && <span className="text-danger small">{errors.ubicacion}</span>}
+                </div>
+
                 {/* ESTADO */}
                 <div className="full">
                   <div
@@ -906,6 +946,17 @@ export default function Aliados({
             </div>
           </div>
         </div>
+      )}
+
+      {showMap && (
+        <MapPicker
+          onConfirm={(lat, lng) => {
+            setForm(f => ({ ...f, latitud: lat, longitud: lng, ubicacionDireccion: `${lat.toFixed(4)}, ${lng.toFixed(4)}` }));
+            setErrors(e => ({ ...e, ubicacion: "" }));
+            setShowMap(false);
+          }}
+          onCancel={() => setShowMap(false)}
+        />
       )}
     </div>
   );
