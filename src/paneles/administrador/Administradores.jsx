@@ -139,7 +139,7 @@ export default function Administradores({
         },
       });
 
-      showToast(`Administrador "${form.nombre.trim()}" creado`);
+      showToast("Administrador creado correctamente");
       cerrarModal();
     } catch (err) {
       showToast("Error al crear administrador: " + err.message, "error");
@@ -168,7 +168,7 @@ export default function Administradores({
     try {
       await actualizarAdmin(u.id, { nombre: u.nombre, telefono: u.telefono, correo: u.email });
       dispatch({ type: "UPDATE_USER", payload: u });
-      showToast(`${u.nombre} actualizado correctamente`);
+      showToast("Cambios guardados correctamente");
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
       throw err;

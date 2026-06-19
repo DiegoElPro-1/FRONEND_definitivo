@@ -278,6 +278,7 @@ export default function Aliados({
           ubicacionDireccion: form.ubicacionDireccion || undefined,
           latitud: form.latitud,
           longitud: form.longitud,
+          materiales: form.materiales,
         });
 
       const aliadoId = resp.aliado?.idAliado ?? resp.usuario?.idUsuario;
@@ -335,9 +336,7 @@ export default function Aliados({
         },
       });
 
-      showToast(
-        `Supermercado "${form.nombreEntidad.trim()}" registrado`
-      );
+      showToast("Supermercado creado correctamente");
 
       cerrarModal();
     } catch (err) {
@@ -410,7 +409,7 @@ export default function Aliados({
         await sincronizarMaterialesAliado(u.id, u.materialesIds);
       }
       dispatch({ type: "UPDATE_ALIADO", payload: u });
-      showToast(`${u.nombreEntidad || u.nombre} actualizado correctamente`);
+      showToast("Cambios guardados correctamente");
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
       throw err;

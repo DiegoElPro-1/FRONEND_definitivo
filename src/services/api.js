@@ -67,19 +67,21 @@ export async function restablecerPassword(datos) {
 // USUARIO  →  /api/usuario
 // ============================================================
 
+function esEncargado() {
+  const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+  const rolStr = (u?.rol ?? "").toString().toLowerCase();
+  return u?.idRol === 4 || u?.id_rol === 4 || rolStr === "encargado";
+}
+
 export async function getPerfil() {
-  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-  if (usuario?.idRol === 4 || usuario?.id_rol === 4) {
+  if (esEncargado()) {
     return request('/api/encargado/perfil');
   }
   return request('/api/usuario/perfil');
 }
 
 export async function actualizarPerfil(datos) {
-  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-  const basePath = (usuario?.idRol === 4 || usuario?.id_rol === 4)
-    ? '/api/encargado'
-    : '/api/usuario';
+  const basePath = esEncargado() ? '/api/encargado' : '/api/usuario';
   return request(`${basePath}/perfil`, {
     method: 'PUT',
     body: JSON.stringify(datos),

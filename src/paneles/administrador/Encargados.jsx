@@ -284,7 +284,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
           fechaAlta: new Date().toLocaleDateString("es-CO"),
         },
       });
-      showToast(`Encargado "${form.nombre.trim()}" creado`);
+      showToast("Encargado creado correctamente");
       cerrarModal();
     } catch (err) {
       showToast("Error al crear encargado: " + err.message, "error");
@@ -313,7 +313,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
         : "";
       const punto = puntosList.find((p) => p.nombre === u.puntoAsignado);
       dispatch({ type: "UPDATE_ENCARGADO", payload: { ...u, aliado: aliadoNombre, idPunto: punto?.id || null } });
-      showToast("Encargado actualizado correctamente");
+      showToast("Cambios guardados correctamente");
     } catch (err) { showToast("Error al actualizar: " + err.message, "error"); }
     finally { setSaving(false); }
   };
@@ -356,9 +356,11 @@ export default function Encargados({ state, dispatch, showToast, user }) {
             {encargados.length} encargado{encargados.length !== 1 ? "s" : ""} registrado{encargados.length !== 1 ? "s" : ""}
           </span>
         </div>
-        <button className="btn-panel primary" onClick={() => setModal(true)}>
-          <i className="bi bi-person-plus" /> Nuevo encargado
-        </button>
+        {!user?.esSuperAdmin && (
+          <button className="btn-panel primary" onClick={() => setModal(true)}>
+            <i className="bi bi-person-plus" /> Nuevo encargado
+          </button>
+        )}
       </div>
 
       <div style={{ marginBottom: 16 }}>

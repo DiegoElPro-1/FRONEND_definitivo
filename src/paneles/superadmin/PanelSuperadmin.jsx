@@ -8,7 +8,6 @@ import Administradores  from "../administrador/Administradores";
 import Aliados          from "../administrador/Aliados";
 import Encargados       from "../administrador/Encargados";
 import Materiales       from "../administrador/Materiales";
-import Recompensas      from "../administrador/Recompensas";
 import Perfil           from "../administrador/Perfil";
 
 import CatRoles               from "../administrador/catalogos/CatRoles";
@@ -37,7 +36,6 @@ export default function PanelSuperadmin({ user, onLogout, state, dispatch, showT
             <Route path="aliados"                  element={<Aliados         {...shared} />} />
             <Route path="encargados"               element={<Encargados      {...shared} />} />
             <Route path="materiales"               element={<Materiales      {...shared} />} />
-            <Route path="recompensas"              element={<Recompensas     {...shared} />} />
             <Route path="perfil"                   element={<Perfil          {...shared} />} />
             <Route path="catalogos/roles"               element={<CatRoles              {...shared} />} />
             <Route path="catalogos/estados-puntos"      element={<CatEstadosPuntos      {...shared} />} />

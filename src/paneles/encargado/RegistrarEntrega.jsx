@@ -26,13 +26,13 @@ const ESTADO_DESC = {
   3: "Material dañado o contaminado, requiere revisión",
 };
 
-const PRIORIDADES = [
-  { key: "alta",   label: "Alta",   bg: C.rojo,       text: "#fff"    },
-  { key: "normal", label: "Normal", bg: C.verdeClaro, text: C.negro   },
-  { key: "baja",   label: "Baja",   bg: C.verde,      text: "#fff"    },
-];
+const ESTADO_MULTIPLIER = {
+  1: 1.0,
+  2: 0.75,
+  3: 0.5,
+};
 
-const FORM_EXTRA_INIT = { prioridad: "normal", estadoMaterial: null, observacion: "", fechaVencimientoPuntos: "" };
+const FORM_EXTRA_INIT = { estadoMaterial: null, observacion: "", fechaVencimientoPuntos: "" };
 
 export default function RegistrarEntrega({ showToast }) {
   const [materiales,           setMateriales]           = useState([]);
@@ -97,20 +97,24 @@ export default function RegistrarEntrega({ showToast }) {
   const limpiarUsuario     = ()  => { setUsuarioSeleccionado(null); setUsuarioBusqueda(""); setSugerencias([]); };
   const setExtra = (campo, valor) => setFormExtra(prev => ({ ...prev, [campo]: valor }));
 
-  const filas    = materiales.map(m => { const kg = parseFloat(pesos[m.key]) || 0; return { ...m, kg, pts: Math.round(kg * m.ptsPorKg) }; });
+  const multi    = ESTADO_MULTIPLIER[formExtra.estadoMaterial] ?? 1.0;
+  const filas    = materiales.map(m => { const kg = parseFloat(pesos[m.key]) || 0; const ptsBase = Math.round(kg * m.ptsPorKg); return { ...m, kg, ptsBase, pts: Math.round(ptsBase * multi) }; });
   const totalKg  = filas.reduce((a, f) => a + f.kg,  0);
   const totalPts = filas.reduce((a, f) => a + f.pts, 0);
   const hayAlgo  = filas.some(f => f.kg > 0);
   const estadoSel = ESTADOS_MATERIAL.find(e => e.id === formExtra.estadoMaterial);
-  const prioSel   = PRIORIDADES.find(p => p.key === formExtra.prioridad);
-
   const handleRegistrar = async () => {
-    if (!usuarioSeleccionado || !hayAlgo) return;
+    if (!usuarioSeleccionado || !hayAlgo || !formExtra.fechaVencimientoPuntos) return;
     setLoading(true); setError("");
     try {
       const materialesPayload = filas.filter(f => f.kg > 0).map(f => ({ idMaterial: f.idMaterial, peso: f.kg, puntosGenerados: f.pts }));
-      const data = await registrarEntregaEncargado({ idUsuario: usuarioSeleccionado.idUsuario, materiales: materialesPayload, prioridad: formExtra.prioridad, estadoMaterial: formExtra.estadoMaterial, observacion: formExtra.observacion, fechaVencimientoPuntos: formExtra.fechaVencimientoPuntos || undefined });
-      setResumen({ idEntrega: data?.idEntrega, usuario: usuarioSeleccionado.nombre, filas: filas.filter(f => f.kg > 0), totalKg, totalPts, prioridad: prioSel, estadoMaterial: estadoSel, observacion: formExtra.observacion, fechaVencimientoPuntos: formExtra.fechaVencimientoPuntos });
+      const data = await registrarEntregaEncargado({ idUsuario: usuarioSeleccionado.idUsuario, materiales: materialesPayload, estadoMaterial: formExtra.estadoMaterial, observacion: formExtra.observacion, fechaVencimientoPuntos: formExtra.fechaVencimientoPuntos });
+      if (data?.idEntrega && formExtra.estadoMaterial) {
+        const map = JSON.parse(localStorage.getItem('_estadosMat') || '{}');
+        map[data.idEntrega] = formExtra.estadoMaterial;
+        localStorage.setItem('_estadosMat', JSON.stringify(map));
+      }
+      setResumen({ idEntrega: data?.idEntrega, usuario: usuarioSeleccionado.nombre, filas: filas.filter(f => f.kg > 0), totalKg, totalPts, estadoMaterial: estadoSel, observacion: formExtra.observacion, fechaVencimientoPuntos: formExtra.fechaVencimientoPuntos });
       setEnviado(true);
       showToast?.(`Entrega registrada: ${totalPts} pts para ${usuarioSeleccionado.nombre}`);
     } catch (e) { setError(e.message || "Error al registrar la entrega"); }
@@ -147,14 +151,9 @@ export default function RegistrarEntrega({ showToast }) {
             alt="QR de entrega" style={{ borderRadius: 8, border: `1.5px solid ${C.verdeBorde}` }} />
         </div>
         <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
-          {resumen.prioridad && (
-            <span className="badge fw-bold px-3 py-2" style={{ backgroundColor: resumen.prioridad.bg, color: resumen.prioridad.text, fontSize: 12, border: `1.5px solid ${C.verdeBorde}` }}>
-              <i className="bi bi-flag-fill me-1" />Prioridad {resumen.prioridad.label}
-            </span>
-          )}
           {resumen.estadoMaterial && (
             <span className="badge fw-bold px-3 py-2" style={{ backgroundColor: resumen.estadoMaterial.bg, color: resumen.estadoMaterial.text, fontSize: 12, border: `1.5px solid ${C.verdeBorde}` }}>
-              <i className={`bi ${resumen.estadoMaterial.icon} me-1`} />Estado: {resumen.estadoMaterial.label}
+              <i className={`bi ${resumen.estadoMaterial.icon} me-1`} />{resumen.estadoMaterial.label} ×{ESTADO_MULTIPLIER[resumen.estadoMaterial.id]}
             </span>
           )}
         </div>
@@ -230,9 +229,9 @@ export default function RegistrarEntrega({ showToast }) {
               </div>
             )}
 
-            {/* Usuario + Prioridad */}
+            {/* Usuario */}
             <div className="row g-3 mb-3">
-              <div className="col-md-6" ref={wrapperRef}>
+              <div className="col-md-12" ref={wrapperRef}>
                 <label className="fw-bold text-dark text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
                   <i className="bi bi-person-fill me-1" style={{ color: C.verde }} />Usuario reciclador *
                 </label>
@@ -285,26 +284,6 @@ export default function RegistrarEntrega({ showToast }) {
                   </div>
                 )}
               </div>
-              <div className="col-md-6">
-                <label className="fw-bold text-dark text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
-                  <i className="bi bi-flag-fill me-1" style={{ color: C.verde }} />Urgencia / Prioridad
-                </label>
-                <div className="d-flex gap-2">
-                  {PRIORIDADES.map(p => (
-                    <button key={p.key} type="button" onClick={() => setExtra("prioridad", p.key)}
-                      className="btn flex-grow-1 fw-bold" style={{ fontSize: 13, border: `1.5px solid ${C.verdeBorde}`, backgroundColor: formExtra.prioridad === p.key ? p.bg : "#fff", color: formExtra.prioridad === p.key ? p.text : C.negro }}>
-                      <i className="bi bi-circle-fill me-1" style={{ fontSize: 8 }} />{p.label}
-                    </button>
-                  ))}
-                </div>
-                {prioSel && (
-                  <div className="mt-2">
-                    <span className="badge fw-bold px-2 py-1" style={{ backgroundColor: prioSel.bg, color: prioSel.text, fontSize: 11, border: `1px solid ${C.verdeBorde}` }}>
-                      <i className="bi bi-flag-fill me-1" />{prioSel.label}
-                    </span>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Estado del material */}
@@ -325,6 +304,7 @@ export default function RegistrarEntrega({ showToast }) {
                 <div className="mt-2 px-3 py-1 rounded-2 d-flex align-items-center gap-2" style={{ backgroundColor: estadoSel.descBg, fontSize: 12, border: `1px solid ${C.verdeBorde}` }}>
                   <i className={`bi ${estadoSel.icon}`} style={{ color: estadoSel.bg }} />
                   <span className="text-dark">{ESTADO_DESC[estadoSel.id]}</span>
+                  <span className="badge fw-bold ms-auto" style={{ backgroundColor: estadoSel.bg, color: estadoSel.text, fontSize: 10 }}>×{ESTADO_MULTIPLIER[estadoSel.id]}</span>
                 </div>
               )}
             </div>
@@ -339,9 +319,10 @@ export default function RegistrarEntrega({ showToast }) {
                   <i className="bi bi-inbox d-block mb-1" style={{ fontSize: 22 }} />No hay materiales disponibles para tu supermercado
                 </div>
               )}
-              {materiales.map(m => {
+              {materiales.map((m, i) => {
                 const kg  = parseFloat(pesos[m.key]) || 0;
-                const pts = Math.round(kg * m.ptsPorKg);
+                const row = filas[i];
+                const pts = row ? row.pts : 0;
                 return (
                   <div key={m.key} className="d-flex align-items-center gap-3 p-3 rounded-2" style={{ backgroundColor: kg > 0 ? C.verdeClaro : C.grisFondo, border: `1.5px solid ${C.verdeBorde}` }}>
                     <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0" style={{ width: 42, height: 42, backgroundColor: m.color, border: `1px solid ${C.verdeBorde}` }}>
@@ -376,8 +357,7 @@ export default function RegistrarEntrega({ showToast }) {
             {/* Vencimiento de puntos */}
             <div className="mb-4">
               <label className="fw-bold text-dark text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>
-                <i className="bi bi-clock-fill me-1" style={{ color: C.verde }} />Vencimiento de puntos
-                <span className="text-secondary fw-normal ms-1" style={{ fontSize: 10 }}>(opcional)</span>
+                <i className="bi bi-clock-fill me-1" style={{ color: C.verde }} />Vencimiento de puntos *
               </label>
               <input type="date" className="form-control" style={{ ...S.input, fontSize: 13 }}
                 value={formExtra.fechaVencimientoPuntos}
@@ -398,25 +378,29 @@ export default function RegistrarEntrega({ showToast }) {
                 <div className="fw-bold text-dark" style={{ fontSize: 22 }}>{totalKg.toFixed(2)} kg</div>
               </div>
               <div className="d-flex flex-column align-items-center gap-1">
-                {prioSel && <span className="badge fw-bold" style={{ backgroundColor: prioSel.bg, color: prioSel.text, fontSize: 10, border: `1px solid ${C.verdeBorde}` }}><i className="bi bi-flag-fill me-1" />{prioSel.label}</span>}
                 {estadoSel && <span className="badge fw-bold" style={{ backgroundColor: estadoSel.bg, color: estadoSel.text, fontSize: 10, border: `1px solid ${C.verdeBorde}` }}><i className={`bi ${estadoSel.icon} me-1`} />{estadoSel.label}</span>}
               </div>
               <div className="text-end">
                 <div className="fw-bold text-dark text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>Puntos a otorgar</div>
                 <div className="fw-bold text-dark" style={{ fontSize: 28 }}>+{totalPts}</div>
+                {multi !== 1 && (
+                  <div className="text-secondary" style={{ fontSize: 11 }}>
+                    Base: +{Math.round(totalPts / multi)} pts × {multi}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Botón registrar */}
-            <button onClick={handleRegistrar} disabled={!usuarioSeleccionado || !hayAlgo || loading}
+            <button onClick={handleRegistrar} disabled={!usuarioSeleccionado || !hayAlgo || !formExtra.fechaVencimientoPuntos || loading}
               className="btn fw-bold w-100 py-2 d-flex align-items-center justify-content-center gap-2"
-              style={{ ...S.btnPrimario, fontSize: 15, backgroundColor: !usuarioSeleccionado || !hayAlgo ? "#adb5bd" : C.verde }}>
+              style={{ ...S.btnPrimario, fontSize: 15, backgroundColor: !usuarioSeleccionado || !hayAlgo || !formExtra.fechaVencimientoPuntos ? "#adb5bd" : C.verde }}>
               {loading ? <><span className="spinner-border spinner-border-sm" />Registrando...</> : <><i className="bi bi-check-circle-fill" />Registrar entrega</>}
             </button>
-            {(!usuarioSeleccionado || !hayAlgo) && !loading && (
+            {(!usuarioSeleccionado || !hayAlgo || !formExtra.fechaVencimientoPuntos) && !loading && (
               <div className="text-center text-secondary mt-2" style={{ fontSize: 11 }}>
                 <i className="bi bi-info-circle me-1" />
-                {!usuarioSeleccionado ? "Busca y selecciona un usuario de la lista" : "Ingresa al menos un material con peso mayor a 0"}
+                {!usuarioSeleccionado ? "Busca y selecciona un usuario de la lista" : !formExtra.fechaVencimientoPuntos ? "Selecciona una fecha de vencimiento de puntos" : "Ingresa al menos un material con peso mayor a 0"}
               </div>
             )}
           </div>

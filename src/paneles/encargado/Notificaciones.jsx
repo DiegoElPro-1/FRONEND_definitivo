@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
-import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas } from "../../services/api";
+import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas, actualizarEstadoReservaEncargado } from "../../services/api";
 
 function tiempoRelativo(iso) {
   if (!iso) return "";
@@ -29,7 +29,14 @@ export default function Notificaciones() {
   const [noLeidas, setNoLeidas] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
   const notifRef = useRef(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   const cargar = async () => {
     try {
@@ -62,10 +69,10 @@ export default function Notificaciones() {
     if (!abierto) cargar();
   };
 
-  const handleLeer = async (id) => {
+  const handleLeer = async (idNotif) => {
     try {
-      await marcarNotificacionLeida(id);
-      setNotis(prev => prev.map(n => n.id === id ? { ...n, leida: true } : n));
+      await marcarNotificacionLeida(idNotif);
+      setNotis(prev => prev.map(n => n.idNotificacion === idNotif ? { ...n, leida: true } : n));
       setNoLeidas(prev => Math.max(0, prev - 1));
     } catch {}
   };
@@ -76,6 +83,34 @@ export default function Notificaciones() {
       setNotis(prev => prev.map(n => ({ ...n, leida: true })));
       setNoLeidas(0);
     } catch {}
+  };
+
+  const handleAceptarReserva = async (n, e) => {
+    e.stopPropagation();
+    try {
+      await actualizarEstadoReservaEncargado(n.idReferencia, { estado: 'confirmada' });
+      await marcarNotificacionLeida(n.idNotificacion);
+      setNotis(prev => prev.filter(x => x.idNotificacion !== n.idNotificacion));
+      setNoLeidas(prev => Math.max(0, prev - 1));
+      window.dispatchEvent(new Event('reservas-actualizadas'));
+      setToast({ tipo: 'exito', mensaje: 'Reserva aceptada correctamente' });
+    } catch {
+      setToast({ tipo: 'error', mensaje: 'Error al aceptar la reserva' });
+    }
+  };
+
+  const handleRechazarReserva = async (n, e) => {
+    e.stopPropagation();
+    try {
+      await actualizarEstadoReservaEncargado(n.idReferencia, { estado: 'cancelada', notas: 'Rechazada por el encargado' });
+      await marcarNotificacionLeida(n.idNotificacion);
+      setNotis(prev => prev.filter(x => x.idNotificacion !== n.idNotificacion));
+      setNoLeidas(prev => Math.max(0, prev - 1));
+      window.dispatchEvent(new Event('reservas-actualizadas'));
+      setToast({ tipo: 'exito', mensaje: 'Reserva rechazada correctamente' });
+    } catch {
+      setToast({ tipo: 'error', mensaje: 'Error al rechazar la reserva' });
+    }
   };
 
   const agrupadas = {};
@@ -94,6 +129,18 @@ export default function Notificaciones() {
 
   return (
     <div ref={notifRef} style={{ position: "relative" }}>
+      {toast && (
+        <div style={{
+          position: 'fixed', top: 20, right: 20, zIndex: 99999,
+          background: toast.tipo === 'exito' ? '#198754' : '#dc3545',
+          color: '#fff', padding: '12px 20px', borderRadius: 10,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)', fontSize: 13,
+          fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8
+        }}>
+          <i className={`bi ${toast.tipo === 'exito' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill'}`} />
+          {toast.mensaje}
+        </div>
+      )}
       <button onClick={handleAbrir}
         className="btn d-flex align-items-center justify-content-center p-0 position-relative"
         style={{ width: 40, height: 40, borderRadius: 8, border: `1.5px solid ${C.grisBorde}`, backgroundColor: C.blanco, color: C.negro }}
@@ -154,17 +201,27 @@ export default function Notificaciones() {
             {notis.slice(0, 10).map(n => {
               const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
               return (
-                <button key={n.id} onClick={() => handleLeer(n.id)}
-                  className="btn w-100 d-flex align-items-start gap-2 px-3 py-2 border-0 rounded-0 text-start"
+                <div key={n.idNotificacion}
+                  className="w-100 d-flex align-items-start gap-2 px-3 py-2 border-0 rounded-0 text-start"
                   style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, fontSize: 12, color: C.negro }}>
                   <i className={`bi ${info.icon} mt-1`} style={{ color: n.leida ? C.grisTexto : info.color, fontSize: 14 }} />
                   <div className="flex-grow-1" style={{ minWidth: 0 }}>
                     <div className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{n.titulo}</div>
                     <div style={{ fontSize: 11, color: C.grisTexto, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{n.mensaje}</div>
                     <div style={{ fontSize: 10, color: C.grisTexto, marginTop: 2 }}>{tiempoRelativo(n.createdAt)}</div>
+                    {n.tipo === 'reserva' && !n.leida && n.idReferencia && (
+                      <div className="d-flex gap-1 mt-2">
+                        <button onClick={(e) => handleAceptarReserva(n, e)} className="btn btn-sm fw-bold d-flex align-items-center gap-1 border-0" style={{ fontSize: 10, backgroundColor: C.verde, color: "#fff", padding: "2px 8px", borderRadius: 4 }}>
+                          <i className="bi bi-check-lg" />Aceptar
+                        </button>
+                        <button onClick={(e) => handleRechazarReserva(n, e)} className="btn btn-sm fw-bold d-flex align-items-center gap-1 border-0" style={{ fontSize: 10, backgroundColor: C.rojo, color: "#fff", padding: "2px 8px", borderRadius: 4 }}>
+                          <i className="bi bi-x-lg" />Rechazar
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {!n.leida && <span style={{ width: 7, height: 7, backgroundColor: C.verde, borderRadius: "50%", flexShrink: 0, marginTop: 6 }} />}
-                </button>
+                </div>
               );
             })}
 
@@ -225,7 +282,7 @@ export default function Notificaciones() {
                   {lista.map(n => {
                     const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
                     return (
-                      <div key={n.id} onClick={() => handleLeer(n.id)}
+                      <div key={n.idNotificacion} onClick={() => handleLeer(n.idNotificacion)}
                         className="d-flex align-items-start gap-3 px-4 py-3"
                         style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, cursor: "pointer" }}>
                         <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
@@ -236,6 +293,16 @@ export default function Notificaciones() {
                           <div className="fw-bold" style={{ fontSize: 13, color: C.negro }}>{n.titulo}</div>
                           <div style={{ fontSize: 12, color: C.grisTexto, marginTop: 2 }}>{n.mensaje}</div>
                           <div style={{ fontSize: 10, color: C.grisTexto, marginTop: 4 }}>{tiempoRelativo(n.createdAt)}</div>
+                          {n.tipo === 'reserva' && !n.leida && n.idReferencia && (
+                            <div className="d-flex gap-2 mt-2">
+                              <button onClick={(e) => { e.stopPropagation(); handleAceptarReserva(n, e); }} className="btn btn-sm fw-bold d-flex align-items-center gap-1 border-0" style={{ fontSize: 11, backgroundColor: C.verde, color: "#fff", padding: "4px 14px", borderRadius: 6 }}>
+                                <i className="bi bi-check-lg" />Aceptar
+                              </button>
+                              <button onClick={(e) => { e.stopPropagation(); handleRechazarReserva(n, e); }} className="btn btn-sm fw-bold d-flex align-items-center gap-1 border-0" style={{ fontSize: 11, backgroundColor: C.rojo, color: "#fff", padding: "4px 14px", borderRadius: 6 }}>
+                                <i className="bi bi-x-lg" />Rechazar
+                              </button>
+                            </div>
+                          )}
                         </div>
                         {!n.leida && <span style={{ width: 8, height: 8, backgroundColor: C.verde, borderRadius: "50%", flexShrink: 0, marginTop: 8 }} />}
                       </div>

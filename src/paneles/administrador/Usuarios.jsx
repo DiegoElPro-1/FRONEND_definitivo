@@ -83,7 +83,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
           fechaAlta: new Date().toLocaleDateString("es-CO"),
         },
       });
-      showToast(`Usuario "${form.nombre.trim()}" registrado`);
+      showToast("Usuario creado correctamente");
       setModal(false); setForm(EMPTY_FORM); setErrors({});
     } catch (err) {
       showToast("Error al registrar: " + err.message, "error");
@@ -113,6 +113,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
         correo: u.email,
       });
       dispatch({ type: "UPDATE_USER", payload: u });
+      showToast("Cambios guardados correctamente");
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
     }

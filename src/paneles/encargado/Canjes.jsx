@@ -160,7 +160,7 @@ export default function Canjes({ showToast }) {
 
   const limpiar = () => {
     setBusqueda(""); setUsuarioSel(null);
-    setRecompSel(null); setMostrarDrop(false); setFechaVen("");
+    setRecompSel(null); setMostrarDrop(false);
   };
 
   const getFvp = (obj) => {
@@ -204,15 +204,12 @@ export default function Canjes({ showToast }) {
   const puntosExpirando = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) <= 7 && getDiasRestantes(e.fechaVencimientoPuntos) >= 0);
   const puntosVencidos = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) < 0);
 
-  const [fechaVen, setFechaVen] = useState("");
-
   const handleCanjear = async () => {
     if (!usuarioSel || !recompSel) return;
     try {
       const data = await registrarCanjeEncargado({
         idUsuario: usuarioSel.idUsuario,
         idRecompensa: recompSel.idRecompensa,
-        fechaVencimiento: fechaVen || undefined,
       });
       setComprobante({
         usuario: usuarioSel.nombre,
@@ -709,20 +706,6 @@ export default function Canjes({ showToast }) {
                   )}
                 </div>
 
-                <div className="mb-3">
-                  <div className="fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1, color: C.grisTexto }}>Vencimiento (opcional)</div>
-                  <input type="date" className="form-control" value={fechaVen}
-                    onChange={e => setFechaVen(e.target.value)}
-                    style={{ fontSize: 13, border: `1.5px solid ${C.verdeBorde}` }}
-                    min={new Date().toISOString().split("T")[0]} />
-                  {fechaVen && (
-                    <div style={{ fontSize: 11, color: C.grisTexto, marginTop: 4 }}>
-                      <i className="bi bi-info-circle me-1" />
-                      Los puntos vencerán el {new Date(fechaVen).toLocaleDateString("es-CO")}
-                    </div>
-                  )}
-                </div>
-
                 <div className="d-grid">
                   <button onClick={handleCanjear}
                     disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0)}
@@ -757,7 +740,7 @@ export default function Canjes({ showToast }) {
                 <table className="table align-middle mb-0" style={{ fontSize: 13, borderColor: C.verdeClaro }}>
                   <thead style={S.tableHead}>
                     <tr>
-                      {["Usuario","Recompensa","Puntos","Código","Fecha","Vence","Estado","Acción"].map((h) => (
+                      {["Usuario","Recompensa","Puntos","Código","Fecha","Estado","Acción"].map((h) => (
                         <th key={h} className="fw-bold px-3 py-2" style={S.tableHeadTh}>{h}</th>
                       ))}
                     </tr>
@@ -775,21 +758,6 @@ export default function Canjes({ showToast }) {
                             <span style={S.badgeCodigo}><i className="bi bi-upc me-1" />{h.codigoCanje}</span>
                           </td>
                           <td className="px-3 py-2" style={{ color: C.grisTexto }}>{h.fechaCanje?.split("T")[0]}</td>
-                          <td className="px-3 py-2 text-center">
-                            {h.diasRestantes !== null && h.diasRestantes !== undefined ? (
-                              h.diasRestantes > 0 ? (
-                                <span className="badge rounded-pill fw-semibold" style={{ fontSize: 10, backgroundColor: "#d1fae5", color: "#065f46" }}>
-                                  <i className="bi bi-clock me-1" />{h.diasRestantes} día{h.diasRestantes !== 1 ? "s" : ""}
-                                </span>
-                              ) : (
-                                <span className="badge rounded-pill bg-danger fw-semibold" style={{ fontSize: 10 }}>
-                                  <i className="bi bi-x-circle me-1" />Vencido
-                                </span>
-                              )
-                            ) : (
-                              <span className="text-muted" style={{ fontSize: 11 }}>—</span>
-                            )}
-                          </td>
                           <td className="px-3 py-2 text-center"><BadgeCanje estado={estado} /></td>
                           <td className="px-3 py-2 text-center">
                             <button onClick={() => handleCambiarEstado(hId, estado)}

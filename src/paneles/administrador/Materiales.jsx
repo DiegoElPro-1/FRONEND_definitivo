@@ -84,7 +84,7 @@ export default function VistaMateriales({ showToast }) {
     try {
       if (editItem) {
         await actualizarMaterial(editItem.idMaterial ?? editItem.id, payload);
-        showToastMsg("Material actualizado");
+        showToastMsg("Cambios guardados correctamente");
       } else {
         await crearMaterial(payload);
         showToastMsg("Material creado correctamente");

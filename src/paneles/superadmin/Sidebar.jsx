@@ -68,19 +68,6 @@ export default function SuperadminSidebar({ user, onLogout }) {
         </NavLink>
 
         <NavLink
-          to="/superadmin/recompensas"
-          className={({ isActive }) =>
-            `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${
-              isActive ? "fw-semibold" : "btn-light text-secondary"
-            }`
-          }
-          style={({ isActive }) => isActive ? { background: "#16a34a", color: "#fff", fontSize: 13 } : { fontSize: 13 }}
-        >
-          <i className="bi bi-gift-fill" style={{ fontSize: 15, width: 18 }} />
-          <span>Recompensas</span>
-        </NavLink>
-
-        <NavLink
           to="/superadmin/aliados"
           className={({ isActive }) =>
             `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${

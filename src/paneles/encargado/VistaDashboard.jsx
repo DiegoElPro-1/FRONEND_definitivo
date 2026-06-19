@@ -11,7 +11,8 @@ function getIniciales(nombre = "") {
 function transformarReservas(reservas) {
   const agrupadas = {};
   for (const r of reservas) {
-    const fecha = r.fecha;
+    const fecha = (r.fecha || '').substring(0, 10);
+    if (!fecha) continue;
     if (!agrupadas[fecha]) agrupadas[fecha] = [];
     agrupadas[fecha].push({
       id: r.idReserva,
@@ -29,7 +30,12 @@ function transformarReservas(reservas) {
   return agrupadas;
 }
 
-const ENCARGADO   = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
+const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+const ENCARGADO = {
+  nombre: u.nombre || "Encargado",
+  punto: u.puntoACargo?.nombre || "Tu punto",
+  av: (u.nombre || "E").trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase() || "EN",
+};
 const DIAS_SEMANA = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MESES       = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -73,9 +79,10 @@ export default function VistaDashboard({ showToast }) {
   const [error, setError]             = useState("");
 
   useEffect(() => {
+    let primerCarga = true;
     const cargar = async () => {
       try {
-        setLoading(true);
+        if (primerCarga) setLoading(true);
         setError("");
         const data = await getReservasEncargado();
         const agrupadas = transformarReservas(data.reservas || []);
@@ -83,10 +90,16 @@ export default function VistaDashboard({ showToast }) {
       } catch (e) {
         setError(e.message || "Error al cargar reservas");
       } finally {
-        setLoading(false);
+        if (primerCarga) { setLoading(false); primerCarga = false; }
       }
     };
     cargar();
+    const intervalo = setInterval(cargar, 30000);
+    window.addEventListener('reservas-actualizadas', cargar);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener('reservas-actualizadas', cargar);
+    };
   }, []);
 
   const toKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
