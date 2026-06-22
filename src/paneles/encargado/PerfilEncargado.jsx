@@ -38,6 +38,7 @@ export default function PerfilEncargado() {
         const foto = localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || u?.imagen || "";
         const perfil = {
           nombre: u?.nombre || "",
+          apellido: u.apellido || "",
           email: u?.correo || "",
           telefono: u?.telefono || "",
           punto: u?.puntoACargo?.nombre || "",
@@ -58,6 +59,7 @@ export default function PerfilEncargado() {
     try {
       await actualizarPerfil({
         nombre: form.nombre,
+        apellido: form.apellido,
         telefono: form.telefono,
         imagen: form.foto || null,
       });
@@ -144,7 +146,12 @@ export default function PerfilEncargado() {
             </div>
             {editMode ? (
               <div className="row g-3">
-                {[["nombre","Nombre completo","text"],["email","Correo electrónico","email"],["telefono","Teléfono","text"]].map(([key, label, type]) => (
+                {[
+                ["nombre",   "Nombre completo",    "text"],
+                ["apellido", "Apellido",           "text"],
+                ["telefono", "Teléfono",           "text"],
+                ["email",    "Correo electrónico", "email"],
+                ].map(([key, label, type]) => (
                   <div key={key} className="col-md-6">
                     <label className="form-label fw-bold small text-muted">{label}</label>
                     <input type={type} value={form[key] || ""} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
@@ -155,10 +162,10 @@ export default function PerfilEncargado() {
             ) : (
               <div className="row g-3">
                   {[
-                    ["Nombre completo", saved.nombre || "No registrado"],
-                    ["Correo",          saved.email  || "No registrado"],
-                    ["Teléfono",        saved.telefono || "No registrado"],
-                    ["Supermercado",    saved.aliadoNombre || "No asignado"],
+                    ["Nombre completo", saved.nombre    || "No registrado"],
+                    ["Apellido",        saved.apellido  || "No registrado"],
+                    ["Teléfono",        saved.telefono  || "No registrado"],
+                    ["Correo",          saved.email     || "No registrado"],
                     ["Punto de recolección", saved.punto || "No registrado"],
                     ["Rol",             saved.rol    || "No registrado"],
                   ].map(([lb, val]) => (

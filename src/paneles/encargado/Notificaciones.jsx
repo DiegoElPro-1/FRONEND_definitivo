@@ -54,17 +54,23 @@ export default function Notificaciones() {
   // ── Cargar notificaciones desde el backend ────────────────────────────────
   const cargar = async () => {
     try {
-      setLoading(true);
-      setError("");
-      const data = await getNotificacionesEncargado();
-      setNotis(data.notificaciones || []);
-      setNoLeidas(data.noLeidas || 0);
-    } catch (e) {
-      setError(e.message || "Error al cargar");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setLoading(true);
+    setError("");
+
+    const data = await getNotificacionesEncargado();
+
+    console.log("NOTIFICACIONES RECIBIDAS:");
+    console.log(data);
+
+    setNotis(data.notificaciones || []);
+    setNoLeidas(data.noLeidas || 0);
+
+  } catch (e) {
+    setError(e.message || "Error al cargar");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => { cargar(); }, []);
 
@@ -137,13 +143,15 @@ export default function Notificaciones() {
   // Si es reserva → abre el modal de detalle
   // Si no          → solo la marca como leída
   const handleClickNotificacion = (n) => {
-    if (!n.leida) handleLeer(n.id);
+  console.log(n);
 
-    if (n.tipo === "reserva") {
-      setAbierto(false);   // cierra el dropdown para que no tape el modal
-      setReservaDetalle(n);
-    }
-  };
+  if (!n.leida) handleLeer(n.id);
+
+  if (n.tipo === "reserva") {
+    setAbierto(false);
+    setReservaDetalle(n);
+  }
+};
 
   // ── NUEVO: aceptar reserva ────────────────────────────────────────────────
   const handleAceptarReserva = async () => {
