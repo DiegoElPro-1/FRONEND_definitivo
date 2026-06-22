@@ -1,5 +1,6 @@
 // src/paneles/encargado/VistaDashboard.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { io } from "socket.io-client";
 import { C, S, Av } from "./encargadoTheme";
 import { getReservasEncargado, actualizarEstadoReservaEncargado } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
@@ -72,21 +73,38 @@ export default function VistaDashboard({ showToast }) {
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
 
+  const cargar = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const data = await getReservasEncargado();
+      const agrupadas = transformarReservas(data.reservas || []);
+      setCitas(agrupadas);
+    } catch (e) {
+      setError(e.message || "Error al cargar reservas");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { cargar(); }, [cargar]);
+
   useEffect(() => {
-    const cargar = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const data = await getReservasEncargado();
+    const idEncargado = localStorage.getItem("userId");
+    if (!idEncargado) return;
+
+    const socket = io("https://backend-rp-arreglado-n8p8.onrender.com", {
+      auth: { userId: Number(idEncargado) }
+    });
+
+    socket.on("notificacion", () => {
+      getReservasEncargado().then(data => {
         const agrupadas = transformarReservas(data.reservas || []);
         setCitas(agrupadas);
-      } catch (e) {
-        setError(e.message || "Error al cargar reservas");
-      } finally {
-        setLoading(false);
-      }
-    };
-    cargar();
+      }).catch(() => {});
+    });
+
+    return () => socket.disconnect();
   }, []);
 
   const toKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;

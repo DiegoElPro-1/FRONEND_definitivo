@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
 import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas } from "../../services/api";
+import { io } from "socket.io-client";
+
 
 function tiempoRelativo(iso) {
   if (!iso) return "";
@@ -46,6 +48,35 @@ export default function Notificaciones() {
   };
 
   useEffect(() => { cargar(); }, []);
+  // 🔔 SOCKET EN TIEMPO REAL
+useEffect(() => {
+  const idEncargado = localStorage.getItem("userId");
+  if (!idEncargado) return;
+
+  const socket = io("https://backend-rp-arreglado-n8p8.onrender.com", {
+    auth: { userId: Number(idEncargado) }
+  });
+
+  socket.on("notificacion", (data) => {
+    console.log("🔔 Notificación recibida:", data);
+
+    setNotis(prev => [
+      {
+        id: data.reserva?.idReserva || Date.now(),
+        titulo: "Nueva reserva",
+        mensaje: `${data.reserva?.nombreUsuario} reservó en ${data.reserva?.nombrePunto}`,
+        tipo: "reserva",
+        leida: false,
+        createdAt: new Date().toISOString(),
+      },
+      ...prev
+    ]);
+
+    setNoLeidas(prev => prev + 1);
+  });
+
+  return () => socket.disconnect();
+}, []);
 
   useEffect(() => {
     const handler = (e) => {
