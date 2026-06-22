@@ -1,6 +1,11 @@
 import { useState, useRef, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
-import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas, actualizarEstadoReservaEncargado } from "../../services/api";
+import { 
+  getNotificacionesEncargado, 
+  marcarNotificacionLeida, 
+  marcarTodasNotificacionesLeidas, 
+  actualizarEstadoReservaEncargado 
+} from "../../services/api";
 
 function tiempoRelativo(iso) {
   if (!iso) return "";
@@ -29,6 +34,8 @@ export default function Notificaciones() {
   const [noLeidas, setNoLeidas] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // Almacena la notificación de reserva seleccionada para ver su detalle
+  const [reservaDetalle, setReservaDetalle] = useState(null);
   const [toast, setToast] = useState(null);
   const notifRef = useRef(null);
 
@@ -54,6 +61,7 @@ export default function Notificaciones() {
 
   useEffect(() => { cargar(); }, []);
 
+  // CORRECCIÓN 1: Se limpió el handler del mousedown quitando la función intrusa
   useEffect(() => {
     const handler = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -77,6 +85,22 @@ export default function Notificaciones() {
     } catch {}
   };
 
+  
+  const handleClickNotificacion = (n, e) => {
+  if (e) e.stopPropagation(); 
+  
+  console.log("Notificación cliqueada:", n); 
+
+  if (!n.leida) {
+    handleLeer(n.idNotificacion);
+  }
+  
+  
+  if (n.tipo && n.tipo.toLowerCase() === 'reserva') {
+    setReservaDetalle(n);
+  }
+};
+
   const handleLeerTodas = async () => {
     try {
       await marcarTodasNotificacionesLeidas();
@@ -86,7 +110,7 @@ export default function Notificaciones() {
   };
 
   const handleAceptarReserva = async (n, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     try {
       await actualizarEstadoReservaEncargado(n.idReferencia, { estado: 'confirmada' });
       await marcarNotificacionLeida(n.idNotificacion);
@@ -100,7 +124,7 @@ export default function Notificaciones() {
   };
 
   const handleRechazarReserva = async (n, e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     try {
       await actualizarEstadoReservaEncargado(n.idReferencia, { estado: 'cancelada', notas: 'Rechazada por el encargado' });
       await marcarNotificacionLeida(n.idNotificacion);
@@ -141,6 +165,7 @@ export default function Notificaciones() {
           {toast.mensaje}
         </div>
       )}
+      
       <button onClick={handleAbrir}
         className="btn d-flex align-items-center justify-content-center p-0 position-relative"
         style={{ width: 40, height: 40, borderRadius: 8, border: `1.5px solid ${C.grisBorde}`, backgroundColor: C.blanco, color: C.negro }}
@@ -154,6 +179,7 @@ export default function Notificaciones() {
         )}
       </button>
 
+      {/* DROPDOWN CHICO */}
       {abierto && (
         <div className="position-absolute bg-white rounded-3 shadow-lg overflow-hidden"
           style={{ top: 48, right: 0, width: 380, zIndex: 9999, border: `1.5px solid ${C.grisBorde}` }}>
@@ -202,8 +228,9 @@ export default function Notificaciones() {
               const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
               return (
                 <div key={n.idNotificacion}
+                  onClick={(e) => handleClickNotificacion(n, e)}
                   className="w-100 d-flex align-items-start gap-2 px-3 py-2 border-0 rounded-0 text-start"
-                  style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, fontSize: 12, color: C.negro }}>
+                  style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, fontSize: 12, color: C.negro, cursor: "pointer" }}>
                   <i className={`bi ${info.icon} mt-1`} style={{ color: n.leida ? C.grisTexto : info.color, fontSize: 14 }} />
                   <div className="flex-grow-1" style={{ minWidth: 0 }}>
                     <div className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{n.titulo}</div>
@@ -243,6 +270,7 @@ export default function Notificaciones() {
         </div>
       )}
 
+      {/* MODAL GRANDE DE HISTORIAL */}
       {modal && (
         <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
           style={S.modalOverlay} onClick={() => setModal(false)}>
@@ -282,7 +310,7 @@ export default function Notificaciones() {
                   {lista.map(n => {
                     const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
                     return (
-                      <div key={n.idNotificacion} onClick={() => handleLeer(n.idNotificacion)}
+                      <div key={n.idNotificacion} onClick={() => handleClickNotificacion(n)}
                         className="d-flex align-items-start gap-3 px-4 py-3"
                         style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, cursor: "pointer" }}>
                         <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
@@ -320,6 +348,88 @@ export default function Notificaciones() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DETALLE DE RESERVA CON FOTO E IA */}
+      {reservaDetalle && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={{ ...S.modalOverlay, zIndex: 100000 }} onClick={() => setReservaDetalle(null)}>
+          
+          <div className="bg-white rounded-3 d-flex flex-column overflow-hidden shadow-lg"
+            style={{ width: "90%", maxWidth: 480, maxHeight: "90vh", border: `1.5px solid ${C.grisBorde}` }}
+            onClick={e => e.stopPropagation()}>
+
+            {/* Cabecera */}
+            <div className="d-flex align-items-center justify-content-between px-4 py-3"
+              style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: C.verdeClaro }}>
+              <span className="fw-bold" style={{ fontSize: 15, color: C.verdeOscuro }}>
+                <i className="bi bi-robot me-2" />Validación de Reserva (IA)
+              </span>
+              <button onClick={() => setReservaDetalle(null)}
+                className="btn p-0 border-0 bg-transparent" style={{ fontSize: 18, color: C.grisTexto }}>
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            {/* Cuerpo del Modal */}
+            <div style={{ overflowY: "auto", padding: "20px" }} className="d-flex flex-column gap-3">
+              {/* Contenedor de la Foto */}
+              <div className="text-center rounded-3 overflow-hidden bg-light d-flex align-items-center justify-content-center" 
+                style={{ border: `1px solid ${C.grisBorde}`, height: 240 }}>
+                {reservaDetalle.urlFoto ? (
+                  <img src={reservaDetalle.urlFoto} alt="Evidencia" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                  <div className="text-muted d-flex flex-column align-items-center">
+                    <i className="bi bi-image mb-1" style={{ fontSize: 24 }} />
+                    <span style={{ fontSize: 11 }}>Usuario no adjuntó imagen</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Información de la IA */}
+              <div className="p-3 rounded-3" style={{ backgroundColor: "#f8f9fa", border: `1px solid ${C.grisBorde}` }}>
+                <div className="fw-bold mb-2" style={{ fontSize: 13, color: C.negro }}>
+                  <i className="bi bi-cpu-fill me-1 text-primary" /> Diagnóstico de la IA:
+                </div>
+                <div className="d-flex justify-content-between align-items-center mb-1" style={{ fontSize: 12 }}>
+                  <span className="text-muted">Material identificado:</span>
+                  <span className="fw-bold text-capitalize" style={{ color: C.verdeOscuro }}>
+                    {reservaDetalle.iaMaterial || "No detectado"}
+                  </span>
+                </div>
+                {reservaDetalle.iaConfianza && (
+                  <div className="d-flex justify-content-between align-items-center" style={{ fontSize: 12 }}>
+                    <span className="text-muted">Precisión/Confianza:</span>
+                    <span className="badge bg-primary" style={{ fontSize: 10 }}>{reservaDetalle.iaConfianza}%</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Mensaje Opcional del Usuario */}
+              <div>
+                <div className="fw-bold mb-1" style={{ fontSize: 13, color: C.negro }}>
+                  <i className="bi bi-chat-left-text-fill me-1 text-secondary" /> Mensaje del usuario:
+                </div>
+                <div className="p-2 rounded-2 bg-white" style={{ border: `1px solid ${C.grisBorde}`, fontSize: 12, color: C.negro, minHeight: 40 }}>
+                  {reservaDetalle.mensajeUsuario || reservaDetalle.mensaje || <span className="text-muted italic">Sin mensaje adjunto.</span>}
+                </div>
+              </div>
+            </div>
+
+            {/* Botonera de Decisiones */}
+            <div className="d-flex gap-2 px-4 py-3 bg-light" style={{ borderTop: `1px solid ${C.grisBorde}` }}>
+              <button onClick={() => { handleRechazarReserva(reservaDetalle); setReservaDetalle(null); }}
+                className="btn btn-danger flex-grow-1 fw-bold d-flex align-items-center justify-content-center gap-1" style={{ fontSize: 13, padding: "10px" }}>
+                <i className="bi bi-x-circle-fill" /> Rechazar
+              </button>
+              <button onClick={() => { handleAceptarReserva(reservaDetalle); setReservaDetalle(null); }}
+                className="btn flex-grow-1 fw-bold d-flex align-items-center justify-content-center gap-1" style={{ fontSize: 13, backgroundColor: C.verde, color: "#fff", padding: "10px" }}>
+                <i className="bi bi-check-circle-fill" /> Aceptar Reserva
+              </button>
+            </div>
+
           </div>
         </div>
       )}
