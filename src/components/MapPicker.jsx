@@ -1,31 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 
 const POPAYAN = [2.4448, -76.6147];
 
-function MapDragHandler({ onCenterChange }) {
+function MapEvents({ mapRef }) {
   const map = useMap();
-  useEffect(() => {
-    const handler = () => {
-      const c = map.getCenter();
-      onCenterChange([c.lat, c.lng]);
-    };
-    map.on("moveend", handler);
-    return () => map.off("moveend", handler);
-  }, [map, onCenterChange]);
-  return null;
-}
-
-function MapViewUpdater({ center }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, map.getZoom());
-  }, [center, map]);
+  mapRef.current = map;
   return null;
 }
 
 export default function MapPicker({ onConfirm, onCancel }) {
-  const [center, setCenter] = useState(POPAYAN);
+  const mapRef = useRef(null);
   const [searchText, setSearchText] = useState("");
   const [searching, setSearching] = useState(false);
 
@@ -40,7 +25,7 @@ export default function MapPicker({ onConfirm, onCancel }) {
       );
       const data = await res.json();
       if (data.length > 0) {
-        setCenter([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+        mapRef.current?.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 15);
       }
     } catch {
       // silent
@@ -49,10 +34,15 @@ export default function MapPicker({ onConfirm, onCancel }) {
     }
   }, [searchText]);
 
-  const handleCenterChange = useCallback((c) => setCenter(c), []);
+  const handleConfirm = useCallback(() => {
+    if (mapRef.current) {
+      const c = mapRef.current.getCenter();
+      onConfirm(c.lat, c.lng);
+    }
+  }, [onConfirm]);
 
   return (
-    <div className="panel-modal-bg" onClick={(e) => e.target === e.currentTarget && onCancel()}>
+    <div className="panel-modal-bg" style={{ zIndex: 1200 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div className="panel-modal" style={{ maxWidth: 680 }}>
         <div className="panel-modal-head">
           <span><i className="bi bi-geo-alt me-2"></i>Seleccionar ubicación</span>
@@ -82,7 +72,7 @@ export default function MapPicker({ onConfirm, onCancel }) {
           </div>
           <div style={{ position: "relative", height: 400, borderRadius: 8, overflow: "hidden" }}>
             <MapContainer
-              center={center}
+              center={POPAYAN}
               zoom={15}
               style={{ height: "100%", width: "100%" }}
               zoomControl={true}
@@ -91,8 +81,7 @@ export default function MapPicker({ onConfirm, onCancel }) {
                 attribution='&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
-              <MapViewUpdater center={center} />
-              <MapDragHandler onCenterChange={handleCenterChange} />
+              <MapEvents mapRef={mapRef} />
             </MapContainer>
             <div style={{
               position: "absolute",
@@ -116,7 +105,7 @@ export default function MapPicker({ onConfirm, onCancel }) {
         </div>
         <div className="panel-modal-foot">
           <button className="btn-panel ghost" onClick={onCancel}>Cancelar</button>
-          <button className="btn-panel primary" onClick={() => onConfirm(center[0], center[1])}>
+          <button className="btn-panel primary" onClick={handleConfirm}>
             <i className="bi bi-check-lg me-1"></i>Confirmar ubicación
           </button>
         </div>

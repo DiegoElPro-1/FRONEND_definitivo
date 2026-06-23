@@ -19,6 +19,7 @@ import CatEstadosRecompensas  from "../administrador/catalogos/CatEstadosRecompe
 import CatTiposRecompensa     from "../administrador/catalogos/CatTiposRecompensa";
 import CatEstadosMateriales   from "../administrador/catalogos/CatEstadosMateriales";
 import CatEstadosEntregas     from "../administrador/catalogos/CatEstadosEntregas";
+import Solicitudes           from "./Solicitudes";
 
 export default function PanelSuperadmin({ user, onLogout, state, dispatch, showToast, navigate }) {
   const shared = { state, dispatch, showToast, navigate, user };
@@ -34,6 +35,7 @@ export default function PanelSuperadmin({ user, onLogout, state, dispatch, showT
             <Route path="usuarios"                 element={<Usuarios        {...shared} />} />
             <Route path="administradores"          element={<Administradores {...shared} />} />
             <Route path="aliados"                  element={<Aliados         {...shared} />} />
+            <Route path="solicitudes"              element={<Solicitudes     {...shared} />} />
             <Route path="encargados"               element={<Encargados      {...shared} />} />
             <Route path="materiales"               element={<Materiales      {...shared} />} />
             <Route path="perfil"                   element={<Perfil          {...shared} />} />

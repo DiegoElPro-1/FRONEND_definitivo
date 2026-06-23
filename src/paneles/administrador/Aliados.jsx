@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { ZONAS } from "../../constants/data";
 import {
   Toggle,
   ModalDetalle,
@@ -17,6 +16,7 @@ import {
   getMateriales,
   getMaterialesPorAliado,
   sincronizarMaterialesAliado,
+  getZonas,
 } from "../../services/api";
 
 const EMPTY_FORM = {
@@ -31,6 +31,7 @@ const EMPTY_FORM = {
   latitud: null,
   longitud: null,
   ubicacionDireccion: "",
+  zonaAutodetectada: false,
 };
 
 export default function Aliados({
@@ -60,6 +61,7 @@ export default function Aliados({
 
   const [todosMateriales, setTodosMateriales] = useState([]);
   const [todosMaterialesEdit, setTodosMaterialesEdit] = useState();
+  const [zonasList, setZonasList] = useState([]);
 
   // =====================================
   // CARGAR MATERIALES PARA EDITAR
@@ -83,6 +85,12 @@ export default function Aliados({
   // CARGAR ALIADOS
   // =====================================
   useEffect(() => {
+    getZonas().then((data) => {
+      console.log('Zonas cargadas:', data.zonas?.length ?? 0);
+      setZonasList(data.zonas ?? []);
+    }).catch((err) => {
+      console.error('Error cargando zonas:', err);
+    });
     getAliados()
       .then((data) => {
         const lista = (
@@ -105,8 +113,6 @@ export default function Aliados({
           rol: "Afiliado",
 
           zona: u.zona ?? "",
-
-          pts: 0,
 
           activo:
             u.estadoAliado
@@ -322,8 +328,6 @@ export default function Aliados({
           rol: "Afiliado",
 
           zona: form.zona,
-
-          pts: 0,
 
           activo: true,
 
@@ -810,17 +814,19 @@ export default function Aliados({
                         e.target.value
                       )
                     }
+                    disabled={form.zonaAutodetectada}
+                    style={form.zonaAutodetectada ? { background: "#f0fdf4", color: "#166534", fontWeight: 600 } : {}}
                   >
                     <option value="">
                       Sin zona
                     </option>
 
-                    {ZONAS.map(
+                    {zonasList.map(
                       (z) => (
                         <option
-                          key={z}
+                          key={z.id_zona || z.nombre}
                         >
-                          {z}
+                          {z.nombre}
                         </option>
                       )
                     )}
@@ -949,9 +955,41 @@ export default function Aliados({
 
       {showMap && (
         <MapPicker
-          onConfirm={(lat, lng) => {
-            setForm(f => ({ ...f, latitud: lat, longitud: lng, ubicacionDireccion: `${lat.toFixed(4)}, ${lng.toFixed(4)}` }));
+          onConfirm={async (lat, lng) => {
+            const update = { latitud: lat, longitud: lng, ubicacionDireccion: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, zonaAutodetectada: false };
+            console.log('MapPicker confirm:', lat, lng, 'zonasList:', zonasList.length);
+            try {
+              const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`,
+                { headers: { "User-Agent": "RecyclingPointsAdmin/1.0" } }
+              );
+              if (!res.ok) {
+                console.error('Nominatim HTTP error:', res.status);
+                throw new Error(`HTTP ${res.status}`);
+              }
+              const data = await res.json();
+              console.log('Nominatim response:', data);
+              const addr = data?.address || {};
+              const candidates = [addr.suburb, addr.city_district, addr.neighbourhood, addr.town, addr.municipality, addr.county, addr.state_district, addr.city].filter(Boolean).map(s => s.toLowerCase());
+              console.log('Candidates:', candidates);
+              const match = zonasList.find(z =>
+                candidates.some(c => c.includes(z.nombre.toLowerCase()) || z.nombre.toLowerCase().includes(c))
+              );
+              console.log('Match found:', match);
+              if (match) {
+                update.zona = match.nombre;
+                update.zonaAutodetectada = true;
+              }
+            } catch (e) {
+              console.error('Nominatim error:', e);
+            }
+            setForm(f => ({ ...f, ...update }));
             setErrors(e => ({ ...e, ubicacion: "" }));
+            if (update.zona) {
+              showToast(`Zona detectada: ${update.zona}`, "success");
+            } else {
+              showToast("No se pudo detectar la zona automáticamente. Selecciona manualmente.", "warning");
+            }
             setShowMap(false);
           }}
           onCancel={() => setShowMap(false)}

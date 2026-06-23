@@ -23,7 +23,8 @@ function transformarReservas(reservas) {
       materiales: [],
       estado: r.estado === "confirmada" ? "Aceptada" : r.estado === "cancelada" ? "Rechazada" : r.estado === "completada" ? "Completada" : "Pendiente",
       nota: r.notas || "",
-      foto: null,
+      foto: r.imagen || null,
+      aiResultado: r.aiResultado || null,
       hora: r.hora,
     });
   }
@@ -422,6 +423,30 @@ export default function VistaDashboard({ showToast }) {
                     </div>
                   </div>
                 </div>
+
+                {citaActiva.foto && (
+                  <div>
+                    <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+                      <i className="bi bi-image-fill" style={{ color: C.verde }} />Foto del material
+                    </div>
+                    <img
+                      src={citaActiva.foto}
+                      alt="Material"
+                      className="rounded-3 w-100"
+                      style={{ maxHeight: 200, objectFit: "cover", cursor: "pointer", border: `1.5px solid ${C.verdeBorde}` }}
+                      onClick={() => setFotoPreview(citaActiva.foto)}
+                    />
+                  </div>
+                )}
+
+                {citaActiva.aiResultado && (
+                  <div className="rounded-3 p-3" style={{ backgroundColor: "#e8f5e9", border: `1.5px solid ${C.verde}` }}>
+                    <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
+                      <i className="bi bi-robot" />Análisis IA
+                    </div>
+                    <div style={{ fontSize: 12, color: C.negro, whiteSpace: "pre-wrap" }}>{citaActiva.aiResultado}</div>
+                  </div>
+                )}
 
                 {tieneMateriales(citaActiva) && (
                   <div>

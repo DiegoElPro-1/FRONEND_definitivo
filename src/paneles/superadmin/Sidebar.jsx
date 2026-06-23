@@ -80,6 +80,19 @@ export default function SuperadminSidebar({ user, onLogout }) {
           <span>Supermercados</span>
         </NavLink>
 
+        <NavLink
+          to="/superadmin/solicitudes"
+          className={({ isActive }) =>
+            `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${
+              isActive ? "fw-semibold" : "btn-light text-secondary"
+            }`
+          }
+          style={({ isActive }) => isActive ? { background: "#16a34a", color: "#fff", fontSize: 13 } : { fontSize: 13 }}
+        >
+          <i className="bi bi-file-earmark-text" style={{ fontSize: 15, width: 18 }} />
+          <span>Solicitudes</span>
+        </NavLink>
+
         <div>
           <button
             className={`btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 border-0 ${

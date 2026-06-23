@@ -7,6 +7,7 @@ import {
   actualizarAdmin,
   eliminarAdmin,
   getAliados,
+  getZonas,
 } from "../../services/api";
 
 const EMPTY_FORM = {
@@ -32,7 +33,20 @@ export default function Administradores({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aliados, setAliados] = useState([]);
+  const [zonasList, setZonasList] = useState([]);
   const esSuperAdmin = user?.esSuperAdmin;
+
+  const cargarAliados = () => {
+    getAliados().then(data => {
+      setAliados(data.aliados ?? []);
+    }).catch(() => {});
+  };
+
+  const cargarZonas = () => {
+    getZonas().then(data => {
+      setZonasList(data.zonas ?? []);
+    }).catch(() => {});
+  };
 
   useEffect(() => {
     getAdmins()
@@ -45,8 +59,7 @@ export default function Administradores({
           email: u.correo,
           telefono: u.telefono ?? "",
           rol: "Admin",
-          zona: "",
-          pts: 0,
+          zona: u.zona || "",
           activo: u.idEstadoUsuario === 1,
           idAliado: u.idAliado,
           av: (u.nombre ?? "")
@@ -66,15 +79,25 @@ export default function Administradores({
         showToast("No se pudieron cargar los administradores", "error");
       })
       .finally(() => setLoading(false));
-  }, [dispatch, showToast]);
+    if (esSuperAdmin) cargarAliados();
+  }, [dispatch, showToast, esSuperAdmin]);
 
   useEffect(() => {
-    if (modal && esSuperAdmin) {
-      getAliados().then(data => {
-        setAliados(data.aliados ?? []);
-      }).catch(() => {});
+    if (modal) {
+      if (esSuperAdmin) cargarAliados();
+      cargarZonas();
+      if (!esSuperAdmin && user?.idAliado) {
+        setForm((f) => ({ ...f, idAliado: user.idAliado }));
+      }
     }
-  }, [modal, esSuperAdmin]);
+  }, [modal, esSuperAdmin, user]);
+
+  useEffect(() => {
+    if (form.idAliado && aliados.length > 0) {
+      const a = aliados.find(x => x.idAliado === (form.idAliado === "" ? null : Number(form.idAliado)));
+      if (a?.zona) setForm(f => ({ ...f, zona: a.zona }));
+    }
+  }, [form.idAliado, aliados]);
 
   const set = (k, v) => {
     setForm((f) => ({ ...f, [k]: v }));
@@ -114,8 +137,9 @@ export default function Administradores({
         nombre: form.nombre.trim(),
         correo: form.email.trim(),
         telefono: form.telefono.trim(),
+        zona: form.zona || null,
       };
-      if (esSuperAdmin && form.idAliado) {
+      if (form.idAliado) {
         payload.idAliado = Number(form.idAliado);
       }
 
@@ -125,18 +149,18 @@ export default function Administradores({
 
       dispatch({
         type: "ADD_USER",
-        payload: {
-          id: resp.admin?.idAdmin ?? resp.usuario?.idUsuario ?? Date.now(),
-          nombre: form.nombre.trim(),
-          email: form.email.trim(),
-          telefono: form.telefono.trim(),
-          rol: "Admin",
-          pts: 0,
-          activo: true,
-          av: initials,
-          idAliado: form.idAliado ? Number(form.idAliado) : null,
-          fechaAlta: new Date().toLocaleDateString("es-CO"),
-        },
+          payload: {
+            id: resp.admin?.idAdmin ?? resp.usuario?.idUsuario ?? Date.now(),
+            nombre: form.nombre.trim(),
+            email: form.email.trim(),
+            telefono: form.telefono.trim(),
+            rol: "Admin",
+            zona: form.zona || "",
+            activo: true,
+            av: initials,
+            idAliado: form.idAliado ? Number(form.idAliado) : null,
+            fechaAlta: new Date().toLocaleDateString("es-CO"),
+          },
       });
 
       showToast("Administrador creado correctamente");
@@ -166,7 +190,11 @@ export default function Administradores({
 
   const handleSave = async (u) => {
     try {
-      await actualizarAdmin(u.id, { nombre: u.nombre, telefono: u.telefono, correo: u.email });
+      const payload = { nombre: u.nombre, telefono: u.telefono, correo: u.email, zona: u.zona || null };
+      if (u.idAliado) {
+        payload.idAliado = u.idAliado || null;
+      }
+      await actualizarAdmin(u.id, payload);
       dispatch({ type: "UPDATE_USER", payload: u });
       showToast("Cambios guardados correctamente");
     } catch (err) {
@@ -190,9 +218,10 @@ export default function Administradores({
     }
   };
 
+  const aliadoNombre = (id) => id ? (aliados.find((a) => a.idAliado === id)?.nombre || "") : "";
   const filtered = admins.filter((u) => {
     const q = search.toLowerCase();
-    return u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.zona || "").toLowerCase().includes(q);
+    return u.nombre.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || aliadoNombre(u.idAliado).toLowerCase().includes(q);
   });
 
   const avatarPreview = form.nombre.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("") || "?";
@@ -226,10 +255,16 @@ export default function Administradores({
       )}
 
       <div className="panel-table-wrap">
-        <TablaUsuarios lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} />
+        <TablaUsuarios
+          lista={filtered}
+          onToggle={handleToggle}
+          onVer={setViewUser}
+          onEliminar={handleEliminar}
+          extraColumns={esSuperAdmin ? [{ icon: "bi-building", label: "Supermercado", render: (u) => u.idAliado ? (aliados.find((a) => a.idAliado === u.idAliado)?.nombre || <span style={{ color: "#ddd" }}>—</span>) : <span style={{ color: "#ddd" }}>—</span> }] : undefined}
+        />
       </div>
 
-      <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} />
+      <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} aliadosList={esSuperAdmin ? aliados : undefined} />
 
       {modal && (
         <div className="panel-modal-bg" onClick={(ev) => { if (ev.target === ev.currentTarget) cerrarModal(); }}>
@@ -272,10 +307,14 @@ export default function Administradores({
                   {errors.telefono && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.telefono}</span>}
                 </div>
 
-                {esSuperAdmin && (
+                {esSuperAdmin ? (
                   <div>
                     <label className="panel-label">Supermercado *</label>
-                    <select className="panel-input" value={form.idAliado} onChange={(e) => set("idAliado", e.target.value)} style={errors.idAliado ? { borderColor: "var(--rojo)" } : {}}>
+                    <select className="panel-input" value={form.idAliado} onChange={(e) => {
+                      set("idAliado", e.target.value);
+                      const a = aliados.find(x => x.idAliado === Number(e.target.value));
+                      if (a?.zona) set("zona", a.zona);
+                    }} style={errors.idAliado ? { borderColor: "var(--rojo)" } : {}}>
                       <option value="">Seleccionar supermercado...</option>
                       {aliados.map((a) => (
                         <option key={a.idAliado} value={a.idAliado}>{a.nombre}</option>
@@ -283,7 +322,22 @@ export default function Administradores({
                     </select>
                     {errors.idAliado && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.idAliado}</span>}
                   </div>
+                ) : (
+                  <div>
+                    <label className="panel-label">Supermercado</label>
+                    <div className="panel-input" style={{ padding: "8px 12px", background: "#f5f5f5", borderRadius: 6, color: "#666", cursor: "not-allowed" }}>
+                      {user?.aliadoNombre || "Sin supermercado asignado"}
+                    </div>
+                  </div>
                 )}
+
+                <div>
+                  <label className="panel-label">Zona</label>
+                  <select className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)}>
+                    <option value="">Sin zona</option>
+                    {zonasList.map((z) => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
+                  </select>
+                </div>
 
                 <div className="full">
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", border: "1px solid var(--gris-borde)", borderRadius: 6 }}>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
-import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas, actualizarEstadoReservaEncargado } from "../../services/api";
+import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas, actualizarEstadoReservaEncargado, getReservaDetalleEncargado } from "../../services/api";
 
 function tiempoRelativo(iso) {
   if (!iso) return "";
@@ -30,6 +30,8 @@ export default function Notificaciones() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [toast, setToast] = useState(null);
+  const [detalleReserva, setDetalleReserva] = useState(null);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
   const notifRef = useRef(null);
 
   useEffect(() => {
@@ -49,6 +51,18 @@ export default function Notificaciones() {
       setError(e.message || "Error al cargar");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openDetalleReserva = async (n) => {
+    try {
+      setCargandoDetalle(true);
+      const data = await getReservaDetalleEncargado(n.idReferencia);
+      setDetalleReserva({ ...data.reserva, notificacion: n });
+    } catch {
+      setToast({ tipo: 'error', mensaje: 'Error al cargar detalle de la reserva' });
+    } finally {
+      setCargandoDetalle(false);
     }
   };
 
@@ -201,9 +215,9 @@ export default function Notificaciones() {
             {notis.slice(0, 10).map(n => {
               const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
               return (
-                <div key={n.idNotificacion}
+                <div key={n.idNotificacion} onClick={() => { if (n.tipo === 'reserva') openDetalleReserva(n); else handleLeer(n.idNotificacion); }}
                   className="w-100 d-flex align-items-start gap-2 px-3 py-2 border-0 rounded-0 text-start"
-                  style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, fontSize: 12, color: C.negro }}>
+                  style={{ cursor: n.tipo === 'reserva' ? 'pointer' : 'default', borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, fontSize: 12, color: C.negro }}>
                   <i className={`bi ${info.icon} mt-1`} style={{ color: n.leida ? C.grisTexto : info.color, fontSize: 14 }} />
                   <div className="flex-grow-1" style={{ minWidth: 0 }}>
                     <div className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{n.titulo}</div>
@@ -282,7 +296,7 @@ export default function Notificaciones() {
                   {lista.map(n => {
                     const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
                     return (
-                      <div key={n.idNotificacion} onClick={() => handleLeer(n.idNotificacion)}
+                      <div key={n.idNotificacion} onClick={() => { if (n.tipo === 'reserva') openDetalleReserva(n); else handleLeer(n.idNotificacion); }}
                         className="d-flex align-items-start gap-3 px-4 py-3"
                         style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, cursor: "pointer" }}>
                         <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
@@ -320,6 +334,94 @@ export default function Notificaciones() {
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {detalleReserva && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={S.modalOverlay} onClick={() => setDetalleReserva(null)}>
+          <div className="bg-white rounded-3 d-flex flex-column overflow-hidden shadow-lg"
+            style={{ width: "90%", maxWidth: 500, maxHeight: "85vh", border: `1.5px solid ${C.grisBorde}` }}
+            onClick={e => e.stopPropagation()}>
+
+            <div className="d-flex align-items-center justify-content-between px-4 py-3"
+              style={{ borderBottom: `1px solid ${C.grisBorde}` }}>
+              <span className="fw-bold" style={{ fontSize: 16, color: C.negro }}>
+                <i className="bi bi-calendar-check-fill me-2" style={{ color: C.verde }} />Detalle de reserva
+              </span>
+              <button onClick={() => setDetalleReserva(null)}
+                className="btn p-0 border-0 bg-transparent" style={{ fontSize: 18, color: C.grisTexto }}>
+                <i className="bi bi-x-lg" />
+              </button>
+            </div>
+
+            <div style={{ overflowY: "auto", flex: 1 }} className="p-4">
+              {cargandoDetalle ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border spinner-border-sm" style={{ color: C.verde }} role="status" />
+                  <div className="mt-2" style={{ fontSize: 13, color: C.grisTexto }}>Cargando detalle…</div>
+                </div>
+              ) : (
+                <div className="d-flex flex-column gap-3">
+                  <div className="d-flex align-items-center gap-3 p-3 rounded-3"
+                    style={{ backgroundColor: C.grisFondo, border: `1.5px solid ${C.verdeBorde}` }}>
+                    <Av text={detalleReserva.usuario?.nombre ? (detalleReserva.usuario.nombre.split(" ").slice(0,2).map(p => p[0]?.toUpperCase()).join("")) : "?"} size={50} />
+                    <div>
+                      <div className="fw-bold" style={{ fontSize: 15, color: C.negro }}>{detalleReserva.usuario?.nombre || "Usuario"}</div>
+                      <div style={{ fontSize: 11, color: C.grisTexto }}>{detalleReserva.usuario?.correo || ""}</div>
+                    </div>
+                  </div>
+
+                  <div className="d-flex gap-2" style={{ fontSize: 12, color: C.grisTexto }}>
+                    <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-calendar3" />{detalleReserva.fecha}</span>
+                    <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-clock" />{detalleReserva.hora}</span>
+                  </div>
+
+                  {detalleReserva.notificacion?.mensaje && (
+                    <div className="rounded-3 p-3" style={{ backgroundColor: C.verdeClaro, border: `1.5px solid ${C.verdeBorde}` }}>
+                      <div className="fw-bold mb-1" style={{ fontSize: 12, color: C.verdeOscuro }}>Mensaje</div>
+                      <div style={{ fontSize: 12, color: C.negro }}>{detalleReserva.notificacion.mensaje}</div>
+                    </div>
+                  )}
+
+                  {detalleReserva.imagen && (
+                    <div>
+                      <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+                        <i className="bi bi-image-fill" style={{ color: C.verde }} />Foto del material
+                      </div>
+                      <img src={detalleReserva.imagen} alt="Material"
+                        className="rounded-3 w-100"
+                        style={{ maxHeight: 200, objectFit: "cover", border: `1.5px solid ${C.verdeBorde}` }} />
+                    </div>
+                  )}
+
+                  {detalleReserva.aiResultado && (
+                    <div className="rounded-3 p-3" style={{ backgroundColor: "#e8f5e9", border: `1.5px solid ${C.verde}` }}>
+                      <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
+                        <i className="bi bi-robot" />Análisis IA
+                      </div>
+                      <div style={{ fontSize: 12, color: C.negro, whiteSpace: "pre-wrap" }}>{detalleReserva.aiResultado}</div>
+                    </div>
+                  )}
+
+                  {detalleReserva.estado === 'pendiente' && (
+                    <div className="d-flex gap-2 mt-2">
+                      <button onClick={(e) => { e.stopPropagation(); handleAceptarReserva(detalleReserva.notificacion, e); setDetalleReserva(null); }}
+                        className="btn fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-2 border-0"
+                        style={{ backgroundColor: C.verde, color: "#fff", fontSize: 13, padding: "8px 16px", borderRadius: 8 }}>
+                        <i className="bi bi-check-circle-fill" /> Aceptar reserva
+                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); handleRechazarReserva(detalleReserva.notificacion, e); setDetalleReserva(null); }}
+                        className="btn fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-2 border-0"
+                        style={{ backgroundColor: C.rojo, color: "#fff", fontSize: 13, padding: "8px 16px", borderRadius: 8 }}>
+                        <i className="bi bi-x-circle-fill" /> Rechazar
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
