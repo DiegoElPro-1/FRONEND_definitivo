@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { iniciarSesion } from "../services/api";
+import { iniciarSesion, clearToken } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png';
 
@@ -50,6 +50,13 @@ export default function Login({ onLogin }) {
 
       const rolSeleccionado = rolDev || detectarRol(usuario);
       const esSuperAdmin = esSuperAdminUsuario(usuario);
+
+      if (rolSeleccionado === "usuario") {
+        clearToken();
+        setError("Para ingresar con tu cuenta de usuario, descarga nuestra app móvil.");
+        setLoading(false);
+        return;
+      }
 
       localStorage.setItem("usuario",  JSON.stringify(usuario));
       sessionStorage.setItem("user",   JSON.stringify({ ...usuario, rolSeleccionado, esSuperAdmin }));

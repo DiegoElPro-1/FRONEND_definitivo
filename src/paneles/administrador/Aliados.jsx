@@ -803,34 +803,23 @@ export default function Aliados({
                     Zona
                   </label>
 
-                  <select
-                    className="panel-input"
-                    value={
-                      form.zona
-                    }
-                    onChange={(e) =>
-                      set(
-                        "zona",
-                        e.target.value
-                      )
-                    }
-                    disabled={form.zonaAutodetectada}
-                    style={form.zonaAutodetectada ? { background: "#f0fdf4", color: "#166534", fontWeight: 600 } : {}}
-                  >
-                    <option value="">
-                      Sin zona
-                    </option>
-
-                    {zonasList.map(
-                      (z) => (
-                        <option
-                          key={z.id_zona || z.nombre}
-                        >
-                          {z.nombre}
-                        </option>
-                      )
-                    )}
-                  </select>
+                  {form.zonaAutodetectada ? (
+                    <div className="panel-input" style={{ background: "#f0fdf4", color: "#166534", fontWeight: 600, padding: "6px 10px", borderRadius: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <i className="bi bi-geo-alt-fill" style={{ fontSize: "0.75rem" }}></i>
+                      {form.zona || "Sin zona"}
+                    </div>
+                  ) : (
+                    <select
+                      className="panel-input"
+                      value={form.zona}
+                      onChange={(e) => set("zona", e.target.value)}
+                    >
+                      <option value="">Sin zona</option>
+                      {zonasList.map((z) => (
+                        <option key={z.id_zona || z.nombre}>{z.nombre}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 {/* MATERIALES */}
@@ -873,7 +862,7 @@ export default function Aliados({
                 <div className="full">
                   <label className="panel-label">Ubicación en el mapa *</label>
                   <button
-                    className="btn btn-outline-success btn-sm w-100 d-flex align-items-center justify-content-center gap-2"
+                    className="btn btn-outline-success btn-sm w-100 d-flex flex-column align-items-start justify-content-center gap-1"
                     onClick={() => setShowMap(true)}
                     style={{
                       padding: "8px 14px", borderRadius: 6,
@@ -881,16 +870,24 @@ export default function Aliados({
                     }}
                   >
                     {form.latitud && form.longitud ? (
-                      <>
-                        <i className="bi bi-check-circle-fill text-success"></i>
-                        Ubicación seleccionada
-                        <span className="text-muted small">({form.latitud.toFixed(4)}, {form.longitud.toFixed(4)})</span>
-                      </>
+                      <div className="w-100 d-flex align-items-center gap-2">
+                        <i className="bi bi-check-circle-fill text-success flex-shrink-0"></i>
+                        <div className="text-start">
+                          <div className="small fw-semibold">Ubicación seleccionada</div>
+                          {form.ubicacionDireccion && form.ubicacionDireccion !== `${form.latitud.toFixed(4)}, ${form.longitud.toFixed(4)}` ? (
+                            <div className="text-muted small" style={{ fontSize: 11, lineHeight: 1.3 }}>
+                              {form.ubicacionDireccion.split(', ').slice(0, 4).join(', ')}
+                            </div>
+                          ) : (
+                            <div className="text-muted small">({form.latitud.toFixed(4)}, {form.longitud.toFixed(4)})</div>
+                          )}
+                        </div>
+                      </div>
                     ) : (
-                      <>
+                      <div className="d-flex align-items-center gap-2">
                         <i className="bi bi-geo-alt"></i>
                         Agregar ubicación
-                      </>
+                      </div>
                     )}
                   </button>
                   {errors.ubicacion && <span className="text-danger small">{errors.ubicacion}</span>}
@@ -957,27 +954,40 @@ export default function Aliados({
         <MapPicker
           onConfirm={async (lat, lng) => {
             const update = { latitud: lat, longitud: lng, ubicacionDireccion: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, zonaAutodetectada: false };
-            console.log('MapPicker confirm:', lat, lng, 'zonasList:', zonasList.length);
+            let data, addr;
             try {
               const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`,
                 { headers: { "User-Agent": "RecyclingPointsAdmin/1.0" } }
               );
-              if (!res.ok) {
-                console.error('Nominatim HTTP error:', res.status);
-                throw new Error(`HTTP ${res.status}`);
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              data = await res.json();
+              addr = data?.address || {};
+              if (data?.display_name) {
+                update.ubicacionDireccion = data.display_name;
               }
-              const data = await res.json();
-              console.log('Nominatim response:', data);
-              const addr = data?.address || {};
-              const candidates = [addr.suburb, addr.city_district, addr.neighbourhood, addr.town, addr.municipality, addr.county, addr.state_district, addr.city].filter(Boolean).map(s => s.toLowerCase());
-              console.log('Candidates:', candidates);
-              const match = zonasList.find(z =>
-                candidates.some(c => c.includes(z.nombre.toLowerCase()) || z.nombre.toLowerCase().includes(c))
-              );
-              console.log('Match found:', match);
+              const display = (data?.display_name || '').toLowerCase();
+              const candidates = [
+                addr.neighbourhood,
+                addr.suburb,
+                addr.city_district,
+                addr.town,
+                addr.village,
+              ].filter(Boolean).map(s => s.toLowerCase().trim());
+              const match = zonasList.find(z => {
+                const zn = z.nombre.toLowerCase().trim();
+                if (candidates.some(c => c === zn || c.includes(zn) || zn.includes(c))) return true;
+                const palabrasZn = zn.split(/\s+/);
+                if (candidates.some(c => palabrasZn.some(p => p.length > 3 && c.includes(p)))) return true;
+                const antesPopayan = display.split('popayán')[0];
+                if (antesPopayan.includes(zn)) return true;
+                return false;
+              });
               if (match) {
                 update.zona = match.nombre;
+                update.zonaAutodetectada = true;
+              } else if (candidates.length > 0) {
+                update.zona = candidates[0].charAt(0).toUpperCase() + candidates[0].slice(1);
                 update.zonaAutodetectada = true;
               }
             } catch (e) {
@@ -985,10 +995,11 @@ export default function Aliados({
             }
             setForm(f => ({ ...f, ...update }));
             setErrors(e => ({ ...e, ubicacion: "" }));
+            const barrio = addr?.neighbourhood || addr?.suburb || '';
             if (update.zona) {
-              showToast(`Zona detectada: ${update.zona}`, "success");
+              showToast(`Zona: ${update.zona}${barrio ? ` · Barrio: ${barrio}` : ''}`, "success");
             } else {
-              showToast("No se pudo detectar la zona automáticamente. Selecciona manualmente.", "warning");
+              showToast(`No se detectó zona automáticamente. Barrio: ${barrio || 'desconocido'}`, "warning");
             }
             setShowMap(false);
           }}

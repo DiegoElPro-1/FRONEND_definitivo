@@ -19,8 +19,7 @@
 /* ── PÁGINA ──────────────────────────────────────── */
 .panel-page {
   background-color: var(--fondo);
-  min-height: 100vh;
-  padding: 2rem;
+  min-height: 100%;
 }
 
 /* ── ENCABEZADO ──────────────────────────────────── */

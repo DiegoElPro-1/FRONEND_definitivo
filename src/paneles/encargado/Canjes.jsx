@@ -198,8 +198,9 @@ export default function Canjes({ showToast }) {
   const recompensasVencidas   = recompensas.filter(r => getRewardStatus(r) === "vencida");
   const recompensasInactivas  = recompensas.filter(r => getRewardStatus(r) === "inactiva");
 
-  const recompensasDisponibles    = recompensasActivas.filter((r) => !usuarioSel || ptsUsuario >= getPtsRecompensa(r));
-  const recompensasNoDisponibles  = recompensasActivas.filter((r) => usuarioSel && ptsUsuario < getPtsRecompensa(r));
+  const recompensasDisponibles    = recompensasActivas.filter((r) => (!usuarioSel || ptsUsuario >= getPtsRecompensa(r)) && (r.stock === null || r.stock > 0));
+  const recompensasNoDisponibles  = recompensasActivas.filter((r) => usuarioSel && ptsUsuario < getPtsRecompensa(r) && (r.stock === null || r.stock > 0));
+  const recompensasAgotadas       = recompensasActivas.filter((r) => r.stock !== null && r.stock <= 0);
 
   const puntosExpirando = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) <= 7 && getDiasRestantes(e.fechaVencimientoPuntos) >= 0);
   const puntosVencidos = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) < 0);
@@ -454,7 +455,8 @@ export default function Canjes({ showToast }) {
                   <div className="row g-2 mt-2">
                     {[...recompensasActivas, ...recompensasProximas, ...recompensasVencidas, ...recompensasInactivas].map((r) => {
                       const st = getRewardStatus(r);
-                      const disabled = st === "vencida" || st === "inactiva";
+                      const agotado = r.stock !== null && r.stock <= 0;
+                      const disabled = st === "vencida" || st === "inactiva" || agotado;
                       return (
                         <div className="col-6" key={r.idRecompensa}>
                           <div className="p-3 rounded-2 d-flex flex-column gap-1"
@@ -474,7 +476,9 @@ export default function Canjes({ showToast }) {
                               }}>
                                 <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
                               </span>
-                              <span style={{ fontSize: 10, color: C.grisTexto }}>Stock: {r.stock ?? "∞"}</span>
+                              <span style={{ fontSize: 10, color: C.grisTexto }}>
+                                {agotado ? <span className="text-danger fw-bold">Agotado</span> : `Stock: ${r.stock ?? "∞"}`}
+                              </span>
                             </div>
                             {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
                             <div className="mt-1"><StatusBadge r={r} /></div>
@@ -557,6 +561,34 @@ export default function Canjes({ showToast }) {
                                   <span style={{ fontSize: 10, color: C.grisTexto }}>
                                     Faltan {r.puntosRequeridos - ptsUsuario} pts
                                   </span>
+                                </div>
+                                {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {recompensasAgotadas.length > 0 && (
+                      <>
+                        <div className="fw-bold mb-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.rojo }}>
+                          <i className="bi bi-x-circle-fill" />Agotadas ({recompensasAgotadas.length})
+                        </div>
+                        <div className="row g-2 mb-3">
+                          {recompensasAgotadas.map((r) => (
+                            <div className="col-6" key={r.idRecompensa}>
+                              <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                                style={{ border: `1.5px solid ${C.grisBorde}`, backgroundColor: "#fef2f2", opacity: 0.6 }}>
+                                <div className="d-flex align-items-center gap-2">
+                                  <i className="bi bi-archive" style={{ color: C.grisBorde, fontSize: 13 }} />
+                                  <span className="fw-bold" style={{ fontSize: 12, color: C.grisTexto }}>{r.nombre}</span>
+                                </div>
+                                <div className="d-flex align-items-center justify-content-between mt-1">
+                                  <span style={{ ...S.badgePuntos, backgroundColor: "#fef2f2", color: C.rojo, border: `1px solid #fecaca` }}>
+                                    <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
+                                  </span>
+                                  <span className="text-danger fw-bold" style={{ fontSize: 10 }}>Agotado</span>
                                 </div>
                                 {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
                               </div>
@@ -708,7 +740,7 @@ export default function Canjes({ showToast }) {
 
                 <div className="d-grid">
                   <button onClick={handleCanjear}
-                    disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0)}
+                    disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0) || (recompSel?.stock !== null && recompSel?.stock <= 0)}
                     className="btn fw-bold py-2 d-flex align-items-center justify-content-center gap-2"
                     style={S.btnPrimario}>
                     <i className="bi bi-gift" /> Canjear recompensa

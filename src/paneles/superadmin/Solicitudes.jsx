@@ -3,6 +3,8 @@ import {
   getSolicitudesRegistro,
   aprobarSolicitudRegistro,
   rechazarSolicitudRegistro,
+  getAdmins,
+  getEncargados,
 } from "../../services/api";
 
 const ESTILOS = {
@@ -11,7 +13,7 @@ const ESTILOS = {
   rechazado: { bg: "#fee2e2", color: "#991b1b", label: "Rechazado" },
 };
 
-export default function Solicitudes({ showToast }) {
+export default function Solicitudes({ showToast, dispatch }) {
   const [solicitudes, setSolicitudes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rechazarId, setRechazarId] = useState(null);
@@ -29,12 +31,52 @@ export default function Solicitudes({ showToast }) {
     }
   };
 
-  useEffect(() => { cargar(); }, []);
+  useEffect(() => {
+    cargar();
+    const interval = setInterval(cargar, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleAprobar = async (id) => {
     try {
+      const solicitud = solicitudes.find(s => s.idSolicitud === id);
       await aprobarSolicitudRegistro(id);
       showToast("Solicitud aprobada. Usuario creado.", "success");
+      if (solicitud) {
+        if (solicitud.rolSolicitado === "admin") {
+          const data = await getAdmins();
+          const lista = (data.admins ?? data.administradores ?? []).map((u) => ({
+            id: u.idAdmin ?? u.idUsuario,
+            nombre: u.nombre,
+            email: u.correo,
+            telefono: u.telefono ?? "",
+            rol: "Admin",
+            zona: u.zona || "",
+            activo: u.idEstadoUsuario === 1,
+            idAliado: u.idAliado,
+            av: (u.nombre ?? "").trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join(""),
+            fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
+          }));
+          dispatch({ type: "SET_ADMINS", payload: lista });
+        } else {
+          const data = await getEncargados();
+          const lista = (data.encargados ?? []).map((u) => ({
+            id: u.idUsuario,
+            nombre: u.nombre || "",
+            email: u.correo || "",
+            telefono: u.telefono || "",
+            zona: u.zona || "",
+            puntoAsignado: u.puntoACargo?.nombre || "",
+            idPunto: u.puntoACargo?.idPunto || null,
+            aliado: u.aliado?.nombre || "",
+            idAliado: u.aliado?.idAliado || null,
+            activo: u.idEstadoUsuario === 1,
+            av: (u.nombre || "").trim().split(" ").slice(0, 2).map((w) => w?.[0]?.toUpperCase() || "").join(""),
+            fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
+          }));
+          dispatch({ type: "SET_ENCARGADOS", payload: lista });
+        }
+      }
       cargar();
     } catch (err) {
       showToast(err.message || "Error al aprobar", "error");

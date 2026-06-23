@@ -20,7 +20,7 @@ export default function MapPicker({ onConfirm, onCancel }) {
     setSearching(true);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1&countrycodes=CO`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Popayán, Colombia')}&limit=5&countrycodes=CO&bounded=1&viewbox=-76.68,2.50,-76.55,2.38`,
         { headers: { "User-Agent": "RecyclingPointsAdmin/1.0" } }
       );
       const data = await res.json();

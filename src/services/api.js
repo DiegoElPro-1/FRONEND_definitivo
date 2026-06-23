@@ -60,6 +60,10 @@ export async function getSolicitudesRegistro() {
   return request('/api/admin/solicitudes-registro');
 }
 
+export async function getSolicitudesPendientesCount() {
+  return request('/api/admin/solicitudes-registro/pendientes-count');
+}
+
 export async function aprobarSolicitudRegistro(id) {
   return request(`/api/admin/solicitudes-registro/${id}/aprobar`, {
     method: 'PUT',
