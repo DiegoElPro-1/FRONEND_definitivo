@@ -1,7 +1,7 @@
 // ============================================================
 // Configuración base
 // ============================================================
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3333';
+export const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3333';
 
 export function setToken(t)  { localStorage.setItem("token", t); }
 export function getToken()   { return localStorage.getItem("token"); }

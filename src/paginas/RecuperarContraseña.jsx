@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from '../services/api';
 
-export const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3333';
+const API = `${BASE_URL}/api/auth/recuperar-password`;
 
 async function apiFetch(url, body) {
   const res = await fetch(url, {
