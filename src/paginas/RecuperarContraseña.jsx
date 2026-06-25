@@ -1,8 +1,9 @@
 // src/components/Forgotpassword.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { BASE_URL } from '../services/api';
 
-const API = "http://localhost:3333/api/auth/recuperar-password";
+const API = `${BASE_URL}/api/auth/recuperar-password`;
 
 async function apiFetch(url, body) {
   const res = await fetch(url, {
