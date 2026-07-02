@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import Sidebar           from "./Sidebar";
 import VistaDashboard    from "./VistaDashboard";
@@ -31,6 +32,26 @@ export default function PanelEncargado({ user, onLogout, showToast }) {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // ── Estado compartido: reservas enriquecidas que llegan por socket ──
+  const [reservasSocket, setReservasSocket] = useState({});
+
+  // ── Callback que Notificaciones llama cuando llega una reserva por socket ──
+  const handleNuevaReservaSocket = (reservaData) => {
+    const fecha = (reservaData.fecha || '').substring(0, 10);
+    if (!fecha) return;
+    setReservasSocket(prev => {
+      const copia = { ...prev };
+      if (!copia[fecha]) copia[fecha] = {};
+      copia[fecha][reservaData.idReserva] = {
+        urlFoto:       reservaData.urlFoto       || null,
+        iaMaterial:    reservaData.iaMaterial    || null,
+        iaConfianza:   reservaData.iaConfianza   || null,
+        mensajeUsuario: reservaData.mensajeUsuario || reservaData.notas || null,
+      };
+      return copia;
+    });
+  };
+
   const activeKey    = NAV.find(n => location.pathname.includes(n.path))?.key || "dashboard";
   const tituloActivo = NAV.find(n => n.key === activeKey)?.label || "Dashboard";
 
@@ -48,13 +69,16 @@ export default function PanelEncargado({ user, onLogout, showToast }) {
             </div>
           </div>
           <div className="d-flex align-items-center gap-2">
-            <Notificaciones />
+            {/* ── Le pasamos el callback a Notificaciones ── */}
+            <Notificaciones onNuevaReserva={handleNuevaReservaSocket} />
             <Av text={ENCARGADO.av} size={38} bg="#ffc107" color="#000" />
           </div>
         </div>
 
         <Routes>
-          <Route path="dashboard" element={<VistaDashboard showToast={showToast} />}    />
+          <Route path="dashboard" element={
+            <VistaDashboard showToast={showToast} reservasSocket={reservasSocket} />
+          } />
           <Route path="control"   element={<PanelControl />}      />
           <Route path="registrar" element={<RegistrarEntrega showToast={showToast} />}  />
           <Route path="historial" element={<HistorialEntregas showToast={showToast} />} />

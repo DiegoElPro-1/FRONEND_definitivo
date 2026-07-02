@@ -25,6 +25,9 @@ function transformarReservas(reservas) {
       nota: r.notas || "",
       foto: r.imagen || null,
       aiResultado: r.aiResultado || null,
+      iaMaterial: r.iaMaterial || null,
+      iaConfianza: r.iaConfianza || null,
+      mensajeUsuario: r.notas || null,
       hora: r.hora,
     });
   }
@@ -65,7 +68,7 @@ function BadgeEstado({ estado }) {
   );
 }
 
-export default function VistaDashboard({ showToast }) {
+export default function VistaDashboard({ showToast, reservasSocket = {} }) {
   const today = new Date();
   const [year, setYear]               = useState(today.getFullYear());
   const [month, setMonth]             = useState(today.getMonth());
@@ -87,7 +90,18 @@ export default function VistaDashboard({ showToast }) {
         setError("");
         const data = await getReservasEncargado();
         const agrupadas = transformarReservas(data.reservas || []);
-        setCitas(agrupadas);
+
+// Enriquecer con datos del socket (foto, IA, mensaje)
+for (const fecha in reservasSocket) {
+  if (agrupadas[fecha]) {
+    agrupadas[fecha] = agrupadas[fecha].map(cita => {
+      const extra = reservasSocket[fecha]?.[cita.idReserva];
+      return extra ? { ...cita, ...extra } : cita;
+    });
+  }
+}
+
+setCitas(agrupadas);
       } catch (e) {
         setError(e.message || "Error al cargar reservas");
       } finally {
@@ -118,7 +132,16 @@ export default function VistaDashboard({ showToast }) {
 
   const prevMes   = () => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); setSelectedDay(null); setPanel("lista"); setCitaActiva(null); };
   const nextMes   = () => { if (month === 11) { setMonth(0);  setYear(y => y + 1); } else setMonth(m => m + 1); setSelectedDay(null); setPanel("lista"); setCitaActiva(null); };
-  const selectDia = (d) => { setSelectedDay(d); setPanel("lista"); setCitaActiva(null); setNotaRechazo(""); setTabActivo("Pendiente"); };
+  const selectDia = (d) => {
+  const key = toKey(year, month, d);
+  const citasEseDia = citas[key] || [];
+  const tabConCitas = TABS.find(t => citasEseDia.some(c => c.estado === t.key));
+  setSelectedDay(d);
+  setPanel("lista");
+  setCitaActiva(null);
+  setNotaRechazo("");
+  setTabActivo(tabConCitas?.key || "Pendiente");
+};
 
   const keyActivo      = selectedDay ? toKey(year, month, selectedDay) : null;
   const citasDelDia    = keyActivo ? (citas[keyActivo] || []) : [];
@@ -423,6 +446,53 @@ export default function VistaDashboard({ showToast }) {
                     </div>
                   </div>
                 </div>
+                {citaActiva.foto && (
+
+                  <div>
+                    <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+                    <i className="bi bi-camera-fill" style={{ color: C.verde }} /> Foto de evidencia
+                  </div>
+                  <img
+                    src={citaActiva.foto}
+                    alt="Evidencia"
+                    className="rounded-3 w-100"
+                    style={{ maxHeight: 200, objectFit: "cover", cursor: "zoom-in", border: `1.5px solid ${C.verdeBorde}` }}
+                    onClick={() => setFotoPreview(citaActiva.foto)}
+                  />
+                </div>
+                )}
+                {citaActiva.iaMaterial && (
+  <div className="p-3 rounded-3" style={{ backgroundColor: "#f0f4ff", border: "1px solid #c7d2fe" }}>
+    <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+      <i className="bi bi-cpu-fill text-primary" /> Diagnóstico de la IA
+    </div>
+    <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12 }}>
+      <span style={{ color: C.grisTexto }}>Material identificado:</span>
+      <span className="fw-bold text-capitalize" style={{ color: C.verdeOscuro }}>
+        {citaActiva.iaMaterial}
+      </span>
+    </div>
+    {citaActiva.iaConfianza && (
+      <div className="d-flex justify-content-between" style={{ fontSize: 12 }}>
+        <span style={{ color: C.grisTexto }}>Confianza:</span>
+        <span className="badge bg-primary" style={{ fontSize: 10 }}>
+          {citaActiva.iaConfianza}%
+        </span>
+      </div>
+    )}
+  </div>
+)}
+
+{citaActiva.mensajeUsuario && (
+  <div>
+    <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+      <i className="bi bi-chat-left-text-fill text-secondary" /> Mensaje del usuario
+    </div>
+    <div className="p-2 rounded-2" style={{ border: `1px solid ${C.grisBorde}`, fontSize: 12, color: C.negro, backgroundColor: "#fff", minHeight: 40 }}>
+      {citaActiva.mensajeUsuario}
+    </div>
+  </div>
+)}
 
                 {citaActiva.foto && (
                   <div>

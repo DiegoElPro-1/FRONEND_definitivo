@@ -36,6 +36,7 @@ const TIPO_LABEL = {
   general: "General",
 };
 
+<<<<<<< Updated upstream
 export default function Notificaciones({ onNuevaReserva }) {
   const [abierto, setAbierto] = useState(false);
   const [modal, setModal] = useState(false);
@@ -46,6 +47,19 @@ export default function Notificaciones({ onNuevaReserva }) {
   const [toast, setToast] = useState(null);
   const [detalleReserva, setDetalleReserva] = useState(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
+=======
+// ─────────────────────────────────────────────────────────────────────────────
+export default function Notificaciones({ onNuevaReserva }) {
+  const [abierto, setAbierto]           = useState(false);
+  const [modal, setModal]               = useState(false);
+  const [notis, setNotis]               = useState([]);
+  const [noLeidas, setNoLeidas]         = useState(0);
+  const [loading, setLoading]           = useState(false);
+  const [error, setError]               = useState("");
+
+  // ── NUEVO: notificación de reserva seleccionada para el modal de detalle ──
+  const [reservaDetalle, setReservaDetalle] = useState(null);
+>>>>>>> Stashed changes
 
   const notifRef = useRef(null);
 
@@ -105,6 +119,7 @@ export default function Notificaciones({ onNuevaReserva }) {
       setNoLeidas(prev => prev + 1);
       if (onNuevaReserva && data.reserva) onNuevaReserva(data.reserva);
     });
+    
 
     return () => socket.disconnect();
   }, []);
