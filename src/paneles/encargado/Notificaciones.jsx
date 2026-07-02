@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { C, S } from "./encargadoTheme";
+import { C, S, Av } from "./encargadoTheme";
 import {
   getNotificacionesEncargado,
   marcarNotificacionLeida,
   marcarTodasNotificacionesLeidas,
   actualizarEstadoReservaEncargado,
+  getReservaDetalleEncargado,
 } from "../../services/api";
 import { io } from "socket.io-client";
 
-// ─── Utilidad de tiempo relativo ─────────────────────────────────────────────
 function tiempoRelativo(iso) {
   if (!iso) return "";
   const diff = Date.now() - new Date(iso).getTime();
@@ -23,7 +23,6 @@ function tiempoRelativo(iso) {
   return new Date(iso).toLocaleDateString("es-MX", { day: "numeric", month: "short" });
 }
 
-// ─── Mapa de íconos por tipo ──────────────────────────────────────────────────
 const TIPO_ICON = {
   reserva: { icon: "bi-calendar-check-fill", color: C.verde },
   entrega: { icon: "bi-box-seam-fill",        color: "#f9a825" },
@@ -37,44 +36,50 @@ const TIPO_LABEL = {
   general: "General",
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-export default function Notificaciones() {
-  const [abierto, setAbierto]           = useState(false);
-  const [modal, setModal]               = useState(false);
-  const [notis, setNotis]               = useState([]);
-  const [noLeidas, setNoLeidas]         = useState(0);
-  const [loading, setLoading]           = useState(false);
-  const [error, setError]               = useState("");
-
-  // ── NUEVO: notificación de reserva seleccionada para el modal de detalle ──
-  const [reservaDetalle, setReservaDetalle] = useState(null);
+export default function Notificaciones({ onNuevaReserva }) {
+  const [abierto, setAbierto] = useState(false);
+  const [modal, setModal] = useState(false);
+  const [notis, setNotis] = useState([]);
+  const [noLeidas, setNoLeidas] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [toast, setToast] = useState(null);
+  const [detalleReserva, setDetalleReserva] = useState(null);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
   const notifRef = useRef(null);
 
-  // ── Cargar notificaciones desde el backend ────────────────────────────────
   const cargar = async () => {
     try {
-    setLoading(true);
-    setError("");
+      setLoading(true);
+      setError("");
+      const data = await getNotificacionesEncargado();
+      console.log("NOTIFICACIONES RECIBIDAS:");
+      console.log(data);
+      setNotis(data.notificaciones || []);
+      setNoLeidas(data.noLeidas || 0);
+    } catch (e) {
+      setError(e.message || "Error al cargar");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const data = await getNotificacionesEncargado();
-
-    console.log("NOTIFICACIONES RECIBIDAS:");
-    console.log(data);
-
-    setNotis(data.notificaciones || []);
-    setNoLeidas(data.noLeidas || 0);
-
-  } catch (e) {
-    setError(e.message || "Error al cargar");
-  } finally {
-    setLoading(false);
-  }
-};
+  const openDetalleReserva = async (n) => {
+    try {
+      setCargandoDetalle(true);
+      setAbierto(false);
+      const data = await getReservaDetalleEncargado(n.idReferencia);
+      setDetalleReserva({ ...data.reserva, notificacion: n });
+    } catch {
+      setToast({ tipo: 'error', mensaje: 'Error al cargar detalle de la reserva' });
+    } finally {
+      setCargandoDetalle(false);
+    }
+  };
 
   useEffect(() => { cargar(); }, []);
 
-  // ── Socket en tiempo real ─────────────────────────────────────────────────
   useEffect(() => {
     const idEncargado = localStorage.getItem("userId");
     if (!idEncargado) return;
@@ -93,18 +98,17 @@ export default function Notificaciones() {
           tipo:      "reserva",
           leida:     false,
           createdAt: new Date().toISOString(),
-          // Campos extra de la reserva para el modal de detalle
           reserva:   data.reserva,
         },
         ...prev,
       ]);
       setNoLeidas(prev => prev + 1);
+      if (onNuevaReserva && data.reserva) onNuevaReserva(data.reserva);
     });
 
     return () => socket.disconnect();
   }, []);
 
-  // ── Cerrar dropdown al hacer clic afuera ──────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
@@ -115,13 +119,11 @@ export default function Notificaciones() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // ── Abrir/cerrar dropdown ─────────────────────────────────────────────────
   const handleAbrir = () => {
     setAbierto(v => !v);
     if (!abierto) cargar();
   };
 
-  // ── Marcar una notificación como leída ────────────────────────────────────
   const handleLeer = async (id) => {
     try {
       await marcarNotificacionLeida(id);
@@ -130,7 +132,6 @@ export default function Notificaciones() {
     } catch {}
   };
 
-  // ── Marcar todas como leídas ──────────────────────────────────────────────
   const handleLeerTodas = async () => {
     try {
       await marcarTodasNotificacionesLeidas();
@@ -139,57 +140,39 @@ export default function Notificaciones() {
     } catch {}
   };
 
-  // ── NUEVO: al hacer clic en una notificación ──────────────────────────────
-  // Si es reserva → abre el modal de detalle
-  // Si no          → solo la marca como leída
-  const handleClickNotificacion = (n) => {
-  console.log(n);
-
-  if (!n.leida) handleLeer(n.id);
-
-  if (n.tipo === "reserva") {
-    setAbierto(false);
-    setReservaDetalle(n);
-  }
-};
-
-  // ── NUEVO: aceptar reserva ────────────────────────────────────────────────
   const handleAceptarReserva = async () => {
-    if (!reservaDetalle) return;
+    if (!detalleReserva) return;
     try {
-      // Ajusta el campo idReferencia / id según lo que devuelva tu backend
-      const idReserva = reservaDetalle.reserva?.idReserva ?? reservaDetalle.idReferencia ?? reservaDetalle.id;
+      const idReserva = detalleReserva.idReserva ?? detalleReserva.notificacion?.idReferencia;
       await actualizarEstadoReservaEncargado(idReserva, { estado: "confirmada" });
-      await marcarNotificacionLeida(reservaDetalle.id);
-      setNotis(prev => prev.map(n => n.id === reservaDetalle.id ? { ...n, leida: true } : n));
+      await marcarNotificacionLeida(detalleReserva.notificacion?.id || detalleReserva.notificacion?.idNotificacion);
+      setNotis(prev => prev.map(n => n.id === detalleReserva.notificacion?.id ? { ...n, leida: true } : n));
       setNoLeidas(prev => Math.max(0, prev - 1));
     } catch (e) {
       console.error("Error al aceptar reserva:", e);
     } finally {
-      setReservaDetalle(null);
+      setDetalleReserva(null);
     }
   };
 
-  // ── NUEVO: rechazar reserva ───────────────────────────────────────────────
   const handleRechazarReserva = async () => {
-    if (!reservaDetalle) return;
+    if (!detalleReserva) return;
     try {
-      const idReserva = reservaDetalle.reserva?.idReserva ?? reservaDetalle.idReferencia ?? reservaDetalle.id;
+      const idReserva = detalleReserva.idReserva ?? detalleReserva.notificacion?.idReferencia;
       await actualizarEstadoReservaEncargado(idReserva, {
         estado: "cancelada",
-        notas:  "Rechazada por el encargado",
+        notas: "Rechazada por el encargado",
       });
-      await marcarNotificacionLeida(reservaDetalle.id);
-      setNotis(prev => prev.map(n => n.id === reservaDetalle.id ? { ...n, leida: true } : n));
+      await marcarNotificacionLeida(detalleReserva.notificacion?.id || detalleReserva.notificacion?.idNotificacion);
+      setNotis(prev => prev.map(n => n.id === detalleReserva.notificacion?.id ? { ...n, leida: true } : n));
       setNoLeidas(prev => Math.max(0, prev - 1));
     } catch (e) {
       console.error("Error al rechazar reserva:", e);
     } finally {
-      setReservaDetalle(null);
+      setDetalleReserva(null);
     }
   };
 
-  // ── Agrupar notificaciones por tipo (para el modal completo) ──────────────
   const agrupadas = {};
   for (const n of notis) {
     const t = n.tipo || "general";
@@ -197,11 +180,10 @@ export default function Notificaciones() {
     agrupadas[t].push(n);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────
   return (
     <div ref={notifRef} style={{ position: "relative" }}>
 
-      {/* ── Botón campana ─────────────────────────────────────────────────── */}
+      {/* Botón campana */}
       <button
         onClick={handleAbrir}
         className="btn d-flex align-items-center justify-content-center p-0 position-relative"
@@ -219,13 +201,12 @@ export default function Notificaciones() {
         )}
       </button>
 
-      {/* ── Dropdown de notificaciones ────────────────────────────────────── */}
+      {/* Dropdown */}
       {abierto && (
         <div
           className="position-absolute bg-white rounded-3 shadow-lg overflow-hidden"
           style={{ top: 48, right: 0, width: 380, zIndex: 9999, border: `1.5px solid ${C.grisBorde}` }}
         >
-          {/* Cabecera del dropdown */}
           <div className="d-flex align-items-center justify-content-between px-3 py-2"
             style={{ borderBottom: `1px solid ${C.grisBorde}` }}>
             <span className="fw-bold" style={{ fontSize: 14, color: C.negro }}>Notificaciones</span>
@@ -244,7 +225,6 @@ export default function Notificaciones() {
             </div>
           </div>
 
-          {/* Lista de notificaciones */}
           <div style={{ maxHeight: 380, overflowY: "auto" }}>
             {loading && notis.length === 0 && (
               <div className="text-center py-4" style={{ color: C.grisTexto, fontSize: 12 }}>
@@ -277,16 +257,10 @@ export default function Notificaciones() {
               const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
               const esReserva = n.tipo === "reserva";
               return (
-                <button
-                  key={n.id}
-                  onClick={() => handleClickNotificacion(n)}
-                  className="btn w-100 d-flex align-items-start gap-2 px-3 py-2 border-0 rounded-0 text-start"
-                  style={{
-                    borderBottom:    `1px solid ${C.grisBorde}`,
-                    backgroundColor: n.leida ? C.blanco : C.verdeClaro,
-                    fontSize:        12,
-                    color:           C.negro,
-                  }}
+                <div key={n.idNotificacion || n.id}
+                  onClick={() => { if (esReserva) openDetalleReserva(n); else handleLeer(n.idNotificacion || n.id); }}
+                  className="w-100 d-flex align-items-start gap-2 px-3 py-2"
+                  style={{ cursor: "pointer", borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, fontSize: 12, color: C.negro }}
                 >
                   <i className={`bi ${info.icon} mt-1`} style={{ color: n.leida ? C.grisTexto : info.color, fontSize: 14 }} />
                   <div className="flex-grow-1" style={{ minWidth: 0 }}>
@@ -295,7 +269,6 @@ export default function Notificaciones() {
                       {n.mensaje}
                     </div>
                     <div style={{ fontSize: 10, color: C.grisTexto, marginTop: 2 }}>{tiempoRelativo(n.createdAt)}</div>
-                    {/* Indicador de que tiene detalle */}
                     {esReserva && (
                       <div style={{ fontSize: 10, color: C.verde, marginTop: 3 }}>
                         <i className="bi bi-eye-fill me-1" />Ver detalle de reserva
@@ -305,7 +278,7 @@ export default function Notificaciones() {
                   {!n.leida && (
                     <span style={{ width: 7, height: 7, backgroundColor: C.verde, borderRadius: "50%", flexShrink: 0, marginTop: 6 }} />
                   )}
-                </button>
+                </div>
               );
             })}
 
@@ -316,7 +289,6 @@ export default function Notificaciones() {
             )}
           </div>
 
-          {/* Pie del dropdown */}
           <div className="d-flex justify-content-between align-items-center px-3 py-2"
             style={{ borderTop: `1px solid ${C.grisBorde}` }}>
             <button onClick={() => setModal(true)}
@@ -328,7 +300,7 @@ export default function Notificaciones() {
         </div>
       )}
 
-      {/* ── Modal historial completo ───────────────────────────────────────── */}
+      {/* Modal historial completo */}
       {modal && (
         <div
           className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
@@ -374,8 +346,8 @@ export default function Notificaciones() {
                   {lista.map(n => {
                     const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
                     return (
-                      <div key={n.id}
-                        onClick={() => handleClickNotificacion(n)}
+                      <div key={n.idNotificacion || n.id}
+                        onClick={() => { if (n.tipo === "reserva") openDetalleReserva(n); else handleLeer(n.idNotificacion || n.id); }}
                         className="d-flex align-items-start gap-3 px-4 py-3"
                         style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: n.leida ? C.blanco : C.verdeClaro, cursor: "pointer" }}
                       >
@@ -416,145 +388,90 @@ export default function Notificaciones() {
         </div>
       )}
 
-      {/* ── NUEVO: Modal de detalle de reserva ────────────────────────────── */}
-      {reservaDetalle && (
-        <div
-          className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
-          style={{ ...S.modalOverlay, zIndex: 100000 }}
-          onClick={() => setReservaDetalle(null)}
-        >
-          <div
-            className="bg-white rounded-3 d-flex flex-column overflow-hidden shadow-lg"
-            style={{ width: "90%", maxWidth: 480, maxHeight: "90vh", border: `1.5px solid ${C.grisBorde}` }}
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Cabecera */}
+      {/* Modal detalle reserva */}
+      {detalleReserva && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          style={{ ...S.modalOverlay, zIndex: 100000 }} onClick={() => setDetalleReserva(null)}>
+          <div className="bg-white rounded-3 d-flex flex-column overflow-hidden shadow-lg"
+            style={{ width: "90%", maxWidth: 500, maxHeight: "85vh", border: `1.5px solid ${C.grisBorde}` }}
+            onClick={e => e.stopPropagation()}>
+
             <div className="d-flex align-items-center justify-content-between px-4 py-3"
               style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: C.verdeClaro }}>
-              <span className="fw-bold" style={{ fontSize: 15, color: C.verdeOscuro }}>
+              <span className="fw-bold" style={{ fontSize: 16, color: C.verdeOscuro }}>
                 <i className="bi bi-calendar-check-fill me-2" />Detalle de reserva
               </span>
-              <button onClick={() => setReservaDetalle(null)}
+              <button onClick={() => setDetalleReserva(null)}
                 className="btn p-0 border-0 bg-transparent" style={{ fontSize: 18, color: C.grisTexto }}>
                 <i className="bi bi-x-lg" />
               </button>
             </div>
 
-            {/* Cuerpo */}
-            <div style={{ overflowY: "auto", padding: "20px" }} className="d-flex flex-column gap-3">
-
-              {/* Foto de evidencia */}
-              <div>
-                <div className="fw-bold mb-2" style={{ fontSize: 13, color: C.negro }}>
-                  <i className="bi bi-camera-fill me-1" style={{ color: C.verde }} /> Foto de evidencia
+            <div style={{ overflowY: "auto", flex: 1 }} className="p-4">
+              {cargandoDetalle ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border spinner-border-sm" style={{ color: C.verde }} role="status" />
+                  <div className="mt-2" style={{ fontSize: 13, color: C.grisTexto }}>Cargando detalle…</div>
                 </div>
-                <div
-                  className="rounded-3 overflow-hidden bg-light d-flex align-items-center justify-content-center"
-                  style={{ border: `1px solid ${C.grisBorde}`, height: 220 }}
-                >
-                  {reservaDetalle.reserva?.urlFoto || reservaDetalle.urlFoto ? (
-                    <img
-                      src={reservaDetalle.reserva?.urlFoto ?? reservaDetalle.urlFoto}
-                      alt="Evidencia del usuario"
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    <div className="text-muted d-flex flex-column align-items-center">
-                      <i className="bi bi-image mb-1" style={{ fontSize: 28, color: C.grisTexto }} />
-                      <span style={{ fontSize: 11, color: C.grisTexto }}>El usuario no adjuntó imagen</span>
+              ) : (
+                <div className="d-flex flex-column gap-3">
+                  <div className="d-flex align-items-center gap-3 p-3 rounded-3"
+                    style={{ backgroundColor: C.grisFondo, border: `1.5px solid ${C.verdeBorde}` }}>
+                    <Av text={detalleReserva.usuario?.nombre ? detalleReserva.usuario.nombre.split(" ").slice(0,2).map(p => p[0]?.toUpperCase()).join("") : "?"} size={50} />
+                    <div>
+                      <div className="fw-bold" style={{ fontSize: 15, color: C.negro }}>{detalleReserva.usuario?.nombre || "Usuario"}</div>
+                      <div style={{ fontSize: 11, color: C.grisTexto }}>{detalleReserva.usuario?.correo || ""}</div>
+                    </div>
+                  </div>
+
+                  <div className="d-flex gap-3" style={{ fontSize: 12, color: C.grisTexto }}>
+                    <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-calendar3" />{detalleReserva.fecha}</span>
+                    <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-clock" />{detalleReserva.hora}</span>
+                  </div>
+
+                  {detalleReserva.notificacion?.mensaje && (
+                    <div className="rounded-3 p-3" style={{ backgroundColor: C.verdeClaro, border: `1.5px solid ${C.verdeBorde}` }}>
+                      <div className="fw-bold mb-1" style={{ fontSize: 12, color: C.verdeOscuro }}>Mensaje</div>
+                      <div style={{ fontSize: 12, color: C.negro }}>{detalleReserva.notificacion.mensaje}</div>
                     </div>
                   )}
-                </div>
-              </div>
 
-              {/* Datos del usuario y punto */}
-              <div className="p-3 rounded-3" style={{ backgroundColor: "#f8f9fa", border: `1px solid ${C.grisBorde}` }}>
-                <div className="fw-bold mb-2" style={{ fontSize: 13, color: C.negro }}>
-                  <i className="bi bi-person-fill me-1 text-secondary" /> Información de la reserva
-                </div>
-                <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12 }}>
-                  <span style={{ color: C.grisTexto }}>Usuario:</span>
-                  <span className="fw-bold" style={{ color: C.negro }}>
-                    {reservaDetalle.reserva?.nombreUsuario ?? "—"}
-                  </span>
-                </div>
-                <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12 }}>
-                  <span style={{ color: C.grisTexto }}>Punto de reciclaje:</span>
-                  <span className="fw-bold" style={{ color: C.negro }}>
-                    {reservaDetalle.reserva?.nombrePunto ?? "—"}
-                  </span>
-                </div>
-                <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12 }}>
-                  <span style={{ color: C.grisTexto }}>Fecha:</span>
-                  <span className="fw-bold" style={{ color: C.negro }}>
-                    {reservaDetalle.reserva?.fecha
-                      ? new Date(reservaDetalle.reserva.fecha).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" })
-                      : tiempoRelativo(reservaDetalle.createdAt)}
-                  </span>
-                </div>
-                {reservaDetalle.reserva?.material && (
-                  <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12 }}>
-                    <span style={{ color: C.grisTexto }}>Material:</span>
-                    <span className="fw-bold text-capitalize" style={{ color: C.verdeOscuro }}>
-                      {reservaDetalle.reserva.material}
-                    </span>
-                  </div>
-                )}
-              </div>
+                  {detalleReserva.imagen && (
+                    <div>
+                      <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+                        <i className="bi bi-image-fill" style={{ color: C.verde }} />Foto del material
+                      </div>
+                      <img src={detalleReserva.imagen} alt="Material"
+                        className="rounded-3 w-100"
+                        style={{ maxHeight: 200, objectFit: "cover", border: `1.5px solid ${C.verdeBorde}` }} />
+                    </div>
+                  )}
 
-              {/* Diagnóstico de la IA (si viene) */}
-              {(reservaDetalle.reserva?.iaMaterial || reservaDetalle.iaMaterial) && (
-                <div className="p-3 rounded-3" style={{ backgroundColor: "#f0f4ff", border: `1px solid #c7d2fe` }}>
-                  <div className="fw-bold mb-2" style={{ fontSize: 13, color: C.negro }}>
-                    <i className="bi bi-cpu-fill me-1 text-primary" /> Diagnóstico de la IA
-                  </div>
-                  <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12 }}>
-                    <span style={{ color: C.grisTexto }}>Material identificado:</span>
-                    <span className="fw-bold text-capitalize" style={{ color: C.verdeOscuro }}>
-                      {reservaDetalle.reserva?.iaMaterial ?? reservaDetalle.iaMaterial}
-                    </span>
-                  </div>
-                  {(reservaDetalle.reserva?.iaConfianza ?? reservaDetalle.iaConfianza) && (
-                    <div className="d-flex justify-content-between align-items-center" style={{ fontSize: 12 }}>
-                      <span style={{ color: C.grisTexto }}>Confianza:</span>
-                      <span className="badge bg-primary" style={{ fontSize: 10 }}>
-                        {reservaDetalle.reserva?.iaConfianza ?? reservaDetalle.iaConfianza}%
-                      </span>
+                  {detalleReserva.aiResultado && (
+                    <div className="rounded-3 p-3" style={{ backgroundColor: "#e8f5e9", border: `1.5px solid ${C.verde}` }}>
+                      <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
+                        <i className="bi bi-robot" />Análisis IA
+                      </div>
+                      <div style={{ fontSize: 12, color: C.negro, whiteSpace: "pre-wrap" }}>{detalleReserva.aiResultado}</div>
+                    </div>
+                  )}
+
+                  {detalleReserva.estado === 'pendiente' && (
+                    <div className="d-flex gap-2 mt-2">
+                      <button onClick={handleAceptarReserva}
+                        className="btn fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                        style={{ backgroundColor: C.verde, color: "#fff", fontSize: 13, padding: "10px", borderRadius: 8 }}>
+                        <i className="bi bi-check-circle-fill" /> Aceptar reserva
+                      </button>
+                      <button onClick={handleRechazarReserva}
+                        className="btn fw-bold flex-grow-1 d-flex align-items-center justify-content-center gap-2"
+                        style={{ backgroundColor: C.rojo, color: "#fff", fontSize: 13, padding: "10px", borderRadius: 8 }}>
+                        <i className="bi bi-x-circle-fill" /> Rechazar
+                      </button>
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Mensaje opcional del usuario */}
-              <div>
-                <div className="fw-bold mb-1" style={{ fontSize: 13, color: C.negro }}>
-                  <i className="bi bi-chat-left-text-fill me-1 text-secondary" /> Mensaje del usuario
-                </div>
-                <div className="p-2 rounded-2 bg-white" style={{ border: `1px solid ${C.grisBorde}`, fontSize: 12, color: C.negro, minHeight: 40 }}>
-                  {reservaDetalle.reserva?.mensajeUsuario
-                    ?? reservaDetalle.reserva?.mensaje
-                    ?? reservaDetalle.mensaje
-                    ?? <span style={{ color: C.grisTexto, fontStyle: "italic" }}>Sin mensaje adjunto.</span>}
-                </div>
-              </div>
-            </div>
-
-            {/* Botonera */}
-            <div className="d-flex gap-2 px-4 py-3 bg-light" style={{ borderTop: `1px solid ${C.grisBorde}` }}>
-              <button
-                onClick={handleRechazarReserva}
-                className="btn btn-danger flex-grow-1 fw-bold d-flex align-items-center justify-content-center gap-1"
-                style={{ fontSize: 13, padding: "10px" }}
-              >
-                <i className="bi bi-x-circle-fill" /> Rechazar
-              </button>
-              <button
-                onClick={handleAceptarReserva}
-                className="btn flex-grow-1 fw-bold d-flex align-items-center justify-content-center gap-1"
-                style={{ fontSize: 13, backgroundColor: C.verde, color: "#fff", padding: "10px" }}
-              >
-                <i className="bi bi-check-circle-fill" /> Aceptar reserva
-              </button>
             </div>
           </div>
         </div>
@@ -562,4 +479,4 @@ export default function Notificaciones() {
 
     </div>
   );
-}
+} 

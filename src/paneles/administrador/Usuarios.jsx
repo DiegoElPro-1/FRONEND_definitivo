@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { ALL_POINTS, ZONAS } from "../../constants/data";
+import { ALL_POINTS } from "../../constants/data";
 import { getRolCfg, Toggle, rolDesc, ModalDetalle, TablaUsuarios } from "../../components/UserShared";
 import { getUsuarios, actualizarUsuario, eliminarUsuario } from "../../services/api";
 
@@ -28,8 +28,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
             email:    u.correo,
             telefono: u.telefono ?? "",
             rol:      "Usuario",
-            zona:     "",
-            pts:      0,
+            zona:     u.zona || "",
             activo:   u.idEstadoUsuario === 1,
             av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
             fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
@@ -77,7 +76,6 @@ export default function Usuarios({ state, dispatch, showToast }) {
           email:    form.email.trim(),
           telefono: form.telefono.trim(),
           rol:      "Usuario",
-          pts:      0,
           activo:   true,
           av:       initials,
           fechaAlta: new Date().toLocaleDateString("es-CO"),

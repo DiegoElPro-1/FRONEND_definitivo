@@ -1,72 +1,63 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { registrarse } from "../services/api";
+import { solicitarRegistro, getAliadosPublicos } from "../services/api";
 import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png'
-import Swal from "sweetalert2";
 
 function Registro() {
   const [nombre, setNombre] = useState("");
-  const [usuario, setUsuario] = useState("");
   const [correo, setCorreo] = useState("");
+  const [telefono, setTelefono] = useState("");
   const [password, setPassword] = useState("");
   const [confirmar, setConfirmar] = useState("");
-  const [terminos, setTerminos] = useState(false);
-  const [origen, setOrigen] = useState("");
+  const [rolSolicitado, setRolSolicitado] = useState("encargado");
+  const [idAliado, setIdAliado] = useState("");
+  const [mensaje, setMensaje] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [aliados, setAliados] = useState([]);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getAliadosPublicos()
+      .then(data => setAliados(data.aliados ?? data ?? []))
+      .catch(() => {});
+  }, []);
 
   const validar = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setError("");
+    setSuccess("");
 
     if (nombre.trim() === "") return setError("Nombre requerido");
-    if (usuario.trim() === "") return setError("Usuario requerido");
     if (correo.trim() === "") return setError("Correo requerido");
     if (password.trim() === "") return setError("Contraseña requerida");
     if (confirmar.trim() === "") return setError("Confirmación requerida");
     if (password !== confirmar) return setError("Las contraseñas no coinciden");
+    if (password.length < 6) return setError("La contraseña debe tener al menos 6 caracteres");
+    if (!idAliado) return setError("Selecciona un supermercado");
+
+    setLoading(true);
 
     try {
-      await registrarse({
+      await solicitarRegistro({
         nombre,
-        usuario,
         correo,
-        password
+        telefono: telefono || undefined,
+        password,
+        idAliado: parseInt(idAliado),
+        rolSolicitado,
+        mensaje: mensaje || undefined,
       });
 
-      Swal.fire({
-        title: "Selecciona un rol",
-        html: `
-          <div class="form-check text-start mb-2">
-            <input 
-              class="form-check-input" 
-              type="checkbox" 
-              id="admin"
-            >
-            <label class="form-check-label" for="admin">
-              Admin
-            </label>
-          </div>
+      setSuccess("Solicitud enviada correctamente. Recibirás un correo cuando sea revisada y aprobada.");
 
-          <div class="form-check text-start">
-            <input 
-              class="form-check-input" 
-              type="checkbox" 
-              id="encargado"
-            >
-            <label class="form-check-label" for="encargado">
-              Encargado
-            </label>
-          </div>
-        `,
-        confirmButtonText: "Aceptar"
-      });
-
-      navigate("/");
+      setTimeout(() => navigate("/login"), 4000);
 
     } catch (err) {
-      setError(err.message || "Error al registrar usuario");
+      setError(err.message || "Error al enviar solicitud");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,7 +65,6 @@ function Registro() {
     <div className="container-fluid">
       <div className="row min-vh-100">
 
-        {/* LADO IZQUIERDO */}
         <div className="col-md-6 bg-light d-flex justify-content-center align-items-center p-5">
           <img
             src={fondoReciclaje}
@@ -83,7 +73,6 @@ function Registro() {
           />
         </div>
 
-        {/* LADO DERECHO */}
         <div className="col-md-6 d-flex justify-content-center align-items-center">
 
           <div className="w-100 p-4">
@@ -93,33 +82,30 @@ function Registro() {
               <div className="text-center mb-2">
               </div>
 
-              <h1 className="text-center text-dark">Crear cuenta</h1>
+              <h1 className="text-center text-dark">Solicitar registro</h1>
 
               <h2 className="text-center fw-light text-success fs-5">
-                Es rápido y fácil
+                Para administradores y encargados
               </h2>
 
               <br />
 
               {error && (
-                <div className="alert alert-danger py-2 text-center">
-                  {error}
-                </div>
+                <div className="alert alert-danger py-2 text-center">{error}</div>
               )}
 
-              {/* NOMBRE Y USUARIO */}
+              {success && (
+                <div className="alert alert-success py-2 text-center">{success}</div>
+              )}
+
               <div className="d-flex justify-content-center gap-2">
 
                 <li className="mb-2 w-50">
-                  <label className="form-label text-dark">
-                    Nombre completo
-                  </label>
-
+                  <label className="form-label text-dark">Nombre completo</label>
                   <div className="input-group">
                     <span className="input-group-text">
                       <i className="bi bi-person"></i>
                     </span>
-
                     <input
                       className="form-control"
                       placeholder="Ingresa tu nombre completo"
@@ -130,64 +116,45 @@ function Registro() {
                 </li>
 
                 <li className="mb-2 w-50">
-                  <label className="form-label text-dark">
-                    Nombre de usuario
-                  </label>
-
+                  <label className="form-label text-dark">Teléfono</label>
                   <div className="input-group">
                     <span className="input-group-text">
-                      <i className="bi bi-at"></i>
+                      <i className="bi bi-telephone"></i>
                     </span>
-
                     <input
                       className="form-control"
-                      placeholder="Elige tu nombre de usuario"
-                      value={usuario}
-                      onChange={(e) => setUsuario(e.target.value)}
+                      placeholder="Opcional"
+                      value={telefono}
+                      onChange={(e) => setTelefono(e.target.value)}
                     />
                   </div>
                 </li>
 
               </div>
 
-              {/* CORREO */}
               <li className="mb-2">
-
-                <label className="form-label text-dark">
-                  Correo electrónico
-                </label>
-
+                <label className="form-label text-dark">Correo electrónico</label>
                 <div className="input-group">
-
                   <span className="input-group-text">
                     <i className="bi bi-envelope"></i>
                   </span>
-
                   <input
                     className="form-control"
                     placeholder="Correo electrónico"
                     value={correo}
                     onChange={(e) => setCorreo(e.target.value)}
                   />
-
                 </div>
               </li>
 
-              {/* CONTRASEÑAS */}
               <div className="d-flex justify-content-center gap-2">
 
                 <li className="mb-2 w-50">
-
-                  <label className="form-label text-dark">
-                    Contraseña
-                  </label>
-
+                  <label className="form-label text-dark">Contraseña</label>
                   <div className="input-group">
-
                     <span className="input-group-text">
                       <i className="bi bi-lock"></i>
                     </span>
-
                     <input
                       className="form-control"
                       placeholder="Crea una contraseña"
@@ -195,22 +162,15 @@ function Registro() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
-
                   </div>
                 </li>
 
                 <li className="mb-2 w-50">
-
-                  <label className="form-label text-dark">
-                    Confirmar contraseña
-                  </label>
-
+                  <label className="form-label text-dark">Confirmar contraseña</label>
                   <div className="input-group">
-
                     <span className="input-group-text">
                       <i className="bi bi-lock"></i>
                     </span>
-
                     <input
                       className="form-control"
                       placeholder="Confirma tu contraseña"
@@ -218,26 +178,80 @@ function Registro() {
                       value={confirmar}
                       onChange={(e) => setConfirmar(e.target.value)}
                     />
-
                   </div>
                 </li>
 
               </div>
 
-              {/* TERMINOS */}
               <li className="mb-2">
+                <label className="form-label text-dark">Rol solicitado</label>
+                <div className="d-flex gap-3">
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="rol"
+                      id="rolEncargado"
+                      value="encargado"
+                      checked={rolSolicitado === "encargado"}
+                      onChange={(e) => setRolSolicitado(e.target.value)}
+                    />
+                    <label className="form-check-label text-dark" htmlFor="rolEncargado">
+                      <i className="bi bi-person-badge me-1"></i>Encargado
+                    </label>
+                  </div>
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="radio"
+                      name="rol"
+                      id="rolAdmin"
+                      value="admin"
+                      checked={rolSolicitado === "admin"}
+                      onChange={(e) => setRolSolicitado(e.target.value)}
+                    />
+                    <label className="form-check-label text-dark" htmlFor="rolAdmin">
+                      <i className="bi bi-shield-lock me-1"></i>Administrador
+                    </label>
+                  </div>
+                </div>
+              </li>
 
-                <input
-                  className="form-check-input me-2"
-                  type="checkbox"
-                  checked={terminos}
-                  onChange={(e) => setTerminos(e.target.checked)}
-                />
+              <li className="mb-2">
+                <label className="form-label text-dark">Supermercado</label>
+                <div className="input-group">
+                  <span className="input-group-text">
+                    <i className="bi bi-shop"></i>
+                  </span>
+                  <select
+                    className="form-select"
+                    value={idAliado}
+                    onChange={(e) => setIdAliado(e.target.value)}
+                  >
+                    <option value="">Selecciona un supermercado</option>
+                    {aliados.map((a) => (
+                      <option key={a.idAliado} value={a.idAliado}>
+                        {a.nombre}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </li>
 
-                <span className="text-dark">
-                  Acepto los términos y condiciones y la política de privacidad
-                </span>
-
+              <li className="mb-2">
+                <label className="form-label text-dark">Mensaje (opcional)</label>
+                <div className="input-group">
+                  <span className="input-group-text">
+                    <i className="bi bi-chat-text"></i>
+                  </span>
+                  <textarea
+                    className="form-control"
+                    rows="2"
+                    placeholder="Cuéntanos por qué quieres ser {rolSolicitado} de este supermercado..."
+                    value={mensaje}
+                    onChange={(e) => setMensaje(e.target.value)}
+                  />
+                </div>
               </li>
 
             </ul>
@@ -247,7 +261,7 @@ function Registro() {
               <button
                 className="btn btn-warning text-white rounded-pill px-5 py-2 w-50"
                 onClick={validar}
-                disabled={loading}
+                disabled={loading || success}
               >
 
                 {loading ? (
@@ -256,13 +270,12 @@ function Registro() {
                       className="spinner-border spinner-border-sm me-2"
                       role="status"
                     ></span>
-
-                    Creando...
+                    Enviando...
                   </>
                 ) : (
                   <>
-                    CREAR CUENTA
-                    <i className="bi bi-leaf-fill ms-2 text-white"></i>
+                    ENVIAR SOLICITUD
+                    <i className="bi bi-send-fill ms-2 text-white"></i>
                   </>
                 )}
 
@@ -285,6 +298,16 @@ function Registro() {
                 Inicia sesión
               </a>
 
+            </div>
+
+            <div className="text-center mt-3">
+              <small className="text-muted">
+                ¿Eres un usuario particular?{' '}
+                <a href="/login" className="text-success text-decoration-none fw-bold">
+                  Inicia sesión
+                </a>
+                {' '}desde la app móvil.
+              </small>
             </div>
 
           </div>

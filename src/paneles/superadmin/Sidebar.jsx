@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { getSolicitudesPendientesCount } from "../../services/api";
 
 const USUARIOS_SUB = [
   { path: "/superadmin/usuarios",        icon: "bi-recycle",           title: "Usuarios" },
@@ -24,6 +25,18 @@ const USUARIOS_PATHS = USUARIOS_SUB.map(u => u.path);
 export default function SuperadminSidebar({ user, onLogout }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [pendientes, setPendientes] = useState(0);
+
+  useEffect(() => {
+    const checkPendientes = () => {
+      getSolicitudesPendientesCount()
+        .then(data => setPendientes(data.pendientes))
+        .catch(() => {});
+    };
+    checkPendientes();
+    const interval = setInterval(checkPendientes, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const isCatalogActive  = location.pathname.startsWith("/superadmin/catalogos");
   const isUsuariosActive = USUARIOS_PATHS.some(p => location.pathname.startsWith(p));
@@ -78,6 +91,24 @@ export default function SuperadminSidebar({ user, onLogout }) {
         >
           <i className="bi bi-shop" style={{ fontSize: 15, width: 18 }} />
           <span>Supermercados</span>
+        </NavLink>
+
+        <NavLink
+          to="/superadmin/solicitudes"
+          className={({ isActive }) =>
+            `btn d-flex align-items-center gap-2 text-start px-3 py-2 rounded-2 w-100 text-decoration-none border-0 ${
+              isActive ? "fw-semibold" : "btn-light text-secondary"
+            }`
+          }
+          style={({ isActive }) => isActive ? { background: "#16a34a", color: "#fff", fontSize: 13 } : { fontSize: 13 }}
+        >
+          <i className="bi bi-file-earmark-text" style={{ fontSize: 15, width: 18 }} />
+          <span className="flex-grow-1">Solicitudes</span>
+          {pendientes > 0 && (
+            <span className="badge bg-danger rounded-pill" style={{ fontSize: 11 }}>
+              {pendientes}
+            </span>
+          )}
         </NavLink>
 
         <div>
