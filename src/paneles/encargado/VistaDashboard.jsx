@@ -1,7 +1,7 @@
 // src/paneles/encargado/VistaDashboard.jsx
 import { useState, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
-import { getReservasEncargado, actualizarEstadoReservaEncargado } from "../../services/api";
+import { getReservasEncargado, actualizarEstadoReservaEncargado, getReservaDetalleEncargado } from "../../services/api";
 import LoadingSpinner from "../../components/LoadingSpinner";
 
 function getIniciales(nombre = "") {
@@ -23,8 +23,9 @@ function transformarReservas(reservas) {
       materiales: [],
       estado: r.estado === "confirmada" ? "Aceptada" : r.estado === "cancelada" ? "Rechazada" : r.estado === "completada" ? "Completada" : "Pendiente",
       nota: r.notas || "",
-      foto: r.imagen || null,
-      aiResultado: r.aiResultado || null,
+      foto: r.urlFoto || null,
+      iaMaterial: r.iaMaterial || null,
+      iaConfianza: r.iaConfianza || null,
       hora: r.hora,
     });
   }
@@ -78,6 +79,8 @@ export default function VistaDashboard({ showToast }) {
   const [fotoPreview, setFotoPreview] = useState(null);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
+  const [detalleReserva, setDetalleReserva] = useState(null);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
   useEffect(() => {
     let primerCarga = true;
@@ -132,6 +135,23 @@ export default function VistaDashboard({ showToast }) {
       setCitaActiva(c => ({ ...c, estado: "Aceptada" }));
       showToast?.("success", "Cita aceptada correctamente");
     } catch (e) { showToast?.("error", "Error al aceptar la cita"); }
+  };
+
+  const abrirDetalle = async (cita) => {
+    setCitaActiva(cita);
+    setPanel("detalle");
+    setDetalleReserva(null);
+    if (cita.idReserva) {
+      try {
+        setCargandoDetalle(true);
+        const data = await getReservaDetalleEncargado(cita.idReserva);
+        setDetalleReserva(data);
+      } catch {
+        // fallback: only use list data
+      } finally {
+        setCargandoDetalle(false);
+      }
+    }
   };
 
   const handleRechazar = async () => {
@@ -362,7 +382,7 @@ export default function VistaDashboard({ showToast }) {
                   <div className="d-flex flex-column gap-2" style={{ maxHeight: 340, overflowY: "auto" }}>
                     {citasFiltradas.map(cita => (
                       <button key={cita.id}
-                        onClick={() => { setCitaActiva(cita); setPanel("detalle"); }}
+                        onClick={() => abrirDetalle(cita)}
                         className="border rounded-3 p-2 text-start w-100 d-flex align-items-center gap-3"
                         style={{ cursor: "pointer", transition: "background 0.15s", borderColor: C.verdeBorde, background: C.blanco }}
                         onMouseEnter={e => { e.currentTarget.style.background = C.grisFondo; }}
@@ -402,8 +422,14 @@ export default function VistaDashboard({ showToast }) {
           {selectedDay && panel === "detalle" && citaActiva && (
             <div className="card" style={S.card}>
               <div className="card-body p-3 d-flex flex-column gap-3">
-
-                <div className="d-flex align-items-center gap-2">
+                {cargandoDetalle && (
+                  <div className="text-center py-3">
+                    <div className="spinner-border spinner-border-sm" style={{ color: C.verde }} role="status" />
+                    <div className="mt-1" style={{ fontSize: 12, color: C.grisTexto }}>Cargando detalle…</div>
+                  </div>
+                )}
+                  {!cargandoDetalle && (<>
+                  <div className="d-flex align-items-center gap-2">
                   <button className="btn btn-sm fw-bold"
                     style={{ ...S.btnSecundario, fontSize: 11, padding: "3px 10px" }}
                     onClick={() => { setPanel("lista"); setCitaActiva(null); }}>
@@ -424,27 +450,48 @@ export default function VistaDashboard({ showToast }) {
                   </div>
                 </div>
 
-                {citaActiva.foto && (
+                {(citaActiva.foto || detalleReserva?.imagenes?.length > 0) && (
                   <div>
                     <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
-                      <i className="bi bi-image-fill" style={{ color: C.verde }} />Foto del material
+                      <i className="bi bi-image-fill" style={{ color: C.verde }} />Fotos del material
                     </div>
-                    <img
-                      src={citaActiva.foto}
-                      alt="Material"
-                      className="rounded-3 w-100"
-                      style={{ maxHeight: 200, objectFit: "cover", cursor: "pointer", border: `1.5px solid ${C.verdeBorde}` }}
-                      onClick={() => setFotoPreview(citaActiva.foto)}
-                    />
+                    <div className="d-flex flex-column gap-2">
+                      {citaActiva.foto && (
+                        <img src={citaActiva.foto} alt="Material"
+                          className="rounded-3 w-100"
+                          style={{ maxHeight: 200, objectFit: "cover", cursor: "pointer", border: `1.5px solid ${C.verdeBorde}` }}
+                          onClick={() => setFotoPreview(citaActiva.foto)} />
+                      )}
+                      {detalleReserva?.imagenes?.map(img => (
+                        <img key={img.id} src={img.url} alt="Material escaneado"
+                          className="rounded-3 w-100"
+                          style={{ maxHeight: 200, objectFit: "cover", cursor: "pointer", border: `1.5px solid ${C.verdeBorde}` }}
+                          onClick={() => setFotoPreview(img.url)} />
+                      ))}
+                    </div>
                   </div>
                 )}
 
-                {citaActiva.aiResultado && (
+                {(citaActiva.iaMaterial || citaActiva.foto || detalleReserva?.imagenes?.length > 0) && (
                   <div className="rounded-3 p-3" style={{ backgroundColor: "#e8f5e9", border: `1.5px solid ${C.verde}` }}>
-                    <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
+                    <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
                       <i className="bi bi-robot" />Análisis IA
                     </div>
-                    <div style={{ fontSize: 12, color: C.negro, whiteSpace: "pre-wrap" }}>{citaActiva.aiResultado}</div>
+                    {citaActiva.iaMaterial && (
+                      <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12, color: C.negro }}>
+                        <span><strong>Material:</strong> {citaActiva.iaMaterial}</span>
+                        {citaActiva.iaConfianza && <span><strong>Confianza:</strong> {citaActiva.iaConfianza}%</span>}
+                      </div>
+                    )}
+                    {detalleReserva?.imagenes?.map(img => img.analisis && (
+                      <div key={img.id} className="rounded-2 p-2 mb-1" style={{ backgroundColor: "rgba(255,255,255,0.7)", fontSize: 12 }}>
+                        <div className="d-flex justify-content-between">
+                          <span><strong>Material:</strong> {img.analisis.material || 'No detectado'}</span>
+                          {img.analisis.confianza && <span><strong>Confianza:</strong> {typeof img.analisis.confianza === 'number' ? Math.round(img.analisis.confianza * 100) : img.analisis.confianza}%</span>}
+                        </div>
+                        <div><strong>Estado:</strong> {img.analisis.estado || 'Pendiente'}</div>
+                      </div>
+                    ))}
                   </div>
                 )}
 
@@ -497,7 +544,7 @@ export default function VistaDashboard({ showToast }) {
                   </div>
                 )}
 
-                {citaActiva.estado === "Rechazada" && (
+                {citaActiva.estado === "Rechazada" && !citaActiva.nota && (
                   <div className="rounded-3 p-3 text-center d-flex flex-column align-items-center gap-1"
                     style={{ backgroundColor: C.rojoclaro, border: `1.5px solid ${C.rojo}` }}>
                     <i className="bi bi-x-circle-fill" style={{ fontSize: 24, color: C.rojo }} />
@@ -505,6 +552,7 @@ export default function VistaDashboard({ showToast }) {
                     <div style={{ fontSize: 11, color: C.rojo }}>El usuario ha sido notificado</div>
                   </div>
                 )}
+                </>)}
               </div>
             </div>
           )}

@@ -32,6 +32,7 @@ export default function Notificaciones() {
   const [toast, setToast] = useState(null);
   const [detalleReserva, setDetalleReserva] = useState(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [filtro, setFiltro] = useState('pendientes');
   const notifRef = useRef(null);
 
   useEffect(() => {
@@ -58,7 +59,7 @@ export default function Notificaciones() {
     try {
       setCargandoDetalle(true);
       const data = await getReservaDetalleEncargado(n.idReferencia);
-      setDetalleReserva({ ...data.reserva, notificacion: n });
+      setDetalleReserva({ ...data.reserva, notificacion: n, imagenes: data.imagenes || [] });
     } catch {
       setToast({ tipo: 'error', mensaje: 'Error al cargar detalle de la reserva' });
     } finally {
@@ -113,7 +114,7 @@ export default function Notificaciones() {
     try {
       await actualizarEstadoReservaEncargado(n.idReferencia, { estado: 'confirmada' });
       await marcarNotificacionLeida(n.idNotificacion);
-      setNotis(prev => prev.filter(x => x.idNotificacion !== n.idNotificacion));
+      setNotis(prev => prev.map(x => x.idNotificacion === n.idNotificacion ? { ...x, leida: true } : x));
       setNoLeidas(prev => Math.max(0, prev - 1));
       window.dispatchEvent(new Event('reservas-actualizadas'));
       setToast({ tipo: 'exito', mensaje: 'Reserva aceptada correctamente' });
@@ -127,7 +128,7 @@ export default function Notificaciones() {
     try {
       await actualizarEstadoReservaEncargado(n.idReferencia, { estado: 'cancelada', notas: 'Rechazada por el encargado' });
       await marcarNotificacionLeida(n.idNotificacion);
-      setNotis(prev => prev.filter(x => x.idNotificacion !== n.idNotificacion));
+      setNotis(prev => prev.map(x => x.idNotificacion === n.idNotificacion ? { ...x, leida: true } : x));
       setNoLeidas(prev => Math.max(0, prev - 1));
       window.dispatchEvent(new Event('reservas-actualizadas'));
       setToast({ tipo: 'exito', mensaje: 'Reserva rechazada correctamente' });
@@ -136,11 +137,23 @@ export default function Notificaciones() {
     }
   };
 
+  const notisFiltradas = notis.filter(n => {
+    if (filtro === 'pendientes') return !n.leida;
+    return n.tipo === 'reserva';
+  });
+
   const agrupadas = {};
-  for (const n of notis) {
+  for (const n of notisFiltradas) {
     const t = n.tipo || "general";
     if (!agrupadas[t]) agrupadas[t] = [];
     agrupadas[t].push(n);
+  }
+
+  const agrupadasFull = {};
+  for (const n of notis) {
+    const t = n.tipo || "general";
+    if (!agrupadasFull[t]) agrupadasFull[t] = [];
+    agrupadasFull[t].push(n);
   }
 
   const TIPO_LABEL = {
@@ -181,25 +194,38 @@ export default function Notificaciones() {
         <div className="position-absolute bg-white rounded-3 shadow-lg overflow-hidden"
           style={{ top: 48, right: 0, width: 380, zIndex: 9999, border: `1.5px solid ${C.grisBorde}` }}>
 
-          <div className="d-flex align-items-center justify-content-between px-3 py-2"
-            style={{ borderBottom: `1px solid ${C.grisBorde}` }}>
-            <span className="fw-bold" style={{ fontSize: 14, color: C.negro }}>Notificaciones</span>
-            <div className="d-flex align-items-center gap-2">
-              {noLeidas > 0 && (
-                <button onClick={handleLeerTodas}
-                  className="btn fw-bold p-0 border-0 bg-transparent"
-                  style={{ fontSize: 11, color: C.verde }}>
-                  <i className="bi bi-check2-all me-1" />Leer todas
-                </button>
-              )}
-              <span className="fw-bold rounded-pill px-2 py-0" style={{ fontSize: 10, backgroundColor: C.verdeClaro, color: C.verdeOscuro }}>
-                {noLeidas} sin leer
-              </span>
+            <div className="d-flex align-items-center justify-content-between px-3 py-2"
+              style={{ borderBottom: `1px solid ${C.grisBorde}` }}>
+              <span className="fw-bold" style={{ fontSize: 14, color: C.negro }}>Notificaciones</span>
+              <div className="d-flex align-items-center gap-2">
+                {noLeidas > 0 && (
+                  <button onClick={handleLeerTodas}
+                    className="btn fw-bold p-0 border-0 bg-transparent"
+                    style={{ fontSize: 11, color: C.verde }}>
+                    <i className="bi bi-check2-all me-1" />Leer todas
+                  </button>
+                )}
+                <span className="fw-bold rounded-pill px-2 py-0" style={{ fontSize: 10, backgroundColor: C.verdeClaro, color: C.verdeOscuro }}>
+                  {noLeidas} sin leer
+                </span>
+              </div>
             </div>
-          </div>
 
-          <div style={{ maxHeight: 380, overflowY: "auto" }}>
-            {loading && notis.length === 0 && (
+            <div className="d-flex px-3 py-1 gap-2" style={{ borderBottom: `1px solid ${C.grisBorde}`, backgroundColor: C.grisFondo }}>
+              <button onClick={() => setFiltro('pendientes')}
+                className="btn btn-sm fw-bold px-3 py-1 border-0"
+                style={{ fontSize: 11, borderRadius: 12, backgroundColor: filtro === 'pendientes' ? C.verde : 'transparent', color: filtro === 'pendientes' ? '#fff' : C.grisTexto }}>
+                Pendientes
+              </button>
+              <button onClick={() => setFiltro('historial')}
+                className="btn btn-sm fw-bold px-3 py-1 border-0"
+                style={{ fontSize: 11, borderRadius: 12, backgroundColor: filtro === 'historial' ? C.verde : 'transparent', color: filtro === 'historial' ? '#fff' : C.grisTexto }}>
+                Historial
+              </button>
+            </div>
+
+            <div style={{ maxHeight: 340, overflowY: "auto" }}>
+              {loading && notis.length === 0 && (
               <div className="text-center py-4" style={{ color: C.grisTexto, fontSize: 12 }}>
                 <div className="spinner-border spinner-border-sm mb-2" style={{ color: C.verde }} role="status" />
                 <div>Cargando…</div>
@@ -221,7 +247,16 @@ export default function Notificaciones() {
               </div>
             )}
 
-            {notis.slice(0, 10).map(n => {
+            {!loading && !error && notis.length > 0 && notisFiltradas.length === 0 && (
+              <div className="text-center py-4">
+                <i className="bi bi-check2-all d-block mb-2" style={{ fontSize: 24, color: C.verdeOscuro }} />
+                <span style={{ fontSize: 12, color: C.grisTexto }}>
+                  {filtro === 'pendientes' ? 'No hay notificaciones pendientes' : 'No hay reservas en el historial'}
+                </span>
+              </div>
+            )}
+
+            {notisFiltradas.slice(0, 10).map(n => {
               const info = TIPO_ICON[n.tipo] || { icon: "bi-bell-fill", color: C.verde };
               return (
                 <div key={n.idNotificacion} onClick={() => { if (n.tipo === 'reserva') openDetalleReserva(n); else handleLeer(n.idNotificacion); }}
@@ -248,9 +283,9 @@ export default function Notificaciones() {
               );
             })}
 
-            {notis.length > 10 && (
+            {notisFiltradas.length > 10 && (
               <div className="text-center py-2" style={{ borderTop: `1px solid ${C.grisBorde}` }}>
-                <span style={{ fontSize: 11, color: C.grisTexto }}>y {notis.length - 10} más</span>
+                <span style={{ fontSize: 11, color: C.grisTexto }}>y {notisFiltradas.length - 10} más</span>
               </div>
             )}
           </div>
@@ -285,14 +320,14 @@ export default function Notificaciones() {
             </div>
 
             <div style={{ overflowY: "auto", flex: 1 }}>
-              {Object.keys(agrupadas).length === 0 && (
+              {notis.length === 0 && (
                 <div className="text-center py-5">
                   <i className="bi bi-bell-slash d-block mb-2" style={{ fontSize: 36, color: C.grisTexto }} />
                   <span style={{ fontSize: 14, color: C.grisTexto }}>No hay notificaciones</span>
                 </div>
               )}
 
-              {Object.entries(agrupadas).map(([tipo, lista]) => (
+              {Object.entries(agrupadasFull).map(([tipo, lista]) => (
                 <div key={tipo}>
                   <div className="px-4 py-2 fw-bold d-flex align-items-center gap-2"
                     style={{ fontSize: 12, color: C.verdeOscuro, backgroundColor: C.verdeClaro, borderBottom: `1px solid ${C.grisBorde}` }}>
@@ -382,9 +417,12 @@ export default function Notificaciones() {
                     </div>
                   </div>
 
-                  <div className="d-flex gap-2" style={{ fontSize: 12, color: C.grisTexto }}>
+                  <div className="d-flex gap-2 align-items-center" style={{ fontSize: 12, color: C.grisTexto }}>
                     <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-calendar3" />{detalleReserva.fecha}</span>
                     <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-clock" />{detalleReserva.hora}</span>
+                    <span className={`badge fw-bold ms-auto px-2 py-1`} style={{ fontSize: 10, backgroundColor: detalleReserva.estado === 'pendiente' ? '#ffc107' : detalleReserva.estado === 'confirmada' ? '#198754' : detalleReserva.estado === 'cancelada' ? '#dc3545' : '#6c757d', color: '#fff' }}>
+                      {detalleReserva.estado === 'pendiente' ? 'Pendiente' : detalleReserva.estado === 'confirmada' ? 'Aceptada' : detalleReserva.estado === 'cancelada' ? 'Rechazada' : detalleReserva.estado === 'completada' ? 'Completada' : detalleReserva.estado}
+                    </span>
                   </div>
 
                   {detalleReserva.notificacion?.mensaje && (
@@ -394,23 +432,46 @@ export default function Notificaciones() {
                     </div>
                   )}
 
-                  {detalleReserva.imagen && (
+                  {(detalleReserva.urlFoto || detalleReserva.imagenes?.length > 0) && (
                     <div>
                       <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
-                        <i className="bi bi-image-fill" style={{ color: C.verde }} />Foto del material
+                        <i className="bi bi-image-fill" style={{ color: C.verde }} />Fotos del material
                       </div>
-                      <img src={detalleReserva.imagen} alt="Material"
-                        className="rounded-3 w-100"
-                        style={{ maxHeight: 200, objectFit: "cover", border: `1.5px solid ${C.verdeBorde}` }} />
+                      {detalleReserva.urlFoto && (
+                        <img src={detalleReserva.urlFoto} alt="Material"
+                          className="rounded-3 w-100 mb-2"
+                          style={{ maxHeight: 200, objectFit: "cover", border: `1.5px solid ${C.verdeBorde}` }} />
+                      )}
+                      {detalleReserva.imagenes.map(img => (
+                        <img key={img.id} src={img.url} alt="Material escaneado"
+                          className="rounded-3 w-100 mb-2"
+                          style={{ maxHeight: 200, objectFit: "cover", border: `1.5px solid ${C.verdeBorde}` }} />
+                      ))}
                     </div>
                   )}
 
-                  {detalleReserva.aiResultado && (
+                  {(detalleReserva.iaMaterial || detalleReserva.imagenes?.length > 0) && (
                     <div className="rounded-3 p-3" style={{ backgroundColor: "#e8f5e9", border: `1.5px solid ${C.verde}` }}>
-                      <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
+                      <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
                         <i className="bi bi-robot" />Análisis IA
                       </div>
-                      <div style={{ fontSize: 12, color: C.negro, whiteSpace: "pre-wrap" }}>{detalleReserva.aiResultado}</div>
+                      {detalleReserva.iaMaterial && (
+                        <div className="mb-2" style={{ fontSize: 12, color: C.negro }}>
+                          <div className="d-flex justify-content-between mb-1">
+                            <span><strong>Material:</strong> {detalleReserva.iaMaterial}</span>
+                            {detalleReserva.iaConfianza && <span><strong>Confianza:</strong> {detalleReserva.iaConfianza}%</span>}
+                          </div>
+                        </div>
+                      )}
+                      {detalleReserva.imagenes.map(img => img.analisis && (
+                        <div key={img.id} className="rounded-2 p-2 mb-1" style={{ backgroundColor: "rgba(255,255,255,0.7)", fontSize: 12 }}>
+                          <div className="d-flex justify-content-between">
+                            <span><strong>Material:</strong> {img.analisis.material || 'No detectado'}</span>
+                            {img.analisis.confianza && <span><strong>Confianza:</strong> {typeof img.analisis.confianza === 'number' ? Math.round(img.analisis.confianza * 100) : img.analisis.confianza}%</span>}
+                          </div>
+                          <div><strong>Estado:</strong> {img.analisis.estado || 'Pendiente'}</div>
+                        </div>
+                      ))}
                     </div>
                   )}
 
