@@ -6,7 +6,6 @@ import {
   actualizarEncargado,
   eliminarEncargado,
   getAliados,
-  getZonas,
 } from "../../services/api";
 
 function Toggle({ checked, onChange }) {
@@ -80,7 +79,8 @@ function ModalDetalle({ user, onClose, onSave, showToast, aliadosList, zonasList
   const id = e.target.value ? Number(e.target.value) : null;
   set("idAliado", id);
   const a = (aliadosList || []).find(x => x.idAliado === id);
-  if (a?.zona) set("zona", a.zona);
+  const zonaCompletaEdit = (aa) => aa ? (aa.direccion ? `${aa.zona} - ${aa.direccion}` : (aa.zona || "")) : "";
+  if (a) set("zona", zonaCompletaEdit(a));
 }}>
                   <option value="">Sin asignar</option>
                   {(aliadosList || []).map((a) => (
@@ -95,10 +95,7 @@ function ModalDetalle({ user, onClose, onSave, showToast, aliadosList, zonasList
             </div>
             <div>
               <label className="panel-label">Zona</label>
-              <select className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)}>
-                <option value="">Sin zona</option>
-                {zonasList.map((z) => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
-              </select>
+              <input className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)} placeholder="Sin zona" />
             </div>
           </div>
         </div>
@@ -174,7 +171,7 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
 }
 
 const EMPTY_FORM = {
-  nombre: "", email: "", telefono: "", zona: "",
+  nombre: "", email: "", telefono: "", cedula: "", zona: "",
   puntoAsignado: "", activo: true, idAliado: "",
 };
 
@@ -187,7 +184,6 @@ export default function Encargados({ state, dispatch, showToast, user }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aliadosList, setAliadosList] = useState([]);
-  const [zonasList, setZonasList] = useState([]);
 
   useEffect(() => {
     getEncargados()
@@ -212,24 +208,22 @@ export default function Encargados({ state, dispatch, showToast, user }) {
       .finally(() => setLoading(false));
   }, [dispatch, showToast]);
 
+  const zonaCompleta = (a) => {
+    if (!a) return "";
+    return a.direccion ? `${a.zona} - ${a.direccion}` : (a.zona || "");
+  };
+
   const cargarAliados = () => {
     getAliados().then((data) => {
       setAliadosList(data.aliados ?? []);
     }).catch(() => {});
   };
 
-  const cargarZonas = () => {
-    getZonas().then((data) => {
-      setZonasList(data.zonas ?? []);
-    }).catch(() => {});
-  };
-
-  useEffect(() => { cargarAliados(); cargarZonas(); }, []);
+  useEffect(() => { cargarAliados(); }, []);
 
   useEffect(() => {
     if (modal) {
       cargarAliados();
-      cargarZonas();
       if (user && !user.esSuperAdmin && user.idAliado) {
         setForm((f) => ({ ...f, idAliado: user.idAliado }));
       }
@@ -237,13 +231,13 @@ export default function Encargados({ state, dispatch, showToast, user }) {
   }, [modal, user]);
 
   useEffect(() => {
-    if (viewUser) { cargarAliados(); cargarZonas(); }
+    if (viewUser) { cargarAliados(); }
   }, [viewUser]);
 
   useEffect(() => {
     if (form.idAliado && aliadosList.length > 0) {
       const a = aliadosList.find(x => x.idAliado === (form.idAliado === "" ? null : Number(form.idAliado)));
-      if (a?.zona) setForm(f => ({ ...f, zona: a.zona }));
+      if (a) setForm(f => ({ ...f, zona: zonaCompleta(a) }));
     }
   }, [form.idAliado, aliadosList]);
 
@@ -278,6 +272,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
         nombre: form.nombre.trim(),
         correo: form.email.trim(),
         telefono: form.telefono.trim(),
+        cedula: form.cedula.trim() || undefined,
         zona: form.zona,
         idAliado: form.idAliado || undefined,
       });
@@ -382,7 +377,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
         <TablaEncargados lista={filtered} onToggle={handleToggle} onVer={setViewUser} onEliminar={handleEliminar} />
       </div>
 
-      <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} aliadosList={aliadosList} zonasList={zonasList} saving={saving} currentUser={user} />
+      <ModalDetalle user={viewUser} onClose={() => setViewUser(null)} onSave={handleSave} showToast={showToast} aliadosList={aliadosList} saving={saving} currentUser={user} />
 
       {modal && (
         <div className="panel-modal-bg" onClick={(ev) => { if (ev.target === ev.currentTarget) cerrarModal(); }}>
@@ -416,6 +411,13 @@ export default function Encargados({ state, dispatch, showToast, user }) {
                 </div>
 
                 <div>
+                  <label className="panel-label">Cédula</label>
+                  <input className="panel-input" value={form.cedula}
+                    onChange={(e) => set("cedula", e.target.value.replace(/\D/g, ""))}
+                    placeholder="Número de cédula" />
+                </div>
+
+                <div>
                   <label className="panel-label">Teléfono *</label>
                   <input className="panel-input" value={form.telefono}
                     onChange={(e) => set("telefono", e.target.value.replace(/\D/g, "").slice(0, 10))}
@@ -432,10 +434,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
 
                 <div>
                   <label className="panel-label">Zona</label>
-                  <select className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)}>
-                    <option value="">Sin zona</option>
-                    {zonasList.map((z) => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
-                  </select>
+                  <input className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)} placeholder="Sin zona" />
                 </div>
 
                 <div>
@@ -450,7 +449,7 @@ export default function Encargados({ state, dispatch, showToast, user }) {
                         const id = e.target.value ? Number(e.target.value) : "";
                         set("idAliado", id);
                         const a = aliadosList.find(x => x.idAliado === id);
-                        if (a?.zona) set("zona", a.zona);
+                        if (a) set("zona", zonaCompleta(a));
                       }}>
                       <option value="">Sin asignar</option>
                       {aliadosList.map((a) => (

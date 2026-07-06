@@ -69,6 +69,15 @@ export default function Notificaciones() {
   useEffect(() => { cargar(); }, []);
 
   useEffect(() => {
+    const intervalo = setInterval(cargar, 10000);
+    window.addEventListener('reservas-actualizadas', cargar);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener('reservas-actualizadas', cargar);
+    };
+  }, []);
+
+  useEffect(() => {
     const handler = (e) => {
       if (notifRef.current && !notifRef.current.contains(e.target)) {
         setAbierto(false);

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { ROLES_CFG } from "../constants/data";
-import { getZonas } from "../services/api";
 
 export const rolDesc = {
   "Admin":     "Acceso total al sistema, puede gestionar usuarios y configuración.",
@@ -54,17 +53,10 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
   const [form,   setForm]   = useState(null);
   const [errors, setErrors] = useState({});
   const [materialesSel, setMaterialesSel] = useState([]);
-  const [zonasList, setZonasList] = useState([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (user) { setForm({ ...user }); setMaterialesSel(user.materialesIds || []); setErrors({}); }
-  }, [user]);
-
-  useEffect(() => {
-    if (user) {
-      getZonas().then(data => setZonasList(data.zonas ?? [])).catch(() => {});
-    }
   }, [user]);
 
   if (!user || !form) return null;
@@ -216,7 +208,7 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
                       const id = e.target.value ? Number(e.target.value) : null;
                       set("idAliado", id);
                       const a = (aliadosList || []).find(x => x.idAliado === id);
-                      if (a?.zona) set("zona", a.zona);
+                      if (a) set("zona", a.direccion ? `${a.zona} - ${a.direccion}` : (a.zona || ""));
                     }}
                   >
                     <option value="">Sin asignar</option>
@@ -231,14 +223,12 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
                 <label className="form-label fw-semibold small text-secondary mb-1">
                   <i className="bi bi-geo-alt me-1"></i>Zona
                 </label>
-                <select
-                  className="form-select form-select-sm bg-light rounded-3"
+                <input
+                  className="form-control form-control-sm bg-light rounded-3"
                   value={form.zona || ""}
                   onChange={e => set("zona", e.target.value)}
-                >
-                  <option value="">Sin zona</option>
-                  {zonasList.map(z => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
-                </select>
+                  placeholder="Sin zona"
+                />
               </div>
             </div>
 

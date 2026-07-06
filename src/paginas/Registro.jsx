@@ -5,6 +5,7 @@ import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png'
 
 function Registro() {
   const [nombre, setNombre] = useState("");
+  const [cedula, setCedula] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
   const [password, setPassword] = useState("");
@@ -42,6 +43,7 @@ function Registro() {
     try {
       await solicitarRegistro({
         nombre,
+        cedula: cedula || undefined,
         correo,
         telefono: telefono || undefined,
         password,
@@ -114,6 +116,25 @@ function Registro() {
                     />
                   </div>
                 </li>
+
+                <li className="mb-2 w-50">
+                  <label className="form-label text-dark">Cédula</label>
+                  <div className="input-group">
+                    <span className="input-group-text">
+                      <i className="bi bi-credit-card"></i>
+                    </span>
+                    <input
+                      className="form-control"
+                      placeholder="Número de cédula"
+                      value={cedula}
+                      onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))}
+                    />
+                  </div>
+                </li>
+
+              </div>
+
+              <div className="d-flex justify-content-center gap-2">
 
                 <li className="mb-2 w-50">
                   <label className="form-label text-dark">Teléfono</label>

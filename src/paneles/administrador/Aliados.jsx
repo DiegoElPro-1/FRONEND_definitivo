@@ -113,6 +113,7 @@ export default function Aliados({
           rol: "Afiliado",
 
           zona: u.zona ?? "",
+          direccion: u.direccion ?? "",
 
           activo:
             u.estadoAliado
