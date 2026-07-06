@@ -70,6 +70,7 @@ export default function Canjes({ showToast }) {
   const [comprobante,   setComprobante]   = useState(null);
   const [buscandoUser,  setBuscandoUser]  = useState(false);
   const [noEncontrado,  setNoEncontrado]  = useState(false);
+  const [listaUsuarios, setListaUsuarios] = useState([]);
 
   const [entregas,      setEntregas]      = useState([]);
   const [recompensas,   setRecompensas]   = useState([]);
@@ -80,17 +81,14 @@ export default function Canjes({ showToast }) {
   useEffect(() => {
     cargarRecompensas();
     cargarHistorial();
+    buscarPorCedula('');
   }, []);
 
   useEffect(() => {
-    if (cedula.trim().length >= 5) {
-      setNoEncontrado(false);
-      setUsuarioSel(null);
-      const t = setTimeout(() => buscarPorCedula(cedula.trim()), 400);
-      return () => clearTimeout(t);
-    }
-    setUsuarioSel(null);
     setNoEncontrado(false);
+    setUsuarioSel(null);
+    const t = setTimeout(() => buscarPorCedula(cedula.trim()), 400);
+    return () => clearTimeout(t);
   }, [cedula]);
 
   useEffect(() => {
@@ -131,9 +129,13 @@ export default function Canjes({ showToast }) {
     try {
       const data = await buscarUsuariosEncargado(c);
       const usuarios = data.usuarios ?? [];
+      setListaUsuarios(usuarios);
       if (usuarios.length === 1) {
         setUsuarioSel(usuarios[0]);
         setRecompSel(null);
+        setListaUsuarios([]);
+      } else if (usuarios.length > 1) {
+        setUsuarioSel(null);
       } else {
         setUsuarioSel(null);
         setNoEncontrado(true);
@@ -161,7 +163,7 @@ export default function Canjes({ showToast }) {
 
   const limpiar = () => {
     setCedula(""); setUsuarioSel(null);
-    setRecompSel(null); setNoEncontrado(false);
+    setRecompSel(null); setNoEncontrado(false); setListaUsuarios([]);
   };
 
   const getFvp = (obj) => {
@@ -278,10 +280,10 @@ export default function Canjes({ showToast }) {
                     <span className="input-group-text bg-white" style={{ border: `1.5px solid ${C.verdeBorde}` }}>
                       <i className="bi bi-credit-card text-secondary" />
                     </span>
-                    <input type="text" className="form-control" placeholder="Número de cédula"
+                    <input type="text" className="form-control" placeholder="Nombre o cédula"
                       value={cedula}
                       style={{ ...S.input, fontSize: 13 }}
-                      onChange={(e) => { setCedula(e.target.value.replace(/\D/g, "")); }}
+                      onChange={(e) => { setCedula(e.target.value); }}
                       inputMode="numeric"
                     />
                     {cedula && (
@@ -297,10 +299,31 @@ export default function Canjes({ showToast }) {
                     </div>
                   )}
 
-                  {noEncontrado && !buscandoUser && cedula.trim().length >= 5 && (
+                  {noEncontrado && !buscandoUser && cedula.trim().length >= 1 && (
                     <div className="mt-1 px-3 py-2 rounded-2"
                       style={{ fontSize: 13, color: "#991b1b", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
-                      <i className="bi bi-exclamation-circle me-2" />No se encontró ningún usuario con esa cédula
+                      <i className="bi bi-exclamation-circle me-2" />No se encontró ningún usuario
+                    </div>
+                  )}
+
+                  {listaUsuarios.length > 0 && (
+                    <div className="mt-1 rounded-2" style={{ maxHeight: 200, overflowY: "auto", border: "1px solid #e5e7eb" }}>
+                      {listaUsuarios.map((u) => (
+                        <div key={u.idUsuario}
+                          className="d-flex align-items-center gap-2 px-3 py-2"
+                          style={{ cursor: "pointer", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                          onClick={() => { setUsuarioSel(u); setRecompSel(null); setListaUsuarios([]); }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ""}
+                        >
+                          <Av text={getIniciales(u.nombre)} size={32} />
+                          <div>
+                            <div className="fw-semibold" style={{ color: C.negro }}>{u.nombre}</div>
+                            <div style={{ fontSize: 11, color: C.grisTexto }}>{u.correo}</div>
+                          </div>
+                          <div className="ms-auto fw-bold" style={{ fontSize: 13, color: C.verdeOscuro }}>{u.puntosDisponibles} pts</div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
