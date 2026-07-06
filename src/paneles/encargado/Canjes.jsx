@@ -64,13 +64,13 @@ const MATERIAL_ICON = {
 
 export default function Canjes({ showToast }) {
   const [tab,           setTab]           = useState("canjear");
-  const [busqueda,      setBusqueda]      = useState("");
+  const [cedula,        setCedula]        = useState("");
   const [usuarioSel,    setUsuarioSel]    = useState(null);
   const [recompSel,     setRecompSel]     = useState(null);
   const [comprobante,   setComprobante]   = useState(null);
-  const [mostrarDrop,   setMostrarDrop]   = useState(false);
+  const [buscandoUser,  setBuscandoUser]  = useState(false);
+  const [noEncontrado,  setNoEncontrado]  = useState(false);
 
-  const [usuarios,      setUsuarios]      = useState([]);
   const [entregas,      setEntregas]      = useState([]);
   const [recompensas,   setRecompensas]   = useState([]);
   const [historial,     setHistorial]     = useState([]);
@@ -83,12 +83,15 @@ export default function Canjes({ showToast }) {
   }, []);
 
   useEffect(() => {
-    if (busqueda.trim().length > 0) {
-      const t = setTimeout(() => cargarUsuarios(busqueda), 300);
+    if (cedula.trim().length >= 5) {
+      setNoEncontrado(false);
+      setUsuarioSel(null);
+      const t = setTimeout(() => buscarPorCedula(cedula.trim()), 400);
       return () => clearTimeout(t);
     }
-    setUsuarios([]);
-  }, [busqueda]);
+    setUsuarioSel(null);
+    setNoEncontrado(false);
+  }, [cedula]);
 
   useEffect(() => {
     if (usuarioSel) {
@@ -122,17 +125,24 @@ export default function Canjes({ showToast }) {
     }
   };
 
-  const cargarUsuarios = async (q) => {
-    setCargando((p) => ({ ...p, usuarios: true }));
+  const buscarPorCedula = async (c) => {
+    setBuscandoUser(true);
+    setNoEncontrado(false);
     try {
-      const data = await buscarUsuariosEncargado(q);
-      setUsuarios(data.usuarios ?? []);
-    } catch (err) {
-      setUsuarios([]);
-      setError(err.message);
-      setTimeout(() => setError(null), 4000);
+      const data = await buscarUsuariosEncargado(c);
+      const usuarios = data.usuarios ?? [];
+      if (usuarios.length === 1) {
+        setUsuarioSel(usuarios[0]);
+        setRecompSel(null);
+      } else {
+        setUsuarioSel(null);
+        setNoEncontrado(true);
+      }
+    } catch {
+      setUsuarioSel(null);
+      setNoEncontrado(true);
     } finally {
-      setCargando((p) => ({ ...p, usuarios: false }));
+      setBuscandoUser(false);
     }
   };
 
@@ -149,18 +159,9 @@ export default function Canjes({ showToast }) {
     }
   };
 
-  const usuariosFiltrados = busqueda.trim().length > 0 && !usuarioSel ? usuarios : [];
-
-  const seleccionarUsuario = (u) => {
-    setUsuarioSel(u);
-    setBusqueda(u.nombre);
-    setMostrarDrop(false);
-    setRecompSel(null);
-  };
-
   const limpiar = () => {
-    setBusqueda(""); setUsuarioSel(null);
-    setRecompSel(null); setMostrarDrop(false);
+    setCedula(""); setUsuarioSel(null);
+    setRecompSel(null); setNoEncontrado(false);
   };
 
   const getFvp = (obj) => {
@@ -268,59 +269,38 @@ export default function Canjes({ showToast }) {
             <div className="card mb-3" style={S.card}>
               <div className="card-body p-3">
                 <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
-                  <i className="bi bi-person" style={{ color: C.verde }} />Buscar usuario
+                  <i className="bi bi-person" style={{ color: C.verde }} />Verificar identidad
                 </div>
-                <div className="fw-semibold mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Escribe el nombre del reciclador</div>
+                <div className="fw-semibold mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Solicita el documento de identidad al reciclador</div>
 
                 <div className="position-relative">
                   <div className="input-group">
                     <span className="input-group-text bg-white" style={{ border: `1.5px solid ${C.verdeBorde}` }}>
-                      <i className="bi bi-search text-secondary" />
+                      <i className="bi bi-credit-card text-secondary" />
                     </span>
-                    <input type="text" className="form-control" placeholder="Ej: Diego Ramírez"
-                      value={busqueda}
+                    <input type="text" className="form-control" placeholder="Número de cédula"
+                      value={cedula}
                       style={{ ...S.input, fontSize: 13 }}
-                      onChange={(e) => { setBusqueda(e.target.value); setUsuarioSel(null); setMostrarDrop(true); }}
+                      onChange={(e) => { setCedula(e.target.value.replace(/\D/g, "")); }}
+                      inputMode="numeric"
                     />
-                    {busqueda && (
+                    {cedula && (
                       <button className="btn btn-outline-secondary" style={{ border: `1.5px solid ${C.verdeBorde}` }} onClick={limpiar}>
                         <i className="bi bi-x-lg" />
                       </button>
                     )}
                   </div>
 
-                  {mostrarDrop && usuariosFiltrados.length > 0 && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1" style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}` }}>
-                      {usuariosFiltrados.map((u) => (
-                        <button key={u.idUsuario}
-                          className="btn w-100 d-flex align-items-center gap-3 px-3 py-2 text-start border-0 rounded-0"
-                          onClick={() => seleccionarUsuario(u)} style={{ fontSize: 13 }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = C.verdeClaro}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                          <Av text={getIniciales(u.nombre)} size={34} />
-                          <div>
-                            <div className="fw-bold" style={{ color: C.negro }}>{u.nombre}</div>
-                            <div style={{ fontSize: 11, color: C.grisTexto }}>
-                              <i className="bi bi-star-fill me-1" style={{ color: C.verde }} />
-                              {u.puntosDisponibles} puntos disponibles
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {mostrarDrop && busqueda.trim().length > 0 && usuariosFiltrados.length === 0 && !cargando.usuarios && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1 px-3 py-2"
-                      style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}`, fontSize: 13, color: C.grisTexto }}>
-                      Sin resultados para "{busqueda}"
-                    </div>
-                  )}
-
-                  {mostrarDrop && cargando.usuarios && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1 d-flex justify-content-center"
-                      style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}`, padding: "8px 0" }}>
+                  {buscandoUser && (
+                    <div className="mt-1 d-flex justify-content-center px-3 py-2">
                       <LoadingSpinner size="sm" text="Buscando" />
+                    </div>
+                  )}
+
+                  {noEncontrado && !buscandoUser && cedula.trim().length >= 5 && (
+                    <div className="mt-1 px-3 py-2 rounded-2"
+                      style={{ fontSize: 13, color: "#991b1b", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
+                      <i className="bi bi-exclamation-circle me-2" />No se encontró ningún usuario con esa cédula
                     </div>
                   )}
                 </div>

@@ -7,13 +7,13 @@ import {
   actualizarAdmin,
   eliminarAdmin,
   getAliados,
-  getZonas,
 } from "../../services/api";
 
 const EMPTY_FORM = {
   nombre: "",
   email: "",
   telefono: "",
+  cedula: "",
   rol: "Admin",
   activo: true,
   idAliado: "",
@@ -33,7 +33,6 @@ export default function Administradores({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [aliados, setAliados] = useState([]);
-  const [zonasList, setZonasList] = useState([]);
   const esSuperAdmin = user?.esSuperAdmin;
 
   const cargarAliados = () => {
@@ -42,10 +41,9 @@ export default function Administradores({
     }).catch(() => {});
   };
 
-  const cargarZonas = () => {
-    getZonas().then(data => {
-      setZonasList(data.zonas ?? []);
-    }).catch(() => {});
+  const zonaCompleta = (a) => {
+    if (!a) return "";
+    return a.direccion ? `${a.zona} - ${a.direccion}` : (a.zona || "");
   };
 
   useEffect(() => {
@@ -84,8 +82,7 @@ export default function Administradores({
 
   useEffect(() => {
     if (modal) {
-      if (esSuperAdmin) cargarAliados();
-      cargarZonas();
+      cargarAliados();
       if (!esSuperAdmin && user?.idAliado) {
         setForm((f) => ({ ...f, idAliado: user.idAliado }));
       }
@@ -95,7 +92,7 @@ export default function Administradores({
   useEffect(() => {
     if (form.idAliado && aliados.length > 0) {
       const a = aliados.find(x => x.idAliado === (form.idAliado === "" ? null : Number(form.idAliado)));
-      if (a?.zona) setForm(f => ({ ...f, zona: a.zona }));
+      if (a) setForm(f => ({ ...f, zona: zonaCompleta(a) }));
     }
   }, [form.idAliado, aliados]);
 
@@ -137,6 +134,7 @@ export default function Administradores({
         nombre: form.nombre.trim(),
         correo: form.email.trim(),
         telefono: form.telefono.trim(),
+        cedula: form.cedula.trim() || undefined,
         zona: form.zona || null,
       };
       if (form.idAliado) {
@@ -195,7 +193,8 @@ export default function Administradores({
         payload.idAliado = u.idAliado || null;
       }
       await actualizarAdmin(u.id, payload);
-      dispatch({ type: "UPDATE_USER", payload: u });
+      const z = u.zona || "";
+      dispatch({ type: "UPDATE_USER", payload: { ...u, zona: z } });
       showToast("Cambios guardados correctamente");
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
@@ -302,6 +301,11 @@ export default function Administradores({
                 </div>
 
                 <div>
+                  <label className="panel-label">Cédula</label>
+                  <input className="panel-input" value={form.cedula} onChange={(e) => set("cedula", e.target.value.replace(/\D/g, ""))} placeholder="Número de cédula" />
+                </div>
+
+                <div>
                   <label className="panel-label">Teléfono *</label>
                   <input className="panel-input" value={form.telefono} onChange={(e) => set("telefono", e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="3001234567" />
                   {errors.telefono && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.telefono}</span>}
@@ -313,7 +317,7 @@ export default function Administradores({
                     <select className="panel-input" value={form.idAliado} onChange={(e) => {
                       set("idAliado", e.target.value);
                       const a = aliados.find(x => x.idAliado === Number(e.target.value));
-                      if (a?.zona) set("zona", a.zona);
+                      if (a) set("zona", zonaCompleta(a));
                     }} style={errors.idAliado ? { borderColor: "var(--rojo)" } : {}}>
                       <option value="">Seleccionar supermercado...</option>
                       {aliados.map((a) => (
@@ -333,10 +337,7 @@ export default function Administradores({
 
                 <div>
                   <label className="panel-label">Zona</label>
-                  <select className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)}>
-                    <option value="">Sin zona</option>
-                    {zonasList.map((z) => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
-                  </select>
+                  <input className="panel-input" value={form.zona || ""} onChange={(e) => set("zona", e.target.value)} placeholder="Sin zona" />
                 </div>
 
                 <div className="full">
