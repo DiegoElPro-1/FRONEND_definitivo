@@ -55,6 +55,7 @@ export default function Notificaciones() {
     }
   };
 
+  
   const openDetalleReserva = async (n) => {
     try {
       setCargandoDetalle(true);
