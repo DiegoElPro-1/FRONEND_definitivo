@@ -417,9 +417,12 @@ export default function Notificaciones() {
                     </div>
                   </div>
 
-                  <div className="d-flex gap-2" style={{ fontSize: 12, color: C.grisTexto }}>
+                  <div className="d-flex gap-2 align-items-center" style={{ fontSize: 12, color: C.grisTexto }}>
                     <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-calendar3" />{detalleReserva.fecha}</span>
                     <span className="fw-bold d-flex align-items-center gap-1"><i className="bi bi-clock" />{detalleReserva.hora}</span>
+                    <span className={`badge fw-bold ms-auto px-2 py-1`} style={{ fontSize: 10, backgroundColor: detalleReserva.estado === 'pendiente' ? '#ffc107' : detalleReserva.estado === 'confirmada' ? '#198754' : detalleReserva.estado === 'cancelada' ? '#dc3545' : '#6c757d', color: '#fff' }}>
+                      {detalleReserva.estado === 'pendiente' ? 'Pendiente' : detalleReserva.estado === 'confirmada' ? 'Aceptada' : detalleReserva.estado === 'cancelada' ? 'Rechazada' : detalleReserva.estado === 'completada' ? 'Completada' : detalleReserva.estado}
+                    </span>
                   </div>
 
                   {detalleReserva.notificacion?.mensaje && (
