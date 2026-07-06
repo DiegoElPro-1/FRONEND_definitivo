@@ -422,8 +422,14 @@ export default function VistaDashboard({ showToast }) {
           {selectedDay && panel === "detalle" && citaActiva && (
             <div className="card" style={S.card}>
               <div className="card-body p-3 d-flex flex-column gap-3">
-
-                <div className="d-flex align-items-center gap-2">
+                {cargandoDetalle && (
+                  <div className="text-center py-3">
+                    <div className="spinner-border spinner-border-sm" style={{ color: C.verde }} role="status" />
+                    <div className="mt-1" style={{ fontSize: 12, color: C.grisTexto }}>Cargando detalle…</div>
+                  </div>
+                )}
+                  {!cargandoDetalle && (<>
+                  <div className="d-flex align-items-center gap-2">
                   <button className="btn btn-sm fw-bold"
                     style={{ ...S.btnSecundario, fontSize: 11, padding: "3px 10px" }}
                     onClick={() => { setPanel("lista"); setCitaActiva(null); }}>
@@ -546,6 +552,7 @@ export default function VistaDashboard({ showToast }) {
                     <div style={{ fontSize: 11, color: C.rojo }}>El usuario ha sido notificado</div>
                   </div>
                 )}
+                </>)}
               </div>
             </div>
           )}
