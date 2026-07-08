@@ -147,8 +147,6 @@ export default function RegistrarEntrega({ showToast }) {
             <div className="fw-bold mb-1" style={{ fontSize: 11, color: C.verde, letterSpacing: 1 }}>CÓDIGO DE ENTREGA</div>
             <div className="fw-bold" style={{ fontSize: 22, letterSpacing: 3, color: C.verdeOscuro }}>{codigoEntrega}</div>
           </div>
-          <img src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${codigoEntrega}`}
-            alt="QR de entrega" style={{ borderRadius: 8, border: `1.5px solid ${C.verdeBorde}` }} />
         </div>
         <div className="d-flex justify-content-center gap-2 mb-4 flex-wrap">
           {resumen.estadoMaterial && (
