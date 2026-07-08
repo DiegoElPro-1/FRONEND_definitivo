@@ -5,9 +5,8 @@ import {
   crearMaterial,
   actualizarMaterial,
   eliminarMaterial,
+  getZonas,
 } from "../../services/api";
-
-const ZONAS     = ["Norte", "Sur", "Centro", "Oriente", "Occidente"];
 const UNIDADES  = ["kg", "g", "tonelada", "unidad"];
 const CATEGORIAS = ["Organico", "Electronico", "Textil"];
 const COLORES_CANECA = ["Verde", "Amarillo", "Azul", "Rojo"];
@@ -29,8 +28,9 @@ export default function VistaMateriales({ showToast }) {
   const [form, setForm]             = useState(EMPTY_FORM);
   const [saving, setSaving]         = useState(false);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [zonasList, setZonasList] = useState([]);
 
-  useEffect(() => { cargarMateriales(); }, []);
+  useEffect(() => { cargarMateriales(); cargarZonas(); }, []);
 
   async function cargarMateriales() {
     setLoading(true);
@@ -43,6 +43,10 @@ export default function VistaMateriales({ showToast }) {
       setLoading(false);
     }
   }
+
+  const cargarZonas = () => {
+    getZonas().then(data => setZonasList(data.zonas ?? [])).catch(() => {});
+  };
 
   function abrirNuevo()   { setEditItem(null); setForm(EMPTY_FORM); setShowModal(true); }
   function abrirEditar(m) { setEditItem(m);    setForm(mapearForm(m)); setShowModal(true); }
@@ -84,7 +88,7 @@ export default function VistaMateriales({ showToast }) {
     try {
       if (editItem) {
         await actualizarMaterial(editItem.idMaterial ?? editItem.id, payload);
-        showToastMsg("Material actualizado");
+        showToastMsg("Cambios guardados correctamente");
       } else {
         await crearMaterial(payload);
         showToastMsg("Material creado correctamente");
@@ -169,7 +173,7 @@ export default function VistaMateriales({ showToast }) {
         </div>
         <select className="panel-select" style={{ width: "auto" }} value={filtroZona} onChange={e => setFiltroZona(e.target.value)}>
           <option value="todos">Todas las zonas</option>
-          {ZONAS.map(z => <option key={z}>{z}</option>)}
+          {zonasList.map(z => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
         </select>
         <select className="panel-select" style={{ width: "auto" }} value={filtroCat} onChange={e => setFiltroCat(e.target.value)}>
           <option value="todos">Todas las categorías</option>
@@ -326,7 +330,7 @@ export default function VistaMateriales({ showToast }) {
                   <label className="panel-label">Zona *</label>
                   <select className="panel-select" value={form.zona} onChange={e => setF("zona", e.target.value)}>
                     <option value="">Selecciona zona...</option>
-                    {ZONAS.map(z => <option key={z}>{z}</option>)}
+                    {zonasList.map(z => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
                   </select>
                 </div>
 

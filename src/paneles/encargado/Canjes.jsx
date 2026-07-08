@@ -64,13 +64,14 @@ const MATERIAL_ICON = {
 
 export default function Canjes({ showToast }) {
   const [tab,           setTab]           = useState("canjear");
-  const [busqueda,      setBusqueda]      = useState("");
+  const [cedula,        setCedula]        = useState("");
   const [usuarioSel,    setUsuarioSel]    = useState(null);
   const [recompSel,     setRecompSel]     = useState(null);
   const [comprobante,   setComprobante]   = useState(null);
-  const [mostrarDrop,   setMostrarDrop]   = useState(false);
+  const [buscandoUser,  setBuscandoUser]  = useState(false);
+  const [noEncontrado,  setNoEncontrado]  = useState(false);
+  const [listaUsuarios, setListaUsuarios] = useState([]);
 
-  const [usuarios,      setUsuarios]      = useState([]);
   const [entregas,      setEntregas]      = useState([]);
   const [recompensas,   setRecompensas]   = useState([]);
   const [historial,     setHistorial]     = useState([]);
@@ -80,15 +81,15 @@ export default function Canjes({ showToast }) {
   useEffect(() => {
     cargarRecompensas();
     cargarHistorial();
+    buscarPorCedula('');
   }, []);
 
   useEffect(() => {
-    if (busqueda.trim().length > 0) {
-      const t = setTimeout(() => cargarUsuarios(busqueda), 300);
-      return () => clearTimeout(t);
-    }
-    setUsuarios([]);
-  }, [busqueda]);
+    setNoEncontrado(false);
+    setUsuarioSel(null);
+    const t = setTimeout(() => buscarPorCedula(cedula.trim()), 400);
+    return () => clearTimeout(t);
+  }, [cedula]);
 
   useEffect(() => {
     if (usuarioSel) {
@@ -122,17 +123,28 @@ export default function Canjes({ showToast }) {
     }
   };
 
-  const cargarUsuarios = async (q) => {
-    setCargando((p) => ({ ...p, usuarios: true }));
+  const buscarPorCedula = async (c) => {
+    setBuscandoUser(true);
+    setNoEncontrado(false);
     try {
-      const data = await buscarUsuariosEncargado(q);
-      setUsuarios(data.usuarios ?? []);
-    } catch (err) {
-      setUsuarios([]);
-      setError(err.message);
-      setTimeout(() => setError(null), 4000);
+      const data = await buscarUsuariosEncargado(c);
+      const usuarios = data.usuarios ?? [];
+      setListaUsuarios(usuarios);
+      if (usuarios.length === 1) {
+        setUsuarioSel(usuarios[0]);
+        setRecompSel(null);
+        setListaUsuarios([]);
+      } else if (usuarios.length > 1) {
+        setUsuarioSel(null);
+      } else {
+        setUsuarioSel(null);
+        setNoEncontrado(true);
+      }
+    } catch {
+      setUsuarioSel(null);
+      setNoEncontrado(true);
     } finally {
-      setCargando((p) => ({ ...p, usuarios: false }));
+      setBuscandoUser(false);
     }
   };
 
@@ -149,18 +161,9 @@ export default function Canjes({ showToast }) {
     }
   };
 
-  const usuariosFiltrados = busqueda.trim().length > 0 && !usuarioSel ? usuarios : [];
-
-  const seleccionarUsuario = (u) => {
-    setUsuarioSel(u);
-    setBusqueda(u.nombre);
-    setMostrarDrop(false);
-    setRecompSel(null);
-  };
-
   const limpiar = () => {
-    setBusqueda(""); setUsuarioSel(null);
-    setRecompSel(null); setMostrarDrop(false); setFechaVen("");
+    setCedula(""); setUsuarioSel(null);
+    setRecompSel(null); setNoEncontrado(false); setListaUsuarios([]);
   };
 
   const getFvp = (obj) => {
@@ -198,13 +201,12 @@ export default function Canjes({ showToast }) {
   const recompensasVencidas   = recompensas.filter(r => getRewardStatus(r) === "vencida");
   const recompensasInactivas  = recompensas.filter(r => getRewardStatus(r) === "inactiva");
 
-  const recompensasDisponibles    = recompensasActivas.filter((r) => !usuarioSel || ptsUsuario >= getPtsRecompensa(r));
-  const recompensasNoDisponibles  = recompensasActivas.filter((r) => usuarioSel && ptsUsuario < getPtsRecompensa(r));
+  const recompensasDisponibles    = recompensasActivas.filter((r) => (!usuarioSel || ptsUsuario >= getPtsRecompensa(r)) && (r.stock === null || r.stock > 0));
+  const recompensasNoDisponibles  = recompensasActivas.filter((r) => usuarioSel && ptsUsuario < getPtsRecompensa(r) && (r.stock === null || r.stock > 0));
+  const recompensasAgotadas       = recompensasActivas.filter((r) => r.stock !== null && r.stock <= 0);
 
   const puntosExpirando = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) <= 7 && getDiasRestantes(e.fechaVencimientoPuntos) >= 0);
   const puntosVencidos = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) < 0);
-
-  const [fechaVen, setFechaVen] = useState("");
 
   const handleCanjear = async () => {
     if (!usuarioSel || !recompSel) return;
@@ -212,7 +214,6 @@ export default function Canjes({ showToast }) {
       const data = await registrarCanjeEncargado({
         idUsuario: usuarioSel.idUsuario,
         idRecompensa: recompSel.idRecompensa,
-        fechaVencimiento: fechaVen || undefined,
       });
       setComprobante({
         usuario: usuarioSel.nombre,
@@ -270,59 +271,59 @@ export default function Canjes({ showToast }) {
             <div className="card mb-3" style={S.card}>
               <div className="card-body p-3">
                 <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
-                  <i className="bi bi-person" style={{ color: C.verde }} />Buscar usuario
+                  <i className="bi bi-person" style={{ color: C.verde }} />Verificar identidad
                 </div>
-                <div className="fw-semibold mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Escribe el nombre del reciclador</div>
+                <div className="fw-semibold mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Solicita el documento de identidad al reciclador</div>
 
                 <div className="position-relative">
                   <div className="input-group">
                     <span className="input-group-text bg-white" style={{ border: `1.5px solid ${C.verdeBorde}` }}>
-                      <i className="bi bi-search text-secondary" />
+                      <i className="bi bi-credit-card text-secondary" />
                     </span>
-                    <input type="text" className="form-control" placeholder="Ej: Diego Ramírez"
-                      value={busqueda}
+                    <input type="text" className="form-control" placeholder="Nombre o cédula"
+                      value={cedula}
                       style={{ ...S.input, fontSize: 13 }}
-                      onChange={(e) => { setBusqueda(e.target.value); setUsuarioSel(null); setMostrarDrop(true); }}
+                      onChange={(e) => { setCedula(e.target.value); }}
+                      inputMode="numeric"
                     />
-                    {busqueda && (
+                    {cedula && (
                       <button className="btn btn-outline-secondary" style={{ border: `1.5px solid ${C.verdeBorde}` }} onClick={limpiar}>
                         <i className="bi bi-x-lg" />
                       </button>
                     )}
                   </div>
 
-                  {mostrarDrop && usuariosFiltrados.length > 0 && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1" style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}` }}>
-                      {usuariosFiltrados.map((u) => (
-                        <button key={u.idUsuario}
-                          className="btn w-100 d-flex align-items-center gap-3 px-3 py-2 text-start border-0 rounded-0"
-                          onClick={() => seleccionarUsuario(u)} style={{ fontSize: 13 }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = C.verdeClaro}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                          <Av text={getIniciales(u.nombre)} size={34} />
-                          <div>
-                            <div className="fw-bold" style={{ color: C.negro }}>{u.nombre}</div>
-                            <div style={{ fontSize: 11, color: C.grisTexto }}>
-                              <i className="bi bi-star-fill me-1" style={{ color: C.verde }} />
-                              {u.puntosDisponibles} puntos disponibles
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {mostrarDrop && busqueda.trim().length > 0 && usuariosFiltrados.length === 0 && !cargando.usuarios && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1 px-3 py-2"
-                      style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}`, fontSize: 13, color: C.grisTexto }}>
-                      Sin resultados para "{busqueda}"
-                    </div>
-                  )}
-
-                  {mostrarDrop && cargando.usuarios && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1 d-flex justify-content-center"
-                      style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}`, padding: "8px 0" }}>
+                  {buscandoUser && (
+                    <div className="mt-1 d-flex justify-content-center px-3 py-2">
                       <LoadingSpinner size="sm" text="Buscando" />
+                    </div>
+                  )}
+
+                  {noEncontrado && !buscandoUser && cedula.trim().length >= 1 && (
+                    <div className="mt-1 px-3 py-2 rounded-2"
+                      style={{ fontSize: 13, color: "#991b1b", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
+                      <i className="bi bi-exclamation-circle me-2" />No se encontró ningún usuario
+                    </div>
+                  )}
+
+                  {listaUsuarios.length > 0 && (
+                    <div className="mt-1 rounded-2" style={{ maxHeight: 200, overflowY: "auto", border: "1px solid #e5e7eb" }}>
+                      {listaUsuarios.map((u) => (
+                        <div key={u.idUsuario}
+                          className="d-flex align-items-center gap-2 px-3 py-2"
+                          style={{ cursor: "pointer", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                          onClick={() => { setUsuarioSel(u); setRecompSel(null); setListaUsuarios([]); }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ""}
+                        >
+                          <Av text={getIniciales(u.nombre)} size={32} />
+                          <div>
+                            <div className="fw-semibold" style={{ color: C.negro }}>{u.nombre}</div>
+                            <div style={{ fontSize: 11, color: C.grisTexto }}>{u.correo}</div>
+                          </div>
+                          <div className="ms-auto fw-bold" style={{ fontSize: 13, color: C.verdeOscuro }}>{u.puntosDisponibles} pts</div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -457,7 +458,8 @@ export default function Canjes({ showToast }) {
                   <div className="row g-2 mt-2">
                     {[...recompensasActivas, ...recompensasProximas, ...recompensasVencidas, ...recompensasInactivas].map((r) => {
                       const st = getRewardStatus(r);
-                      const disabled = st === "vencida" || st === "inactiva";
+                      const agotado = r.stock !== null && r.stock <= 0;
+                      const disabled = st === "vencida" || st === "inactiva" || agotado;
                       return (
                         <div className="col-6" key={r.idRecompensa}>
                           <div className="p-3 rounded-2 d-flex flex-column gap-1"
@@ -477,7 +479,9 @@ export default function Canjes({ showToast }) {
                               }}>
                                 <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
                               </span>
-                              <span style={{ fontSize: 10, color: C.grisTexto }}>Stock: {r.stock ?? "∞"}</span>
+                              <span style={{ fontSize: 10, color: C.grisTexto }}>
+                                {agotado ? <span className="text-danger fw-bold">Agotado</span> : `Stock: ${r.stock ?? "∞"}`}
+                              </span>
                             </div>
                             {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
                             <div className="mt-1"><StatusBadge r={r} /></div>
@@ -560,6 +564,34 @@ export default function Canjes({ showToast }) {
                                   <span style={{ fontSize: 10, color: C.grisTexto }}>
                                     Faltan {r.puntosRequeridos - ptsUsuario} pts
                                   </span>
+                                </div>
+                                {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {recompensasAgotadas.length > 0 && (
+                      <>
+                        <div className="fw-bold mb-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.rojo }}>
+                          <i className="bi bi-x-circle-fill" />Agotadas ({recompensasAgotadas.length})
+                        </div>
+                        <div className="row g-2 mb-3">
+                          {recompensasAgotadas.map((r) => (
+                            <div className="col-6" key={r.idRecompensa}>
+                              <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                                style={{ border: `1.5px solid ${C.grisBorde}`, backgroundColor: "#fef2f2", opacity: 0.6 }}>
+                                <div className="d-flex align-items-center gap-2">
+                                  <i className="bi bi-archive" style={{ color: C.grisBorde, fontSize: 13 }} />
+                                  <span className="fw-bold" style={{ fontSize: 12, color: C.grisTexto }}>{r.nombre}</span>
+                                </div>
+                                <div className="d-flex align-items-center justify-content-between mt-1">
+                                  <span style={{ ...S.badgePuntos, backgroundColor: "#fef2f2", color: C.rojo, border: `1px solid #fecaca` }}>
+                                    <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
+                                  </span>
+                                  <span className="text-danger fw-bold" style={{ fontSize: 10 }}>Agotado</span>
                                 </div>
                                 {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
                               </div>
@@ -709,23 +741,9 @@ export default function Canjes({ showToast }) {
                   )}
                 </div>
 
-                <div className="mb-3">
-                  <div className="fw-bold text-uppercase mb-1" style={{ fontSize: 10, letterSpacing: 1, color: C.grisTexto }}>Vencimiento (opcional)</div>
-                  <input type="date" className="form-control" value={fechaVen}
-                    onChange={e => setFechaVen(e.target.value)}
-                    style={{ fontSize: 13, border: `1.5px solid ${C.verdeBorde}` }}
-                    min={new Date().toISOString().split("T")[0]} />
-                  {fechaVen && (
-                    <div style={{ fontSize: 11, color: C.grisTexto, marginTop: 4 }}>
-                      <i className="bi bi-info-circle me-1" />
-                      Los puntos vencerán el {new Date(fechaVen).toLocaleDateString("es-CO")}
-                    </div>
-                  )}
-                </div>
-
                 <div className="d-grid">
                   <button onClick={handleCanjear}
-                    disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0)}
+                    disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0) || (recompSel?.stock !== null && recompSel?.stock <= 0)}
                     className="btn fw-bold py-2 d-flex align-items-center justify-content-center gap-2"
                     style={S.btnPrimario}>
                     <i className="bi bi-gift" /> Canjear recompensa
@@ -757,7 +775,7 @@ export default function Canjes({ showToast }) {
                 <table className="table align-middle mb-0" style={{ fontSize: 13, borderColor: C.verdeClaro }}>
                   <thead style={S.tableHead}>
                     <tr>
-                      {["Usuario","Recompensa","Puntos","Código","Fecha","Vence","Estado","Acción"].map((h) => (
+                      {["Usuario","Recompensa","Puntos","Código","Fecha","Estado","Acción"].map((h) => (
                         <th key={h} className="fw-bold px-3 py-2" style={S.tableHeadTh}>{h}</th>
                       ))}
                     </tr>
@@ -775,21 +793,6 @@ export default function Canjes({ showToast }) {
                             <span style={S.badgeCodigo}><i className="bi bi-upc me-1" />{h.codigoCanje}</span>
                           </td>
                           <td className="px-3 py-2" style={{ color: C.grisTexto }}>{h.fechaCanje?.split("T")[0]}</td>
-                          <td className="px-3 py-2 text-center">
-                            {h.diasRestantes !== null && h.diasRestantes !== undefined ? (
-                              h.diasRestantes > 0 ? (
-                                <span className="badge rounded-pill fw-semibold" style={{ fontSize: 10, backgroundColor: "#d1fae5", color: "#065f46" }}>
-                                  <i className="bi bi-clock me-1" />{h.diasRestantes} día{h.diasRestantes !== 1 ? "s" : ""}
-                                </span>
-                              ) : (
-                                <span className="badge rounded-pill bg-danger fw-semibold" style={{ fontSize: 10 }}>
-                                  <i className="bi bi-x-circle me-1" />Vencido
-                                </span>
-                              )
-                            ) : (
-                              <span className="text-muted" style={{ fontSize: 11 }}>—</span>
-                            )}
-                          </td>
                           <td className="px-3 py-2 text-center"><BadgeCanje estado={estado} /></td>
                           <td className="px-3 py-2 text-center">
                             <button onClick={() => handleCambiarEstado(hId, estado)}

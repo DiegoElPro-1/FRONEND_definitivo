@@ -111,7 +111,8 @@ function normalizar(e) {
   const estado   = capitalizar(e.estadoEntrega?.nombre ?? e.estado ?? "Pendiente");
   const obs      = e.observacion ?? e.obs ?? "";
   const prioridad      = e.prioridad ?? null;
-  const estadoMaterial = e.estadoMaterial ?? null;
+  const cachedEstados = JSON.parse(localStorage.getItem('_estadosMat') || '{}');
+  const estadoMaterial = e.materiales?.[0]?.idEstadoMaterial ?? e.detalles?.[0]?.idEstadoMaterial ?? e.materiales?.[0]?.estadoMaterial ?? e.detalles?.[0]?.estadoMaterial ?? e.idEstadoMaterial ?? e.estadoMaterial ?? cachedEstados[e.idEntrega ?? e.id] ?? null;
   return {
     id: e.idEntrega ?? e.id,
     nombre, av: getIniciales(nombre), material,
@@ -278,7 +279,9 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
   const [editandoObs, setEditandoObs] = useState(false);
 
   const prioConf   = entrega.prioridad      ? PRIO_CONFIG[entrega.prioridad?.toLowerCase()]  : null;
-  const estMatConf = entrega.estadoMaterial ? ESTADO_MAT_CONFIG[entrega.estadoMaterial]      : null;
+  const cachedEstados = JSON.parse(localStorage.getItem('_estadosMat') || '{}');
+  const estMatVal = entrega.estadoMaterial ?? entrega._raw?.materiales?.[0]?.idEstadoMaterial ?? entrega._raw?.detalles?.[0]?.idEstadoMaterial ?? entrega._raw?.materiales?.[0]?.estadoMaterial ?? entrega._raw?.detalles?.[0]?.estadoMaterial ?? cachedEstados[entrega.id] ?? null;
+  const estMatConf = estMatVal ? ESTADO_MAT_CONFIG[estMatVal] : null;
 
   if (loadingDetalle) {
     return (
@@ -484,7 +487,11 @@ export default function HistorialdeEntregas({ showToast }) {
     setLoadingDetalle(true);
     try {
       const detalle = await getEntregaEncargado(e.id);
-      setSeleccionado(normalizar(detalle));
+      const norm = normalizar(detalle);
+      if (norm.estadoMaterial) {
+        setEntregas(prev => prev.map(item => item.id === e.id ? { ...item, estadoMaterial: norm.estadoMaterial } : item));
+      }
+      setSeleccionado(norm);
     } catch {
       // Si falla dejamos los datos que ya teníamos
     } finally {

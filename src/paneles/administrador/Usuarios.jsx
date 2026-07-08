@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import LoadingSpinner from "../../components/LoadingSpinner";
-import { ALL_POINTS, ZONAS } from "../../constants/data";
+import { ALL_POINTS } from "../../constants/data";
 import { getRolCfg, Toggle, rolDesc, ModalDetalle, TablaUsuarios } from "../../components/UserShared";
 import { getUsuarios, actualizarUsuario, eliminarUsuario } from "../../services/api";
 
 const EMPTY_FORM = {
-  nombre: "", email: "", telefono: "",
+  nombre: "", email: "", telefono: "", cedula: "",
   rol: "Usuario", activo: true,
 };
 
@@ -28,8 +28,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
             email:    u.correo,
             telefono: u.telefono ?? "",
             rol:      "Usuario",
-            zona:     "",
-            pts:      0,
+            zona:     u.zona || "",
             activo:   u.idEstadoUsuario === 1,
             av:       (u.nombre ?? "").trim().split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join(""),
             fechaAlta: u.fechaRegistro ? new Date(u.fechaRegistro).toLocaleDateString("es-CO") : "—",
@@ -54,6 +53,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
     else if (state.usuarios.some(u => u.email === form.email.trim())) e.email = "Este correo ya existe";
     if (!form.telefono.trim())   e.telefono = "El teléfono es obligatorio";
     else if (!/^\d{10}$/.test(form.telefono.trim())) e.telefono = "El teléfono debe tener exactamente 10 dígitos";
+    if (!form.cedula.trim()) e.cedula = "La cédula es obligatoria";
     return e;
   };
 
@@ -67,6 +67,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
         correo:   form.email.trim(),
         password: "Temporal123!",
         telefono: form.telefono.trim() || undefined,
+        cedula:   form.cedula.trim() || undefined,
       });
       const initials = form.nombre.trim().split(" ").slice(0, 2).map(w => w[0].toUpperCase()).join("");
       dispatch({
@@ -77,13 +78,12 @@ export default function Usuarios({ state, dispatch, showToast }) {
           email:    form.email.trim(),
           telefono: form.telefono.trim(),
           rol:      "Usuario",
-          pts:      0,
           activo:   true,
           av:       initials,
           fechaAlta: new Date().toLocaleDateString("es-CO"),
         },
       });
-      showToast(`Usuario "${form.nombre.trim()}" registrado`);
+      showToast("Usuario creado correctamente");
       setModal(false); setForm(EMPTY_FORM); setErrors({});
     } catch (err) {
       showToast("Error al registrar: " + err.message, "error");
@@ -113,6 +113,7 @@ export default function Usuarios({ state, dispatch, showToast }) {
         correo: u.email,
       });
       dispatch({ type: "UPDATE_USER", payload: u });
+      showToast("Cambios guardados correctamente");
     } catch (err) {
       showToast("Error al actualizar: " + err.message, "error");
     }
@@ -255,6 +256,22 @@ export default function Usuarios({ state, dispatch, showToast }) {
                   {errors.email && (
                     <span style={{ fontSize: "0.72rem", color: "var(--rojo)", marginTop: 2, display: "block" }}>
                       {errors.email}
+                    </span>
+                  )}
+                </div>
+
+                <div>
+                  <label className="panel-label">Cédula *</label>
+                  <input
+                    className="panel-input"
+                    value={form.cedula}
+                    onChange={e => set("cedula", e.target.value.replace(/\D/g, ""))}
+                    placeholder="Número de cédula"
+                    style={errors.cedula ? { borderColor: "var(--rojo)" } : {}}
+                  />
+                  {errors.cedula && (
+                    <span style={{ fontSize: "0.72rem", color: "var(--rojo)", marginTop: 2, display: "block" }}>
+                      {errors.cedula}
                     </span>
                   )}
                 </div>

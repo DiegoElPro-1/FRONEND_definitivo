@@ -3,63 +3,50 @@ import { ADMIN_PROFILE } from "../../constants/data";
 import { RolBadge } from "../../components/UserShared";
 import { getPerfil, actualizarPerfil } from "../../services/api";
 
+function desdeStorage() {
+  try {
+    const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+    return {
+      nombre: u.nombre || "",
+      email: u.correo || "",
+      telefono: u.telefono || "",
+      punto: u.puntoACargo?.nombre || "",
+      aliadoNombre: u.aliado || u.aliadoNombre || "",
+      rol: typeof u.rol === "string" ? u.rol : "",
+      fechaAlta: u.fechaRegistro || "",
+      foto: localStorage.getItem("perfilFoto") || u.imagen || ADMIN_PROFILE.foto,
+    };
+  } catch { return { ...ADMIN_PROFILE }; }
+}
+
 export default function Perfil({ state, showToast }) {
 
   const [editMode, setEditMode] = useState(false);
+  const [form, setForm] = useState(desdeStorage);
+  const [saved, setSaved] = useState(desdeStorage);
 
-  const [form, setForm] = useState({
-    ...ADMIN_PROFILE
-  });
-
-  const [saved, setSaved] = useState(() => {
-
-    const fotoGuardada = localStorage.getItem("perfilFoto");
-
-    return {
-      ...ADMIN_PROFILE,
-      foto: fotoGuardada || ADMIN_PROFILE.foto
-    };
-  });
-
-  // 🔥 TRAER USUARIO DESDE LOGIN
   useEffect(() => {
-
-    const cargarPerfil = async () => {
-
+    (async () => {
       try {
-
-        const usuario = JSON.parse(localStorage.getItem("usuario"));
-
-        if (!usuario || !usuario.idUsuario) return;
-
-        const data = await getPerfil(usuario.idUsuario);
-
+        const data = await getPerfil();
+        const u = data?.usuario || data || {};
+        const fotoGuardada = localStorage.getItem("perfilFoto");
         const perfilDB = {
-          nombre: data?.nombre || "No registrado",
-          email: data?.correo || "No registrado",
-          telefono: data?.telefono || "No registrado",
-          punto: data?.punto || "No registrado",
-          aliadoNombre: data?.aliadoNombre || "No registrado",
-          rol: data?.rol || "No registrado",
-          fechaAlta: data?.fechaAlta || "No registrado",
-          foto: fotoGuardada || data?.foto || ADMIN_PROFILE.foto
+          nombre: u?.nombre || "",
+          email: u?.correo || "",
+          telefono: u?.telefono || "",
+          punto: u?.puntoACargo?.nombre || "",
+          aliadoNombre: u?.aliado || u?.aliadoNombre || "",
+          rol: u?.rol || "",
+          fechaAlta: u?.fechaRegistro || "",
+          foto: fotoGuardada || u?.imagen || ADMIN_PROFILE.foto,
         };
-
         setSaved(perfilDB);
-
         setForm(perfilDB);
-
       } catch (error) {
-
-        console.log("Error cargando perfil:", error);
-
+        console.warn("API perfil no disponible, usando datos locales:", error.message);
       }
-    };
-    //foto localstorage
-    const fotoGuardada = localStorage.getItem("perfilFoto");
-
-    cargarPerfil();
-
+    })();
   }, []);
 
   // 🔥 FOTO
@@ -107,7 +94,7 @@ export default function Perfil({ state, showToast }) {
 
       setEditMode(false);
 
-      showToast("Perfil actualizado correctamente");
+      showToast("Cambios guardados correctamente");
 
     } catch (error) {
 

@@ -10,7 +10,12 @@ import Av                from "./Av";
 import PerfilEncargado   from "./PerfilEncargado";
 import Notificaciones    from "./Notificaciones";
 
-const ENCARGADO = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
+const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+const ENCARGADO = {
+  nombre: u.nombre || "Encargado",
+  punto: u.puntoACargo?.nombre || "Tu punto",
+  av: (u.nombre || "E").trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase() || "EN",
+};
 
 const NAV = [
   { key: "dashboard",  path: "dashboard",  label: "Dashboard"          },

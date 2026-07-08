@@ -107,10 +107,10 @@ export default function Recompensas({ showToast }) {
       };
       if (editId) {
         await actualizarRecompensa(editId, payload);
-        showToast("Recompensa actualizada");
+        showToast("Cambios guardados correctamente");
       } else {
         await crearRecompensa(payload);
-        showToast("Recompensa creada");
+        showToast("Recompensa creada correctamente");
       }
       cerrarModal();
       cargar();

@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { ZONAS, ROLES_CFG } from "../constants/data";
-import { getPuntosReciclaje } from "../services/api";
+import { ROLES_CFG } from "../constants/data";
 
 export const rolDesc = {
   "Admin":     "Acceso total al sistema, puede gestionar usuarios y configuración.",
@@ -50,21 +49,14 @@ export function Toggle({ checked, onChange }) {
 }
 
 // ── Modal editable ─────────────────────────────────────────────────────────────
-export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales }) {
+export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales, aliadosList }) {
   const [form,   setForm]   = useState(null);
   const [errors, setErrors] = useState({});
   const [materialesSel, setMaterialesSel] = useState([]);
-  const [puntosList, setPuntosList] = useState([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (user) { setForm({ ...user }); setMaterialesSel(user.materialesIds || []); setErrors({}); }
-  }, [user]);
-
-  useEffect(() => {
-    if (user?.rol === "Encargado") {
-      getPuntosReciclaje().then(data => setPuntosList(data.puntos ?? [])).catch(() => {});
-    }
   }, [user]);
 
   if (!user || !form) return null;
@@ -85,7 +77,6 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
     if (!form.nombre.trim()) e.nombre = "El nombre es obligatorio";
     if (!form.email.trim())  e.email  = "El correo es obligatorio";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = "Correo inválido";
-    if (form.pts !== "" && isNaN(Number(form.pts))) e.pts = "Debe ser un número válido";
     if (todosMateriales !== undefined && user.rol === "Afiliado" && materialesSel.length === 0) {
       e.materiales = "Debes seleccionar al menos un material";
     }
@@ -100,7 +91,6 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
       ...form,
       nombre: form.nombre.trim(),
       email:  form.email.trim(),
-      pts:    Number(form.pts) || 0,
       av:     form.nombre.trim().split(" ").slice(0, 2).map(w => w[0].toUpperCase()).join(""),
       ...(todosMateriales !== undefined ? { materialesIds: materialesSel } : {}),
     };
@@ -206,63 +196,41 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
                 />
               </div>
 
+              {user.rol === "Admin" && aliadosList && (
+                <div className="col-md-6">
+                  <label className="form-label fw-semibold small text-secondary mb-1">
+                    <i className="bi bi-building me-1"></i>Supermercado
+                  </label>
+                  <select
+                    className="form-select form-select-sm bg-light rounded-3"
+                    value={form.idAliado || ""}
+                    onChange={e => {
+                      const id = e.target.value ? Number(e.target.value) : null;
+                      set("idAliado", id);
+                      const a = (aliadosList || []).find(x => x.idAliado === id);
+                      if (a) set("zona", a.direccion ? `${a.zona} - ${a.direccion}` : (a.zona || ""));
+                    }}
+                  >
+                    <option value="">Sin asignar</option>
+                    {aliadosList.map(a => (
+                      <option key={a.idAliado} value={a.idAliado}>{a.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="col-md-6">
                 <label className="form-label fw-semibold small text-secondary mb-1">
                   <i className="bi bi-geo-alt me-1"></i>Zona
                 </label>
-                <select
-                  className="form-select form-select-sm bg-light rounded-3"
+                <input
+                  className="form-control form-control-sm bg-light rounded-3"
                   value={form.zona || ""}
                   onChange={e => set("zona", e.target.value)}
-                >
-                  <option value="">Sin zona</option>
-                  {ZONAS.map(z => <option key={z}>{z}</option>)}
-                </select>
+                  placeholder="Sin zona"
+                />
               </div>
             </div>
-
-            {/* Asignación y puntos (solo Encargado) */}
-            {user.rol === "Encargado" && (
-              <>
-                <p className="text-uppercase fw-bold text-muted mb-2" style={{ fontSize: 11, letterSpacing: 1 }}>
-                  <i className="bi bi-pin-map me-1"></i>Asignación y puntos
-                </p>
-                <div className="row g-3 mb-4">
-                  <div className="col-md-8">
-                    <label className="form-label fw-semibold small text-secondary mb-1">
-                      <i className="bi bi-geo-fill me-1"></i>Punto asignado
-                    </label>
-                    <select
-                      className="form-select form-select-sm bg-light rounded-3"
-                      value={form.puntoAsignado || ""}
-                      onChange={e => set("puntoAsignado", e.target.value)}
-                    >
-                      <option value="">Sin asignar</option>
-                      {puntosList.map(p => <option key={p.id} value={p.nombre}>{p.nombre}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="col-md-4">
-                    <label className="form-label fw-semibold small text-secondary mb-1">
-                      <i className="bi bi-star-fill text-warning me-1"></i>Puntos acumulados
-                    </label>
-                    <div className="input-group input-group-sm">
-                      <input
-                        type="number"
-                        min="0"
-                        className={`form-control bg-light rounded-start-3 ${errors.pts ? "is-invalid" : ""}`}
-                        value={form.pts ?? 0}
-                        onChange={e => set("pts", e.target.value)}
-                      />
-                      <span className="input-group-text rounded-end-3 bg-success-subtle text-success fw-bold border-0">
-                        pts
-                      </span>
-                      {errors.pts && <div className="invalid-feedback">{errors.pts}</div>}
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
 
             {/* Materiales que acepta (solo Afiliado) */}
             {todosMateriales !== undefined && user.rol === "Afiliado" && (
@@ -373,7 +341,7 @@ export function ModalDetalle({ user, onClose, onSave, showToast, todosMateriales
 }
 
 // ── Tabla genérica ─────────────────────────────────────────────────────────────
-export function TablaUsuarios({ lista, onToggle, onVer, onEliminar }) {
+export function TablaUsuarios({ lista, onToggle, onVer, onEliminar, extraColumns }) {
   if (lista.length === 0) {
     return (
       <div className="card shadow-sm p-0 overflow-hidden">
@@ -395,12 +363,13 @@ export function TablaUsuarios({ lista, onToggle, onVer, onEliminar }) {
               {[
                 ["bi-person",        "Usuario"],
                 ["bi-envelope",      "Email"],
+                ["bi-telephone",     "Teléfono"],
                 ["bi-shield",        "Rol"],
                 ["bi-geo-alt",       "Zona"],
-                ["bi-star",          "Puntos"],
+                ...(extraColumns || []).map(c => [c.icon, c.label]),
                 ["bi-toggles",       "Estado"],
                 ["bi-gear",          "Acciones"],
-              ].map(([ic, h]) => (
+              ].filter(Boolean).map(([ic, h]) => (
                 <th key={h}
                   className="text-uppercase text-muted fw-semibold border-0"
                   style={{ padding: "10px 16px", fontSize: 11 }}
@@ -444,14 +413,19 @@ export function TablaUsuarios({ lista, onToggle, onVer, onEliminar }) {
                   <td className="text-secondary" style={{ padding: "12px 16px" }}>
                     <i className="bi bi-envelope me-1 text-muted"></i>{u.email}
                   </td>
+                  <td className="text-secondary" style={{ padding: "12px 16px", fontSize: 12 }}>
+                    <i className="bi bi-telephone me-1 text-muted"></i>{u.telefono || <span style={{ color: "#ddd" }}>&mdash;</span>}
+                  </td>
                   <td style={{ padding: "12px 16px" }}><RolBadge rol={u.rol} /></td>
                   <td className="text-secondary" style={{ padding: "12px 16px", fontSize: 12 }}>
                     <i className="bi bi-geo-alt me-1 text-muted"></i>{u.zona || "—"}
                   </td>
-                  <td className="fw-bold text-success" style={{ padding: "12px 16px" }}>
-                    <i className="bi bi-star-fill text-warning me-1"></i>
-                    {(u.pts || 0).toLocaleString()}
-                  </td>
+
+                  {extraColumns?.map(col => (
+                    <td key={col.label} style={{ padding: "12px 16px", fontSize: 12 }}>
+                      {col.render(u)}
+                    </td>
+                  ))}
 
                   {/* Toggle */}
                   <td style={{ padding: "12px 16px" }}>
