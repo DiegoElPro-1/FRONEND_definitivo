@@ -2,6 +2,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import heroImage from '../components/imagenes/hero.png'
+import logo from '../components/imagenes/logo.png'
 
 export default function LandingPage() {
   return (
@@ -13,8 +14,9 @@ export default function LandingPage() {
         padding: "16px 40px", background: "#fff", borderBottom: "1px solid #e5e7eb",
         position: "sticky", top: 0, zIndex: 100
       }}>
-        <div style={{ fontWeight: 700, fontSize: 22, color: "#16a34a" }}>
-          <i className="bi bi-recycle me-2"></i>Recycling Points
+        <div style={{ fontWeight: 700, fontSize: 22, color: "#16a34a", display: "flex", alignItems: "center", gap: 8 }}>
+          <img src={logo} alt="Recycling Points" style={{ height: 34, width: "auto" }} />
+          Recycling Points
         </div>
         <nav style={{ display: "flex", gap: 28 }}>
           {["#inicio","#funciona","#beneficios","#faq"].map((href, i) => (

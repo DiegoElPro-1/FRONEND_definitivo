@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { io } from "socket.io-client";
 import { C, S, Av } from "./encargadoTheme";
 import { getNotificacionesEncargado, marcarNotificacionLeida, marcarTodasNotificacionesLeidas, actualizarEstadoReservaEncargado, getReservaDetalleEncargado } from "../../services/api";
 
@@ -41,7 +42,7 @@ export default function Notificaciones() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const cargar = async () => {
+  const cargar = useCallback(async () => {
     try {
       setLoading(true);
       setError("");
@@ -53,7 +54,7 @@ export default function Notificaciones() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   
   const openDetalleReserva = async (n) => {
@@ -69,65 +70,45 @@ export default function Notificaciones() {
   };
 
   useEffect(() => { cargar(); }, []);
-  useEffect(() => {
-  // El usuario encargado se guarda como objeto en localStorage con clave 'usuario'
-  const usuarioRaw = localStorage.getItem('usuario')
-  if (!usuarioRaw) return
-
-  let userId
-  try {
-    const usuario = JSON.parse(usuarioRaw)
-    userId = usuario.idUsuario || usuario.id
-  } catch {
-    return
-  }
-
-  if (!userId) return
-
-  const socket = io('https://backend-rp-arreglado-n8p8.onrender.com', {
-  auth: { userId },
-  transports: ['websocket'],
-})
-
-  socket.on('connect', () => {
-    console.log('🔌 Socket conectado al panel encargado — userId:', userId)
-  })
-
-
-
-  socket.on('notificacion', (nueva) => {
-    const notiFormateada = {
-      id: nueva.reserva?.idReserva || Date.now(),
-      tipo: 'reserva',
-      titulo: nueva.tipo === 'nueva_reserva'
-        ? `Nueva reserva de ${nueva.reserva.nombreUsuario}`
-        : `Reserva #${nueva.idReserva} cancelada`,
-      mensaje: nueva.tipo === 'nueva_reserva'
-        ? `En ${nueva.reserva.nombrePunto} — ${nueva.reserva.fecha} a las ${nueva.reserva.hora}`
-        : nueva.mensaje,
-      leida: false,
-      createdAt: new Date().toISOString(),
-    }
-
-    setNotis(prev => [notiFormateada, ...prev])
-    setNoLeidas(prev => prev + 1)
-  })
-
-  socket.on('connect_error', (err) => {
-    console.error('❌ Error socket:', err.message)
-  })
-
-  return () => socket.disconnect()
-}, [])
 
   useEffect(() => {
     const intervalo = setInterval(cargar, 10000);
     window.addEventListener('reservas-actualizadas', cargar);
+
+    const token = localStorage.getItem("token");
+    let socket;
+    if (token) {
+      socket = io(process.env.REACT_APP_API_URL || 'https://backend-rp-arreglado-n8p8.onrender.com', {
+        auth: { token }
+      });
+
+      socket.on("notificacion", (nueva) => {
+        const noti = {
+          idNotificacion: "temp_" + Date.now(),
+          idReferencia: nueva.reserva?.idReserva,
+          tipo: "reserva",
+          titulo: nueva.tipo === 'nueva_reserva'
+            ? `Nueva reserva de ${nueva.reserva?.nombreUsuario || "usuario"}`
+            : `Reserva #${nueva.idReserva}`,
+          mensaje: nueva.tipo === 'nueva_reserva'
+            ? `En ${nueva.reserva?.nombrePunto || "punto"} — ${nueva.reserva?.fecha || ""} ${nueva.reserva?.hora || ""}`
+            : nueva.mensaje,
+          leida: false,
+          createdAt: new Date().toISOString(),
+        };
+        setNotis(prev => [noti, ...prev]);
+        setNoLeidas(prev => prev + 1);
+      });
+
+      socket.on("connect_error", (err) => console.error("Socket error:", err.message));
+    }
+
     return () => {
       clearInterval(intervalo);
       window.removeEventListener('reservas-actualizadas', cargar);
+      if (socket) socket.disconnect();
     };
-  }, []);
+  }, [cargar]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -483,16 +464,11 @@ export default function Notificaciones() {
                     </div>
                   )}
 
-                  {(detalleReserva.urlFoto || detalleReserva.imagenes?.length > 0) && (
+                  {detalleReserva.imagenes?.length > 0 && (
                     <div>
                       <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
                         <i className="bi bi-image-fill" style={{ color: C.verde }} />Fotos del material
                       </div>
-                      {detalleReserva.urlFoto && (
-                        <img src={detalleReserva.urlFoto} alt="Material"
-                          className="rounded-3 w-100 mb-2"
-                          style={{ maxHeight: 200, objectFit: "cover", border: `1.5px solid ${C.verdeBorde}` }} />
-                      )}
                       {detalleReserva.imagenes.map(img => (
                         <img key={img.id} src={img.url} alt="Material escaneado"
                           className="rounded-3 w-100 mb-2"

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { iniciarSesion, clearToken } from "../services/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png';
+import logo from '../components/imagenes/logo.png'
 
 function detectarRol(usuario) {
   const idRol = usuario?.id_rol ?? usuario?.idRol ?? usuario?.rol?.id_rol ?? usuario?.rol?.idRol;
@@ -92,7 +93,7 @@ export default function Login({ onLogin }) {
 
               <div className="text-center mb-4">
                 <h1 className="fw-bold text-dark fs-3 mb-1">
-                  ¡Bienvenido de nuevo! <i className="bi bi-leaf-fill text-success" />
+                  ¡Bienvenido de nuevo! <img src={logo} alt="Recycling Points" style={{ height: 28, width: "auto", verticalAlign: "middle" }} />
                 </h1>
                 <p className="text-success fw-semibold mb-0" style={{ fontSize: 14 }}>
                   Inicia sesión para continuar reciclando y ganando
