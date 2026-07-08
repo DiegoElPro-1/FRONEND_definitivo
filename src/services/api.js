@@ -1,7 +1,7 @@
 // ============================================================
 // Configuración base
 // ============================================================
-const BASE_URL = 'http://localhost:3333';
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-rp-arreglado-n8p8.onrender.com';
 
 export function setToken(t)  { localStorage.setItem("token", t); }
 export function getToken()   { return localStorage.getItem("token"); }
@@ -49,6 +49,34 @@ export async function registrarse(datos) {
   });
 }
 
+export async function solicitarRegistro(datos) {
+  return request('/api/auth/solicitar-registro', {
+    method: 'POST',
+    body: JSON.stringify(datos),
+  });
+}
+
+export async function getSolicitudesRegistro() {
+  return request('/api/admin/solicitudes-registro');
+}
+
+export async function getSolicitudesPendientesCount() {
+  return request('/api/admin/solicitudes-registro/pendientes-count');
+}
+
+export async function aprobarSolicitudRegistro(id) {
+  return request(`/api/admin/solicitudes-registro/${id}/aprobar`, {
+    method: 'PUT',
+  });
+}
+
+export async function rechazarSolicitudRegistro(id, motivo) {
+  return request(`/api/admin/solicitudes-registro/${id}/rechazar`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivo }),
+  });
+}
+
 export async function solicitarRecuperacion(correo) {
   return request('/api/auth/recuperar-password/solicitar', {
     method: 'POST',
@@ -67,19 +95,21 @@ export async function restablecerPassword(datos) {
 // USUARIO  →  /api/usuario
 // ============================================================
 
+function esEncargado() {
+  const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+  const rolStr = (u?.rol ?? "").toString().toLowerCase();
+  return u?.idRol === 4 || u?.id_rol === 4 || rolStr === "encargado";
+}
+
 export async function getPerfil() {
-  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-  if (usuario?.idRol === 4 || usuario?.id_rol === 4) {
+  if (esEncargado()) {
     return request('/api/encargado/perfil');
   }
   return request('/api/usuario/perfil');
 }
 
 export async function actualizarPerfil(datos) {
-  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
-  const basePath = (usuario?.idRol === 4 || usuario?.id_rol === 4)
-    ? '/api/encargado'
-    : '/api/usuario';
+  const basePath = esEncargado() ? '/api/encargado' : '/api/usuario';
   return request(`${basePath}/perfil`, {
     method: 'PUT',
     body: JSON.stringify(datos),
@@ -304,7 +334,7 @@ export async function getEncargado(id)               { return request(`/api/admi
 export async function crearEncargado(datos)          { return request('/api/admin/encargados', { method: 'POST', body: JSON.stringify(datos) }); }
 export async function actualizarEncargado(id, datos) { return request(`/api/admin/encargados/${id}`, { method: 'PUT', body: JSON.stringify(datos) }); }
 export async function eliminarEncargado(id)          { return request(`/api/admin/encargados/${id}`, { method: 'DELETE' }); }
-export async function asignarPuntoEncargado(id)      { return request(`/api/admin/encargados/${id}/asignar-punto`, { method: 'POST' }); }
+export async function asignarPuntoEncargado(id, datos)      { return request(`/api/admin/encargados/${id}/asignar-punto`, { method: 'PUT', body: JSON.stringify(datos) }); }
 
 export async function getEntregasAdmin()                        { return request('/api/admin/entregas'); }
 export async function getEntregaAdmin(id)                       { return request(`/api/admin/entregas/${id}`); }
@@ -416,4 +446,26 @@ export async function actualizarEstadoReservaEncargado(id, datos) {
     method: 'PUT',
     body: JSON.stringify(datos),
   });
+}
+
+export async function getReservaDetalleEncargado(id) {
+  return request(`/api/encargado/reservas/${id}`);
+}
+
+export async function getReportesEncargado(periodo = 'Este mes') {
+  return request(`/api/encargado/reportes?periodo=${encodeURIComponent(periodo)}`);
+}
+
+export async function getPuntosReciclaje() {
+  return request('/api/puntos-reciclaje');
+}
+
+export async function getZonas() {
+  return request('/api/admin/zonas');
+}
+
+export async function getAliadosPublicos() {
+  const res = await fetch(`${BASE_URL}/api/aliados-lista`);
+  if (!res.ok) throw new Error('Error al cargar aliados');
+  return res.json();
 }

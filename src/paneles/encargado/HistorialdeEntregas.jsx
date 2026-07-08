@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Badge from "./Badge";
 import Av    from "./Av";
 import { C, S } from "./encargadoTheme";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   getEntregasEncargado,
   getEntregaEncargado,
@@ -110,7 +111,8 @@ function normalizar(e) {
   const estado   = capitalizar(e.estadoEntrega?.nombre ?? e.estado ?? "Pendiente");
   const obs      = e.observacion ?? e.obs ?? "";
   const prioridad      = e.prioridad ?? null;
-  const estadoMaterial = e.estadoMaterial ?? null;
+  const cachedEstados = JSON.parse(localStorage.getItem('_estadosMat') || '{}');
+  const estadoMaterial = e.materiales?.[0]?.idEstadoMaterial ?? e.detalles?.[0]?.idEstadoMaterial ?? e.materiales?.[0]?.estadoMaterial ?? e.detalles?.[0]?.estadoMaterial ?? e.idEstadoMaterial ?? e.estadoMaterial ?? cachedEstados[e.idEntrega ?? e.id] ?? null;
   return {
     id: e.idEntrega ?? e.id,
     nombre, av: getIniciales(nombre), material,
@@ -277,13 +279,14 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
   const [editandoObs, setEditandoObs] = useState(false);
 
   const prioConf   = entrega.prioridad      ? PRIO_CONFIG[entrega.prioridad?.toLowerCase()]  : null;
-  const estMatConf = entrega.estadoMaterial ? ESTADO_MAT_CONFIG[entrega.estadoMaterial]      : null;
+  const cachedEstados = JSON.parse(localStorage.getItem('_estadosMat') || '{}');
+  const estMatVal = entrega.estadoMaterial ?? entrega._raw?.materiales?.[0]?.idEstadoMaterial ?? entrega._raw?.detalles?.[0]?.idEstadoMaterial ?? entrega._raw?.materiales?.[0]?.estadoMaterial ?? entrega._raw?.detalles?.[0]?.estadoMaterial ?? cachedEstados[entrega.id] ?? null;
+  const estMatConf = estMatVal ? ESTADO_MAT_CONFIG[estMatVal] : null;
 
   if (loadingDetalle) {
     return (
       <div className="text-center py-5">
-        <span className="spinner-border" style={SH.spinnerColor} />
-        <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando detalle...</div>
+        <LoadingSpinner text="Cargando detalle..." />
       </div>
     );
   }
@@ -428,7 +431,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
 // ══════════════════════════════════════════════════════════════════════════════
 // COMPONENTE PRINCIPAL
 // ══════════════════════════════════════════════════════════════════════════════
-export default function HistorialdeEntregas() {
+export default function HistorialdeEntregas({ showToast }) {
   const [entregas,     setEntregas]     = useState([]);
   const [materiales,   setMateriales]   = useState([]);
   const [seleccionado, setSeleccionado] = useState(null);
@@ -461,19 +464,22 @@ export default function HistorialdeEntregas() {
       await actualizarEstadoEntregaEncargado(id, idEstado);
       setEntregas(prev => prev.map(e => e.id === id ? { ...e, estado: nuevoEstado } : e));
       setSeleccionado(prev => prev ? { ...prev, estado: nuevoEstado } : prev);
+      showToast?.("success", `Estado actualizado a "${nuevoEstado}" correctamente`);
     } catch (err) {
-      alert("Error al actualizar el estado: " + err.message);
+      showToast?.("error", "Error al actualizar el estado: " + err.message);
     }
   };
 
   const handleCorregirPts = (id, nuevosPts) => {
     setEntregas(prev => prev.map(e => e.id === id ? { ...e, pts: nuevosPts } : e));
     setSeleccionado(prev => prev ? { ...prev, pts: nuevosPts } : prev);
+    showToast?.("success", "Puntos corregidos correctamente");
   };
 
   const handleEditar = (id, cambios) => {
     setEntregas(prev => prev.map(e => e.id === id ? { ...e, ...cambios } : e));
     setSeleccionado(prev => prev ? { ...prev, ...cambios } : prev);
+    showToast?.("success", "Entrega actualizada correctamente");
   };
 
   const verDetalle = async (e) => {
@@ -481,7 +487,11 @@ export default function HistorialdeEntregas() {
     setLoadingDetalle(true);
     try {
       const detalle = await getEntregaEncargado(e.id);
-      setSeleccionado(normalizar(detalle));
+      const norm = normalizar(detalle);
+      if (norm.estadoMaterial) {
+        setEntregas(prev => prev.map(item => item.id === e.id ? { ...item, estadoMaterial: norm.estadoMaterial } : item));
+      }
+      setSeleccionado(norm);
     } catch {
       // Si falla dejamos los datos que ya teníamos
     } finally {
@@ -611,8 +621,7 @@ export default function HistorialdeEntregas() {
                 {loading ? (
                   <tr>
                     <td colSpan={9} className="text-center py-5">
-                      <span className="spinner-border" style={SH.spinnerColor} />
-                      <div className="text-secondary mt-2" style={{ fontSize: 13 }}>Cargando entregas...</div>
+                      <LoadingSpinner text="Cargando entregas..." />
                     </td>
                   </tr>
                 ) : filtradas.length === 0 ? (

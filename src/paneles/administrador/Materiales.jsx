@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   getMateriales,
   crearMaterial,
   actualizarMaterial,
   eliminarMaterial,
+  getZonas,
 } from "../../services/api";
-
-const ZONAS     = ["Norte", "Sur", "Centro", "Oriente", "Occidente"];
 const UNIDADES  = ["kg", "g", "tonelada", "unidad"];
 const CATEGORIAS = ["Organico", "Electronico", "Textil"];
 const COLORES_CANECA = ["Verde", "Amarillo", "Azul", "Rojo"];
@@ -17,7 +17,7 @@ const EMPTY_FORM = {
   zona: "", puntosPorKg: "", activo: true,
 };
 
-export default function VistaMateriales() {
+export default function VistaMateriales({ showToast }) {
   const [materiales, setMateriales] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [busqueda, setBusqueda]     = useState("");
@@ -27,10 +27,10 @@ export default function VistaMateriales() {
   const [editItem, setEditItem]     = useState(null);
   const [form, setForm]             = useState(EMPTY_FORM);
   const [saving, setSaving]         = useState(false);
-  const [toast, setToast]           = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
+  const [zonasList, setZonasList] = useState([]);
 
-  useEffect(() => { cargarMateriales(); }, []);
+  useEffect(() => { cargarMateriales(); cargarZonas(); }, []);
 
   async function cargarMateriales() {
     setLoading(true);
@@ -43,6 +43,10 @@ export default function VistaMateriales() {
       setLoading(false);
     }
   }
+
+  const cargarZonas = () => {
+    getZonas().then(data => setZonasList(data.zonas ?? [])).catch(() => {});
+  };
 
   function abrirNuevo()   { setEditItem(null); setForm(EMPTY_FORM); setShowModal(true); }
   function abrirEditar(m) { setEditItem(m);    setForm(mapearForm(m)); setShowModal(true); }
@@ -84,7 +88,7 @@ export default function VistaMateriales() {
     try {
       if (editItem) {
         await actualizarMaterial(editItem.idMaterial ?? editItem.id, payload);
-        showToastMsg("Material actualizado");
+        showToastMsg("Cambios guardados correctamente");
       } else {
         await crearMaterial(payload);
         showToastMsg("Material creado correctamente");
@@ -109,7 +113,15 @@ export default function VistaMateriales() {
     }
   }
 
-  function showToastMsg(msg) { setToast(msg); setTimeout(() => setToast(null), 3000); }
+  const [toast, setToast] = useState(null);
+  function showToastMsg(msg, type) {
+    if (showToast) {
+      showToast(msg, type || "success");
+    } else {
+      setToast(msg);
+      setTimeout(() => setToast(null), 3000);
+    }
+  }
   function setF(key, val)    { setForm(f => ({ ...f, [key]: val })); }
 
   const filtrados = materiales.filter(m => {
@@ -161,7 +173,7 @@ export default function VistaMateriales() {
         </div>
         <select className="panel-select" style={{ width: "auto" }} value={filtroZona} onChange={e => setFiltroZona(e.target.value)}>
           <option value="todos">Todas las zonas</option>
-          {ZONAS.map(z => <option key={z}>{z}</option>)}
+          {zonasList.map(z => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
         </select>
         <select className="panel-select" style={{ width: "auto" }} value={filtroCat} onChange={e => setFiltroCat(e.target.value)}>
           <option value="todos">Todas las categorías</option>
@@ -174,9 +186,8 @@ export default function VistaMateriales() {
 
       <div className="panel-table-wrap">
         {loading ? (
-          <div style={{ textAlign: "center", padding: "40px 0", color: "var(--verde)", fontSize: "0.82rem", fontWeight: 600 }}>
-            <div className="spinner-border spinner-border-sm mb-2"></div>
-            <br />Cargando materiales...
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <LoadingSpinner size="md" text="Cargando materiales" />
           </div>
         ) : (
           <table className="panel-table">
@@ -319,7 +330,7 @@ export default function VistaMateriales() {
                   <label className="panel-label">Zona *</label>
                   <select className="panel-select" value={form.zona} onChange={e => setF("zona", e.target.value)}>
                     <option value="">Selecciona zona...</option>
-                    {ZONAS.map(z => <option key={z}>{z}</option>)}
+                    {zonasList.map(z => <option key={z.id_zona || z.nombre}>{z.nombre}</option>)}
                   </select>
                 </div>
 

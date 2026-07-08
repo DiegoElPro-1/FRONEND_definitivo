@@ -14,7 +14,7 @@ export default function LandingPage() {
         position: "sticky", top: 0, zIndex: 100
       }}>
         <div style={{ fontWeight: 700, fontSize: 22, color: "#16a34a" }}>
-          <i className="bi bi-recycle me-2"></i>EcoRecicla
+          <i className="bi bi-recycle me-2"></i>Recycling Points
         </div>
         <nav style={{ display: "flex", gap: 28 }}>
           {["#inicio","#funciona","#beneficios","#faq"].map((href, i) => (

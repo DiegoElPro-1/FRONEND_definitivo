@@ -19,8 +19,7 @@
 /* ── PÁGINA ──────────────────────────────────────── */
 .panel-page {
   background-color: var(--fondo);
-  min-height: 100vh;
-  padding: 2rem;
+  min-height: 100%;
 }
 
 /* ── ENCABEZADO ──────────────────────────────────── */
@@ -274,4 +273,32 @@
   padding: 6px 8px;
   font-size: 0.82rem;
   width: 180px;
+}
+
+/* ── LOADING SPINNER ──────────────────────────── */
+@keyframes rec-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── TOAST ANIMACIONES ────────────────────────── */
+@keyframes rec-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(60px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes rec-toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(60px) scale(0.9);
+  }
 }

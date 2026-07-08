@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   getRecompensas,
   crearRecompensa,
@@ -106,10 +107,10 @@ export default function Recompensas({ showToast }) {
       };
       if (editId) {
         await actualizarRecompensa(editId, payload);
-        showToast("Recompensa actualizada");
+        showToast("Cambios guardados correctamente");
       } else {
         await crearRecompensa(payload);
-        showToast("Recompensa creada");
+        showToast("Recompensa creada correctamente");
       }
       cerrarModal();
       cargar();
@@ -131,6 +132,19 @@ export default function Recompensas({ showToast }) {
 
   const getAliadoNombre = (id) => aliadosList.find(a => a.idAliado === id)?.nombre || "—";
   const getTipoNombre = (id) => tiposList.find(t => t.idTipoRecompensa === id)?.nombre || "—";
+  const getLifecycleStatus = (r) => {
+    const hoy = new Date(new Date().toDateString());
+    const inicio = r.fechaInicio ? new Date(r.fechaInicio) : null;
+    const fin = r.fechaFin ? new Date(r.fechaFin) : null;
+    if (r.idEstadoRecompensa === 2) return { label: "Inactivo", color: "bg-secondary", icon: "bi-pause-circle" };
+    if (inicio && inicio > hoy) return { label: "Próximamente", color: "bg-info text-dark", icon: "bi-calendar-event" };
+    if (fin && fin < hoy) return { label: "Expirada", color: "bg-danger", icon: "bi-clock-history" };
+    if (fin) {
+      const d = Math.ceil((fin - hoy) / (1000 * 60 * 60 * 24));
+      if (d <= 7) return { label: `Vence en ${d}d`, color: "bg-warning text-dark", icon: "bi-clock" };
+    }
+    return { label: "Activa", color: "bg-success", icon: "bi-check-circle" };
+  };
 
   const filtered = items.filter(i => {
     const q = search.toLowerCase();
@@ -160,8 +174,8 @@ export default function Recompensas({ showToast }) {
       </div>
 
       {loading && (
-        <div className="text-center py-3 text-muted small">
-          <div className="spinner-border spinner-border-sm text-success me-2"></div>Cargando recompensas...
+        <div className="text-center py-3">
+          <LoadingSpinner size="sm" text="Cargando recompensas" />
         </div>
       )}
 
@@ -171,7 +185,7 @@ export default function Recompensas({ showToast }) {
             <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
               <thead className="table-light">
                 <tr>
-                  {[["bi-gift", "Recompensa"], ["bi-shop", "Supermercado"], ["bi-tag", "Tipo"], ["bi-star", "Puntos"], ["bi-box", "Stock"], ["bi-toggles", "Estado"], ["bi-gear", "Acciones"]].map(([ic, h]) => (
+                  {[["bi-gift", "Recompensa"], ["bi-shop", "Supermercado"], ["bi-tag", "Tipo"], ["bi-star", "Puntos"], ["bi-box", "Stock"], ["bi-calendar", "Inicio"], ["bi-calendar-check", "Vence"], ["bi-toggles", "Estado"], ["bi-gear", "Acciones"]].map(([ic, h]) => (
                     <th key={h} className="text-uppercase text-muted fw-semibold border-0" style={{ padding: "10px 16px", fontSize: 11 }}>
                       <i className={`bi ${ic} me-1`}></i>{h}
                     </th>
@@ -180,8 +194,10 @@ export default function Recompensas({ showToast }) {
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="text-center py-4 text-muted small">Sin resultados</td></tr>
-                ) : filtered.map(r => (
+                  <tr><td colSpan={9} className="text-center py-4 text-muted small">Sin resultados</td></tr>
+                ) : filtered.map(r => {
+                  const lc = getLifecycleStatus(r);
+                  return (
                   <tr key={r.idRecompensa}>
                     <td style={{ padding: "12px 16px" }}>
                       <div className="fw-bold">{r.nombre}</div>
@@ -192,9 +208,26 @@ export default function Recompensas({ showToast }) {
                     <td className="fw-bold text-success" style={{ padding: "12px 16px" }}><i className="bi bi-star-fill text-warning me-1"></i>{r.puntosRequeridos}</td>
                     <td style={{ padding: "12px 16px", fontSize: 12 }}>{r.stock ?? "∞"}</td>
                     <td style={{ padding: "12px 16px" }}>
-                      <span className={`badge rounded-pill fw-semibold ${r.idEstadoRecompensa === 1 ? "bg-success" : "bg-secondary"}`} style={{ fontSize: 10 }}>
-                        <i className={`bi ${r.idEstadoRecompensa === 1 ? "bi-check-circle" : "bi-x-circle"} me-1`}></i>
-                        {r.idEstadoRecompensa === 1 ? "Activo" : "Inactivo"}
+                      {r.fechaInicio ? (
+                        <span className="badge rounded-pill bg-light text-dark fw-semibold" style={{ fontSize: 10 }}>
+                          <i className="bi bi-calendar me-1"></i>{new Date(r.fechaInicio).toLocaleDateString("es-CO")}
+                        </span>
+                      ) : (
+                        <span className="text-muted" style={{ fontSize: 11 }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      {r.fechaFin ? (
+                        <span className="badge rounded-pill bg-info text-dark fw-semibold" style={{ fontSize: 10 }}>
+                          <i className="bi bi-calendar-check me-1"></i>{new Date(r.fechaFin).toLocaleDateString("es-CO")}
+                        </span>
+                      ) : (
+                        <span className="text-muted" style={{ fontSize: 11 }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ padding: "12px 16px" }}>
+                      <span className={`badge rounded-pill fw-semibold ${lc.color}`} style={{ fontSize: 10 }}>
+                        <i className={`bi ${lc.icon} me-1`}></i>{lc.label}
                       </span>
                     </td>
                     <td style={{ padding: "12px 16px" }}>
@@ -222,7 +255,8 @@ export default function Recompensas({ showToast }) {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

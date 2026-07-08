@@ -1,7 +1,8 @@
 // src/paneles/encargado/VistaDashboard.jsx
 import { useState, useEffect } from "react";
 import { C, S, Av } from "./encargadoTheme";
-import { getReservasEncargado, actualizarEstadoReservaEncargado } from "../../services/api";
+import { getReservasEncargado, actualizarEstadoReservaEncargado, getReservaDetalleEncargado } from "../../services/api";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 function getIniciales(nombre = "") {
   return nombre.split(" ").slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
@@ -10,7 +11,8 @@ function getIniciales(nombre = "") {
 function transformarReservas(reservas) {
   const agrupadas = {};
   for (const r of reservas) {
-    const fecha = r.fecha;
+    const fecha = (r.fecha || '').substring(0, 10);
+    if (!fecha) continue;
     if (!agrupadas[fecha]) agrupadas[fecha] = [];
     agrupadas[fecha].push({
       id: r.idReserva,
@@ -21,14 +23,21 @@ function transformarReservas(reservas) {
       materiales: [],
       estado: r.estado === "confirmada" ? "Aceptada" : r.estado === "cancelada" ? "Rechazada" : r.estado === "completada" ? "Completada" : "Pendiente",
       nota: r.notas || "",
-      foto: null,
+      foto: r.urlFoto || null,
+      iaMaterial: r.iaMaterial || null,
+      iaConfianza: r.iaConfianza || null,
       hora: r.hora,
     });
   }
   return agrupadas;
 }
 
-const ENCARGADO   = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
+const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+const ENCARGADO = {
+  nombre: u.nombre || "Encargado",
+  punto: u.puntoACargo?.nombre || "Tu punto",
+  av: (u.nombre || "E").trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase() || "EN",
+};
 const DIAS_SEMANA = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 const MESES       = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
@@ -57,7 +66,7 @@ function BadgeEstado({ estado }) {
   );
 }
 
-export default function VistaDashboard() {
+export default function VistaDashboard({ showToast }) {
   const today = new Date();
   const [year, setYear]               = useState(today.getFullYear());
   const [month, setMonth]             = useState(today.getMonth());
@@ -70,11 +79,14 @@ export default function VistaDashboard() {
   const [fotoPreview, setFotoPreview] = useState(null);
   const [loading, setLoading]         = useState(true);
   const [error, setError]             = useState("");
+  const [detalleReserva, setDetalleReserva] = useState(null);
+  const [cargandoDetalle, setCargandoDetalle] = useState(false);
 
   useEffect(() => {
+    let primerCarga = true;
     const cargar = async () => {
       try {
-        setLoading(true);
+        if (primerCarga) setLoading(true);
         setError("");
         const data = await getReservasEncargado();
         const agrupadas = transformarReservas(data.reservas || []);
@@ -82,10 +94,16 @@ export default function VistaDashboard() {
       } catch (e) {
         setError(e.message || "Error al cargar reservas");
       } finally {
-        setLoading(false);
+        if (primerCarga) { setLoading(false); primerCarga = false; }
       }
     };
     cargar();
+    const intervalo = setInterval(cargar, 30000);
+    window.addEventListener('reservas-actualizadas', cargar);
+    return () => {
+      clearInterval(intervalo);
+      window.removeEventListener('reservas-actualizadas', cargar);
+    };
   }, []);
 
   const toKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
@@ -115,7 +133,25 @@ export default function VistaDashboard() {
       await actualizarEstadoReservaEncargado(citaActiva.idReserva, { estado: "confirmada" });
       setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Aceptada", nota: "" } : c); return copia; });
       setCitaActiva(c => ({ ...c, estado: "Aceptada" }));
-    } catch (e) { console.error("Error al aceptar:", e); }
+      showToast?.("success", "Cita aceptada correctamente");
+    } catch (e) { showToast?.("error", "Error al aceptar la cita"); }
+  };
+
+  const abrirDetalle = async (cita) => {
+    setCitaActiva(cita);
+    setPanel("detalle");
+    setDetalleReserva(null);
+    if (cita.idReserva) {
+      try {
+        setCargandoDetalle(true);
+        const data = await getReservaDetalleEncargado(cita.idReserva);
+        setDetalleReserva(data);
+      } catch {
+        // fallback: only use list data
+      } finally {
+        setCargandoDetalle(false);
+      }
+    }
   };
 
   const handleRechazar = async () => {
@@ -124,7 +160,8 @@ export default function VistaDashboard() {
       setCitas(prev => { const copia = { ...prev }; copia[keyActivo] = copia[keyActivo].map(c => c.id === citaActiva.id ? { ...c, estado: "Rechazada", nota: notaRechazo } : c); return copia; });
       setCitaActiva(c => ({ ...c, estado: "Rechazada", nota: notaRechazo }));
       setPanel("detalle"); setNotaRechazo("");
-    } catch (e) { console.error("Error al rechazar:", e); }
+      showToast?.("success", "Cita rechazada correctamente");
+    } catch (e) { showToast?.("error", "Error al rechazar la cita"); }
   };
 
   const tieneMateriales = (cita) => cita.materiales && cita.materiales.length > 0;
@@ -133,11 +170,9 @@ export default function VistaDashboard() {
   return (
     <div style={{ backgroundColor: C.grisFondo, minHeight: "100vh", padding: 24 }}>
 
-      {/* Loading */}
       {loading && (
         <div className="d-flex align-items-center justify-content-center py-5">
-          <div className="spinner-border" style={{ color: C.verde }} role="status" />
-          <span className="fw-bold ms-3" style={{ color: C.grisTexto }}>Cargando reservas…</span>
+          <LoadingSpinner text="Cargando reservas…" />
         </div>
       )}
 
@@ -347,7 +382,7 @@ export default function VistaDashboard() {
                   <div className="d-flex flex-column gap-2" style={{ maxHeight: 340, overflowY: "auto" }}>
                     {citasFiltradas.map(cita => (
                       <button key={cita.id}
-                        onClick={() => { setCitaActiva(cita); setPanel("detalle"); }}
+                        onClick={() => abrirDetalle(cita)}
                         className="border rounded-3 p-2 text-start w-100 d-flex align-items-center gap-3"
                         style={{ cursor: "pointer", transition: "background 0.15s", borderColor: C.verdeBorde, background: C.blanco }}
                         onMouseEnter={e => { e.currentTarget.style.background = C.grisFondo; }}
@@ -387,8 +422,14 @@ export default function VistaDashboard() {
           {selectedDay && panel === "detalle" && citaActiva && (
             <div className="card" style={S.card}>
               <div className="card-body p-3 d-flex flex-column gap-3">
-
-                <div className="d-flex align-items-center gap-2">
+                {cargandoDetalle && (
+                  <div className="text-center py-3">
+                    <div className="spinner-border spinner-border-sm" style={{ color: C.verde }} role="status" />
+                    <div className="mt-1" style={{ fontSize: 12, color: C.grisTexto }}>Cargando detalle…</div>
+                  </div>
+                )}
+                  {!cargandoDetalle && (<>
+                  <div className="d-flex align-items-center gap-2">
                   <button className="btn btn-sm fw-bold"
                     style={{ ...S.btnSecundario, fontSize: 11, padding: "3px 10px" }}
                     onClick={() => { setPanel("lista"); setCitaActiva(null); }}>
@@ -408,6 +449,51 @@ export default function VistaDashboard() {
                     </div>
                   </div>
                 </div>
+
+                {(citaActiva.foto || detalleReserva?.imagenes?.length > 0) && (
+                  <div>
+                    <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.negro }}>
+                      <i className="bi bi-image-fill" style={{ color: C.verde }} />Fotos del material
+                    </div>
+                    <div className="d-flex flex-column gap-2">
+                      {citaActiva.foto && (
+                        <img src={citaActiva.foto} alt="Material"
+                          className="rounded-3 w-100"
+                          style={{ maxHeight: 200, objectFit: "cover", cursor: "pointer", border: `1.5px solid ${C.verdeBorde}` }}
+                          onClick={() => setFotoPreview(citaActiva.foto)} />
+                      )}
+                      {detalleReserva?.imagenes?.map(img => (
+                        <img key={img.id} src={img.url} alt="Material escaneado"
+                          className="rounded-3 w-100"
+                          style={{ maxHeight: 200, objectFit: "cover", cursor: "pointer", border: `1.5px solid ${C.verdeBorde}` }}
+                          onClick={() => setFotoPreview(img.url)} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(citaActiva.iaMaterial || citaActiva.foto || detalleReserva?.imagenes?.length > 0) && (
+                  <div className="rounded-3 p-3" style={{ backgroundColor: "#e8f5e9", border: `1.5px solid ${C.verde}` }}>
+                    <div className="fw-bold mb-2 d-flex align-items-center gap-2" style={{ fontSize: 13, color: C.verdeOscuro }}>
+                      <i className="bi bi-robot" />Análisis IA
+                    </div>
+                    {citaActiva.iaMaterial && (
+                      <div className="d-flex justify-content-between mb-1" style={{ fontSize: 12, color: C.negro }}>
+                        <span><strong>Material:</strong> {citaActiva.iaMaterial}</span>
+                        {citaActiva.iaConfianza && <span><strong>Confianza:</strong> {citaActiva.iaConfianza}%</span>}
+                      </div>
+                    )}
+                    {detalleReserva?.imagenes?.map(img => img.analisis && (
+                      <div key={img.id} className="rounded-2 p-2 mb-1" style={{ backgroundColor: "rgba(255,255,255,0.7)", fontSize: 12 }}>
+                        <div className="d-flex justify-content-between">
+                          <span><strong>Material:</strong> {img.analisis.material || 'No detectado'}</span>
+                          {img.analisis.confianza && <span><strong>Confianza:</strong> {typeof img.analisis.confianza === 'number' ? Math.round(img.analisis.confianza * 100) : img.analisis.confianza}%</span>}
+                        </div>
+                        <div><strong>Estado:</strong> {img.analisis.estado || 'Pendiente'}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {tieneMateriales(citaActiva) && (
                   <div>
@@ -458,7 +544,7 @@ export default function VistaDashboard() {
                   </div>
                 )}
 
-                {citaActiva.estado === "Rechazada" && (
+                {citaActiva.estado === "Rechazada" && !citaActiva.nota && (
                   <div className="rounded-3 p-3 text-center d-flex flex-column align-items-center gap-1"
                     style={{ backgroundColor: C.rojoclaro, border: `1.5px solid ${C.rojo}` }}>
                     <i className="bi bi-x-circle-fill" style={{ fontSize: 24, color: C.rojo }} />
@@ -466,6 +552,7 @@ export default function VistaDashboard() {
                     <div style={{ fontSize: 11, color: C.rojo }}>El usuario ha sido notificado</div>
                   </div>
                 )}
+                </>)}
               </div>
             </div>
           )}

@@ -10,7 +10,12 @@ import Av                from "./Av";
 import PerfilEncargado   from "./PerfilEncargado";
 import Notificaciones    from "./Notificaciones";
 
-const ENCARGADO = { nombre: "María López", punto: "Punto Verde Centro", av: "ML" };
+const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+const ENCARGADO = {
+  nombre: u.nombre || "Encargado",
+  punto: u.puntoACargo?.nombre || "Tu punto",
+  av: (u.nombre || "E").trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase() || "EN",
+};
 
 const NAV = [
   { key: "dashboard",  path: "dashboard",  label: "Dashboard"          },
@@ -22,7 +27,7 @@ const NAV = [
   { key: "perfil",     path: "perfil",     label: "Mi perfil"          },
 ];
 
-export default function PanelEncargado({ user, onLogout }) {
+export default function PanelEncargado({ user, onLogout, showToast }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,11 +54,11 @@ export default function PanelEncargado({ user, onLogout }) {
         </div>
 
         <Routes>
-          <Route path="dashboard" element={<VistaDashboard />}    />
+          <Route path="dashboard" element={<VistaDashboard showToast={showToast} />}    />
           <Route path="control"   element={<PanelControl />}      />
-          <Route path="registrar" element={<RegistrarEntrega />}  />
-          <Route path="historial" element={<HistorialEntregas />} />
-          <Route path="canjes"    element={<Canjes />}            />
+          <Route path="registrar" element={<RegistrarEntrega showToast={showToast} />}  />
+          <Route path="historial" element={<HistorialEntregas showToast={showToast} />} />
+          <Route path="canjes"    element={<Canjes showToast={showToast} />}            />
           <Route path="reportes"  element={<Reportes />}          />
           <Route path="perfil"    element={<PerfilEncargado />}   />
           <Route path="*"         element={<Navigate to="/encargado/dashboard" replace />} />

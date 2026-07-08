@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Documentación del Frontend - Recycling Points</title>
+<style>
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12pt; line-height: 1.5; color: #222; margin: 40px; }
+h1 { color: #2e7d32; border-bottom: 3px solid #2e7d32; padding-bottom: 8px; font-size: 26pt; }
+h2 { color: #2e7d32; border-bottom: 1px solid #a5d6a7; padding-bottom: 5px; margin-top: 30px; font-size: 20pt; }
+h3 { color: #1b5e20; margin-top: 20px; font-size: 16pt; }
+h4 { color: #333; margin-top: 15px; font-size: 13pt; }
+p { margin: 8px 0; }
+code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-size: 10pt; font-family: 'Consolas', monospace; }
+pre { background: #f5f5f5; padding: 12px; border-radius: 5px; border-left: 4px solid #2e7d32; font-size: 9pt; overflow-x: auto; font-family: 'Consolas', monospace; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 11pt; }
+th { background: #2e7d32; color: white; padding: 8px 12px; text-align: left; }
+td { border: 1px solid #ddd; padding: 6px 12px; }
+tr:nth-child(even) { background: #f9f9f9; }
+ul, ol { margin: 6px 0; padding-left: 24px; }
+li { margin: 4px 0; }
+.verde { color: #2e7d32; font-weight: bold; }
+.resaltar { background: #fff8e1; padding: 10px; border-radius: 5px; border-left: 4px solid #fbc02d; }
+.toc { background: #f1f8e9; padding: 15px; border-radius: 8px; margin: 15px 0; }
+.toc ul { list-style: none; padding: 0; }
+.toc li { padding: 3px 0; }
+.toc a { color: #1b5e20; text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.emoji { font-size: 14pt; }
+</style>
+</head>
+<body>
+
+<h1>&#x1F4DA; Documentación del Frontend — Recycling Points</h1>
+<p><strong>Versión:</strong> 1.0.0 &nbsp;|&nbsp; <strong>Framework:</strong> React 18 + React Router 7 &nbsp;|&nbsp; <strong>Rol:</strong> Frontend Lead</p>
+
+<!-- ============================================================ -->
+<div class="toc">
+<h3>&#x1F4CB; Tabla de Contenidos</h3>
+<ul>
+<li><a href="#intro">1. Introducción y Arquitectura General</a></li>
+<li><a href="#estructura">2. Estructura del Proyecto</a></li>
+<li><a href="#entry">3. Entry Point — <code>index.js</code></a></li>
+<li><a href="#app">4. Corazón de la App — <code>App.jsx</code></a>
+  <ul>
+    <li><a href="#reducer">4.1 Reducer y Estado Global</a></li>
+    <li><a href="#toast">4.2 Sistema de Toasts</a></li>
+    <li><a href="#auth">4.3 Control de Sesión y Roles</a></li>
+    <li><a href="#routing">4.4 Sistema de Rutas por Rol</a></li>
+  </ul>
+</li>
+<li><a href="#api">5. Capa de Servicios — <code>services/api.js</code></a></li>
+<li><a href="#constantes">6. Constantes — <code>constants/data.js</code></a></li>
+<li><a href="#components">7. Componentes Compartidos</a>
+  <ul>
+    <li><a href="#sidebar">7.1 Sidebar.jsx</a></li>
+    <li><a href="#topbar">7.2 Topbar.jsx</a></li>
+    <li><a href="#toastcont">7.3 ToastContainer.jsx</a></li>
+    <li><a href="#spinner">7.4 LoadingSpinner.jsx</a></li>
+    <li><a href="#mappicker">7.5 MapPicker.jsx</a></li>
+    <li><a href="#usershared">7.6 UserShared.jsx</a></li>
+  </ul>
+</li>
+<li><a href="#pages">8. Páginas Públicas</a>
+  <ul>
+    <li><a href="#login">8.1 Login.jsx</a></li>
+    <li><a href="#registro">8.2 Registro.jsx</a></li>
+    <li><a href="#forgot">8.3 RecuperarContraseña.jsx</a></li>
+    <li><a href="#landing">8.4 LandingPage.jsx</a></li>
+  </ul>
+</li>
+<li><a href="#admin">9. Panel Administrador</a>
+  <ul>
+    <li><a href="#dashboard">9.1 Dashboard.jsx</a></li>
+    <li><a href="#usuarios">9.2 Usuarios.jsx</a></li>
+    <li><a href="#admins">9.3 Administradores.jsx</a></li>
+    <li><a href="#aliados">9.4 Aliados.jsx</a></li>
+    <li><a href="#encargados">9.5 Encargados.jsx</a></li>
+    <li><a href="#materiales">9.6 Materiales.jsx</a></li>
+    <li><a href="#recompensas">9.7 Recompensas.jsx</a></li>
+    <li><a href="#perfil">9.8 Perfil.jsx</a></li>
+    <li><a href="#catalogos">9.9 Catálogos (CrudCatalogo)</a></li>
+  </ul>
+</li>
+<li><a href="#encargado">10. Panel Encargado</a>
+  <ul>
+    <li><a href="#panelenc">10.1 PanelEncargado.jsx</a></li>
+    <li><a href="#sidebarc">10.2 Sidebar.jsx (Encargado)</a></li>
+    <li><a href="#dashboardc">10.3 VistaDashboard.jsx</a></li>
+    <li><a href="#registrar">10.4 RegistrarEntrega.jsx</a></li>
+    <li><a href="#historial">10.5 HistorialdeEntregas.jsx</a></li>
+    <li><a href="#canjes">10.6 Canjes.jsx</a></li>
+    <li><a href="#notif">10.7 Notificaciones.jsx</a></li>
+    <li><a href="#reportes">10.8 Reportes.jsx</a></li>
+    <li><a href="#calendario">10.9 Calendario.jsx</a></li>
+    <li><a href="#perfilc">10.10 PerfilEncargado.jsx</a></li>
+  </ul>
+</li>
+<li><a href="#superadmin">11. Panel Superadmin</a></li>
+<li><a href="#estilos">12. Estilos CSS</a></li>
+<li><a href="#flujo">13. Flujo de Datos Completo</a></li>
+<li><a href="#tech">14. Resumen de Tecnologías</a></li>
+<li><a href="#preguntas">15. Preguntas Clave para Entrevista</a></li>
+</ul>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="intro">1. &#x1F3F0; Introducción y Arquitectura General</h2>
+
+<p>Recycling Points es una aplicación web para la gestión de un programa de reciclaje con acumulación de puntos. Los usuarios registran entregas de materiales reciclables, acumulan puntos y pueden canjearlos por recompensas.</p>
+
+<p><strong>Arquitectura:</strong> SPA (Single Page Application) construida con <strong>React 18</strong>. Usa <strong>React Router 7</strong> para la navegación del lado del cliente. El estado global se maneja con <code>useReducer</code> en lugar de Context o Redux. Hay <strong>3 flujos independientes</strong> según el rol del usuario: administrador, encargado y superadmin.</p>
+
+<p><strong>Backend:</strong> AdonisJS (Node.js) en puerto 3333. <strong>Base de datos:</strong> MySQL.</p>
+
+<p><strong>Hosts:</strong></p>
+<ul>
+  <li>Desarrollo: Frontend <code>http://localhost:3000</code>, Backend <code>http://localhost:3333</code></li>
+  <li>Producción: <code>https://backend-rp-arreglado-n8p8.onrender.com</code> (fallback)</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="estructura">2. &#x1F4C1; Estructura del Proyecto</h2>
+
+<pre>
+FRONEND_definitivo/
+  .env                              # REACT_APP_API_URL=http://localhost:3333
+  package.json                      # scripts: start, dev, build
+  serve-build.js                    # Servidor estático (puerto 3000)
+  src/
+    index.js                        # Entry point (BrowserRouter)
+    index.css                       # Estilos globales
+    App.jsx                         # Componente raíz (reducer, rutas, auth)
+    constants/
+      data.js                       # Colores, roles, zonas, configuraciones
+    services/
+      api.js                        # Único archivo de servicios REST
+    styles/
+      panel.css                     # Estilos del panel administrador
+    components/
+      Sidebar.jsx                   # Sidebar del administrador
+      Topbar.jsx                    # Topbar del administrador
+      ToastContainer.jsx            # Sistema de notificaciones toast
+      LoadingSpinner.jsx            # Spinner de carga
+      MapPicker.jsx                 # Selector de ubicación con Leaflet
+      UserShared.jsx                # Componentes compartidos (Tabla, Modal, Badge, Toggle)
+      imagenes/                     # hero.png, fondo_reciclaje.png
+    paginas/
+      LandingPage.jsx               # Página de marketing
+      Login.jsx                     # Inicio de sesión
+      Registro.jsx                  # Registro de usuarios
+      RecuperarContraseña.jsx       # Recuperación de contraseña (2 pasos)
+    paneles/
+      administrador/
+        Dashboard.jsx               # Panel principal admin
+        Usuarios.jsx                # CRUD usuarios
+        Administradores.jsx         # CRUD administradores
+        Aliados.jsx                 # CRUD aliados (con mapas, materiales)
+        Encargados.jsx              # CRUD encargados
+        Materiales.jsx              # CRUD materiales
+        Recompensas.jsx             # CRUD recompensas
+        Perfil.jsx                  # Perfil del admin
+        catalogos/
+          CrudCatalogo.jsx          # Componente genérico CRUD
+          CatRoles.jsx, CatEstadosPuntos.jsx, CatEstadosMateriales.jsx,
+          CatEstadosEntregas.jsx, CatEstadosAliados.jsx, CatEstadosCanjes.jsx,
+          CatEstadosUsuarios.jsx, CatEstadosRecompensas.jsx,
+          CatTiposRecompensa.jsx
+      encargado/
+        PanelEncargado.jsx          # Layout del panel encargado
+        Sidebar.jsx                 # Sidebar del encargado
+        VistaDashboard.jsx          # Dashboard del encargado
+        RegistrarEntrega.jsx        # Registro de entregas
+        HistorialdeEntregas.jsx     # Historial de entregas
+        Canjes.jsx                  # Gestión de canjes
+        DetalleEntrega.jsx          # Modal detalle de entrega
+        Notificaciones.jsx          # Centro de notificaciones
+        Reportes.jsx                # Reportes y estadísticas
+        Calendario.jsx              # Calendario de entregas
+        PerfilEncargado.jsx         # Perfil del encargado
+        StatCard.jsx                # Tarjeta de estadística
+        Av.jsx                      # Avatar con iniciales
+        Badge.jsx                   # Badge de estado
+        ListaUsuariosDia.jsx        # Lista de búsqueda de usuarios
+        encargadoTheme.jsx          # Tema visual del encargado
+      superadmin/
+        PanelSuperadmin.jsx         # Layout del superadmin
+        Sidebar.jsx                 # Sidebar del superadmin
+</pre>
+
+<!-- ============================================================ -->
+<h2 id="entry">3. &#x1F3E0; Entry Point — <code>index.js</code></h2>
+
+<pre>
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import "leaflet/dist/leaflet.css";
+import "./index.css";
+import App from "./App";
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(
+  &lt;React.StrictMode&gt;
+    &lt;BrowserRouter&gt;
+      &lt;App /&gt;
+    &lt;/BrowserRouter&gt;
+  &lt;/React.StrictMode&gt;
+);
+</pre>
+
+<p><strong>Qué hace:</strong></p>
+<ul>
+  <li>Renderiza la app con <code>React.StrictMode</code> (detección de problemas)</li>
+  <li>Envuelve todo en <code>BrowserRouter</code> para navegación SPA</li>
+  <li>Importa estilos globales: Bootstrap 5, Bootstrap Icons, Leaflet, CSS propio</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="app">4. &#x1F9E0; Corazón de la App — <code>App.jsx</code></h2>
+
+<h3 id="reducer">4.1 Reducer y Estado Global</h3>
+
+<p>Todo el estado global se maneja con <code>useReducer</code>. Las acciones disponibles:</p>
+
+<table>
+<tr><th>Acción</th><th>Descripción</th></tr>
+<tr><td><code>ADD_ENTREGA</code></td><td>Agrega una entrega al inicio del array</td></tr>
+<tr><td><code>SET_USUARIOS</code></td><td>Reemplaza la lista de usuarios</td></tr>
+<tr><td><code>SET_ADMINS</code></td><td>Filtra usuarios existentes y agrega admins</td></tr>
+<tr><td><code>ADD_USER</code></td><td>Agrega un nuevo usuario</td></tr>
+<tr><td><code>UPDATE_USER</code></td><td>Actualiza un usuario por ID</td></tr>
+<tr><td><code>TOGGLE_USER</code></td><td>Cambia estado activo/inactivo de un usuario</td></tr>
+<tr><td><code>DEL_USER</code></td><td>Elimina un usuario por ID</td></tr>
+<tr><td><code>SET_ALIADOS</code></td><td>Reemplaza lista de aliados</td></tr>
+<tr><td><code>ADD_ALIADO</code></td><td>Agrega un aliado</td></tr>
+<tr><td><code>UPDATE_ALIADO</code></td><td>Actualiza un aliado</td></tr>
+<tr><td><code>TOGGLE_ALIADO</code></td><td>Toggle activo/inactivo aliado</td></tr>
+<tr><td><code>DEL_ALIADO</code></td><td>Elimina un aliado</td></tr>
+<tr><td><code>SET_ENCARGADOS</code></td><td>Reemplaza lista de encargados</td></tr>
+<tr><td><code>ADD_ENCARGADO</code></td><td>Agrega un encargado</td></tr>
+<tr><td><code>TOGGLE_ENCARGADO</code></td><td>Toggle activo/inactivo encargado</td></tr>
+<tr><td><code>DEL_ENCARGADO</code></td><td>Elimina un encargado</td></tr>
+<tr><td><code>SET_IA_RESULT</code></td><td>Resultado de clasificación IA</td></tr>
+<tr><td><code>ADD_IA_HIST</code></td><td>Historial de IA</td></tr>
+<tr><td><code>SET_PTS</code></td><td>Establece puntos totales</td></tr>
+<tr><td><code>ADD_PTS</code></td><td>Suma puntos</td></tr>
+</table>
+
+<p><strong>IMPORTANTE:</strong> El estado del panel encargado usa su propio <code>useReducer</code> <strong>independiente</strong> dentro de <code>PanelEncargado.jsx</code>. No comparte estado con el administrador.</p>
+
+<h3 id="toast">4.2 Sistema de Toasts</h3>
+
+<pre>
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const showToast = useCallback((msg, type = "success") => {
+    const id = Date.now();
+    setToasts(t => [...t, { id, msg, type }]);
+  }, []);
+  const remove = useCallback(id => setToasts(t => t.filter(x => x.id !== id)), []);
+  return { toasts, showToast, remove };
+}
+</pre>
+
+<p><strong>Cada toast:</strong></p>
+<ul>
+  <li><code>id</code>: timestamp (único)</li>
+  <li><code>msg</code>: texto del mensaje</li>
+  <li><code>type</code>: success | error | warning | info</li>
+  <li>Se auto-destruye después de <strong>3.2 segundos</strong></li>
+  <li>Animación de entrada (slide-in) y salida (fade-out)</li>
+</ul>
+
+<p><strong>Usos estandarizados:</strong></p>
+<ul>
+  <li>Crear: <code>"X creado correctamente"</code></li>
+  <li>Editar: <code>"Cambios guardados correctamente"</code></li>
+</ul>
+
+<h3 id="auth">4.3 Control de Sesión y Roles</h3>
+
+<pre>
+const [user, setUser] = useState(() => {
+  const saved = sessionStorage.getItem("user");
+  return saved ? JSON.parse(saved) : null;
+});
+</pre>
+
+<p>El usuario se guarda en <strong>sessionStorage</strong> (se borra al cerrar la pestaña). El token JWT se guarda en <strong>localStorage</strong> (persiste hasta cerrar sesión).</p>
+
+<p><strong>Flujo de inicio de sesión:</strong></p>
+<ol>
+  <li><code>handleLogin(usuarioData)</code> guarda en sessionStorage y redirige según rol</li>
+  <li>En <code>useEffect</code> principal: si hay usuario (no encargado), carga usuarios y admins desde API</li>
+  <li>Cada dato se transforma a formato interno: <code>{ id, nombre, email, telefono, rol, zona, pts, activo, av, fechaAlta }</code></li>
+</ol>
+
+<p><strong>Cierre de sesión:</strong></p>
+<ol>
+  <li>Llama a <code>cerrarSesion()</code> (DELETE /api/auth/cerrar-sesion)</li>
+  <li>Limpia sessionStorage, localStorage</li>
+  <li>Redirige a <code>/login</code> con <code>window.location.replace()</code></li>
+</ol>
+
+<h3 id="routing">4.4 Sistema de Rutas por Rol</h3>
+
+<pre>
+if (!user) {
+  // LandingPage, Login, Registro, RecuperarContraseña
+}
+if (user.rolSeleccionado === "encargado") {
+  // PanelEncargado (ruta /encargado/*)
+}
+if (user.rolSeleccionado === "superadmin") {
+  // PanelSuperadmin (ruta /superadmin/*)
+}
+else {
+  // Panel Administrador (ruta /dashboard, /usuarios, etc.)
+}
+</pre>
+
+<p>Son <strong>4 apps independientes</strong> dentro de la misma app:</p>
+<ol>
+  <li><strong>Público:</strong> Landing, Login, Registro, Recuperar contraseña</li>
+  <li><strong>Encargado:</strong> Dashboard, Registrar entrega, Historial, Canjes, etc.</li>
+  <li><strong>Superadmin:</strong> Dashboard, Usuarios, Admins, Aliados, Encargados, Materiales, Catálogos</li>
+  <li><strong>Administrador:</strong> Dashboard, Usuarios, Admins, Aliados, Encargados, Materiales, Recompensas, Catálogos</li>
+</ol>
+
+<p>Cada una con su propio layout (Sidebar + contenido) y conjunto de rutas.</p>
+
+<!-- ============================================================ -->
+<h2 id="api">5. &#x1F4E1; Capa de Servicios — <code>services/api.js</code></h2>
+
+<p><strong>Único archivo de servicios.</strong> No existe <code>auth.js</code> ni <code>entregas.js</code> separados.</p>
+
+<p><strong>Configuración base:</strong></p>
+<pre>
+const BASE_URL = process.env.REACT_APP_API_URL || 'https://backend-rp-arreglado-n8p8.onrender.com';
+</pre>
+
+<p><strong>Función genérica request():</strong></p>
+<pre>
+async function request(path, options = {}) {
+  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  const token = localStorage.getItem("token");
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.mensaje || `Error ${res.status}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+</pre>
+
+<p>Cada llamada al backend:</p>
+<ol>
+  <li>Establece Content-Type: application/json</li>
+  <li>Adjunta token JWT en header Authorization</li>
+  <li>Si error, lanza excepción con mensaje del backend</li>
+  <li>Si 204 (sin contenido), retorna null</li>
+</ol>
+
+<p><strong>Endpoints por módulo:</strong></p>
+
+<table>
+<tr><th>Módulo</th><th>Ruta base</th><th>Función</th><th>Endpoint</th></tr>
+<tr><td rowspan="5"><strong>Auth</strong></td><td rowspan="5"><code>/api/auth</code></td><td><code>iniciarSesion</code></td><td>POST /iniciar-sesion</td></tr>
+<tr><td><code>cerrarSesion</code></td><td>DELETE /cerrar-sesion</td></tr>
+<tr><td><code>registrarse</code></td><td>POST /registrarse</td></tr>
+<tr><td><code>solicitarRecuperacion</code></td><td>POST /recuperar-password/solicitar</td></tr>
+<tr><td><code>restablecerPassword</code></td><td>POST /recuperar-password/restablecer</td></tr>
+
+<tr><td rowspan="8"><strong>Usuario</strong></td><td rowspan="8"><code>/api/usuario</code></td><td><code>getPerfil</code></td><td>GET /perfil</td></tr>
+<tr><td><code>actualizarPerfil</code></td><td>PUT /perfil</td></tr>
+<tr><td><code>cambiarPassword</code></td><td>PUT /perfil/cambiar-password</td></tr>
+<tr><td><code>getEntregas</code></td><td>GET /entregas</td></tr>
+<tr><td><code>crearEntrega</code></td><td>POST /entregas</td></tr>
+<tr><td><code>getPuntos</code></td><td>GET /puntos</td></tr>
+<tr><td><code>getCanjes</code></td><td>GET /canjes</td></tr>
+<tr><td><code>canjearRecompensa</code></td><td>POST /canjes</td></tr>
+
+<tr><td rowspan="5"><strong>Aliado</strong></td><td rowspan="5"><code>/api/aliado</code></td><td><code>getPerfilAliado</code></td><td>GET /perfil</td></tr>
+<tr><td><code>agregarPuntoReciclaje</code></td><td>POST /perfil/puntos</td></tr>
+<tr><td><code>getEntregasAliado</code></td><td>GET /entregas</td></tr>
+<tr><td><code>actualizarEstadoEntrega</code></td><td>PUT /entregas/:id/estado</td></tr>
+<tr><td><code>getClasificaciones</code></td><td>GET /clasificaciones</td></tr>
+
+<tr><td rowspan="14"><strong>Admin</strong></td><td rowspan="14"><code>/api/admin</code></td><td><code>getAdmins / crearAdmin / actualizarAdmin / eliminarAdmin</code></td><td>/admins</td></tr>
+<tr><td><code>getUsuarios / actualizarUsuario / eliminarUsuario</code></td><td>/usuarios</td></tr>
+<tr><td><code>getAliados / crearAliado / actualizarAliado / eliminarAliado</code></td><td>/aliados</td></tr>
+<tr><td><code>getMateriales / crearMaterial / actualizarMaterial / eliminarMaterial</code></td><td>/materiales</td></tr>
+<tr><td><code>getRecompensas / crearRecompensa / actualizarRecompensa / eliminarRecompensa</code></td><td>/recompensas</td></tr>
+<tr><td><code>getRoles / crearRol / actualizarRol / eliminarRol</code></td><td>/roles</td></tr>
+<tr><td><code>getEncargados / crearEncargado / actualizarEncargado / eliminarEncargado</code></td><td>/encargados</td></tr>
+<tr><td><code>getMaterialesPorAliado / sincronizarMaterialesAliado</code></td><td>/aliados/:id/materiales</td></tr>
+<tr><td><code>getEntregasAdmin / actualizarEstadoEntregaAdmin</code></td><td>/entregas</td></tr>
+<tr><td><code>getEstadosMateriales / crearEstadoMaterial / ...</code></td><td>/estados-materiales</td></tr>
+<tr><td><code>getEstadosUsuarios / ...</code></td><td>/estados-usuarios</td></tr>
+<tr><td><code>getEstadosEntregas / ...</code></td><td>/estados-entregas</td></tr>
+<tr><td><code>getEstadosRecompensas / ...</code></td><td>/estados-recompensas</td></tr>
+<tr><td><code>getTiposRecompensa / ...</code></td><td>/tipos-recompensas</td></tr>
+
+<tr><td rowspan="11"><strong>Encargado</strong></td><td rowspan="11"><code>/api/encargado</code></td><td><code>buscarUsuariosEncargado</code></td><td>GET /usuarios?q=</td></tr>
+<tr><td><code>getMaterialesEncargado</code></td><td>GET /materiales</td></tr>
+<tr><td><code>registrarEntregaEncargado</code></td><td>POST /entregas</td></tr>
+<tr><td><code>getEntregasEncargado</code></td><td>GET /entregas</td></tr>
+<tr><td><code>getEntregaEncargado</code></td><td>GET /entregas/:id</td></tr>
+<tr><td><code>getCanjesEncargado / registrarCanjeEncargado</code></td><td>/canjes</td></tr>
+<tr><td><code>actualizarEstadoCanjeEncargado</code></td><td>PUT /canjes/:id/estado</td></tr>
+<tr><td><code>getNotificacionesEncargado</code></td><td>GET /notificaciones</td></tr>
+<tr><td><code>getRecompensasEncargado</code></td><td>GET /recompensas</td></tr>
+<tr><td><code>getReportesEncargado</code></td><td>GET /reportes?periodo=</td></tr>
+<tr><td><code>getPuntosReciclaje</code></td><td>GET /api/puntos-reciclaje</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="constantes">6. &#x1F4CA; Constantes — <code>constants/data.js</code></h2>
+
+<p>Exporta variables compartidas en toda la app:</p>
+
+<table>
+<tr><th>Variable</th><th>Descripción</th></tr>
+<tr><td><code>G, GL, GS, Y, YD</code></td><td>Colores: verde oscuro, verde claro, verde grisáceo, amarillo, amarillo oscuro</td></tr>
+<tr><td><code>MAT_CFG</code></td><td>Configuración de materiales (icono, color por tipo de material)</td></tr>
+<tr><td><code>MAT_ICONS</code></td><td>Iconos Bootstrap para cada material</td></tr>
+<tr><td><code>ROLES_CFG</code></td><td>Colores e iconos para cada rol (Admin, Usuario, Aliado, Encargado)</td></tr>
+<tr><td><code>ZONAS</code></td><td>["Norte", "Sur", "Centro", "Oriente", "Occidente"]</td></tr>
+<tr><td><code>ADMIN_PROFILE</code></td><td>Objeto del perfil admin por defecto</td></tr>
+<tr><td><code>REWARDS</code></td><td>Lista de recompensas de ejemplo</td></tr>
+<tr><td><code>CHART_DATA</code></td><td>Datos de ejemplo para gráficos Recharts</td></tr>
+<tr><td><code>INITIAL_STATE</code></td><td>Estado inicial del reducer</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="components">7. &#x1F3C0; Componentes Compartidos — <code>components/</code></h2>
+
+<h3 id="sidebar">7.1 <code>Sidebar.jsx</code> — Barra lateral del Administrador</h3>
+
+<p><strong>Menú colapsable con:</strong></p>
+<ul>
+  <li><strong>Dashboard</strong> (fijo, siempre visible)</li>
+  <li><strong>Recompensas</strong> (fijo)</li>
+  <li><strong>Supermercados</strong> (solo si <code>user?.esSuperAdmin</code>)</li>
+  <li><strong>Usuarios</strong> (desplegable: Usuarios, Encargados, Administradores)</li>
+  <li><strong>Catálogos</strong> (desplegable: 9 sub-rutas CRUD)</li>
+  <li><strong>Perfil</strong> (abajo, con avatar "SA" o "AD")</li>
+  <li><strong>Salir</strong> (botón rojo, hace <code>localStorage.clear()</code>)</li>
+</ul>
+
+<p><strong>Detectar sección activa:</strong> Usa <code>location.pathname.startsWith()</code> para abrir automáticamente el grupo correspondiente (Usuarios o Catálogos) según la ruta actual.</p>
+
+<h3 id="topbar">7.2 <code>Topbar.jsx</code> — Barra superior del Administrador</h3>
+
+<p>Muestra logo "Recycling Points" y avatar del perfil. El avatar se carga de <code>localStorage("perfilFoto")</code> y escucha el evento personalizado <code>"perfilFoto"</code> (disparado desde Perfil.jsx al actualizar la foto). Al hacer clic en el avatar, navega a <code>/perfil</code>.</p>
+
+<h3 id="toastcont">7.3 <code>ToastContainer.jsx</code> — Contenedor de notificaciones</h3>
+
+<p>Renderiza los toasts en la <strong>esquina inferior derecha</strong> (fixed). Cada toast:</p>
+<ul>
+  <li>Tiene animación de entrada <code>rec-toast-in</code> (0.35s ease-out)</li>
+  <li>Se auto-destruye después de 3.2s con animación <code>rec-toast-out</code></li>
+  <li>Muestra ícono según tipo: success (check), error (x), warning (triángulo), info (info)</li>
+  <li>Tiene botón de cierre manual</li>
+  <li>Colores predefinidos por tipo (verde, rojo, amarillo, azul)</li>
+</ul>
+
+<h3 id="spinner">7.4 <code>LoadingSpinner.jsx</code> — Spinner de carga</h3>
+
+<p>Spinner circular animado con texto y puntos que se incrementan cada 400ms. Soporta:</p>
+<ul>
+  <li><code>size</code>: "sm" (24px), "md" (40px), "lg" (64px)</li>
+  <li><code>overlay</code>: modo pantalla completa con fondo semitransparente y blur</li>
+  <li><code>text</code>: texto personalizado debajo del spinner</li>
+</ul>
+
+<h3 id="mappicker">7.5 <code>MapPicker.jsx</code> — Selector de ubicación</h3>
+
+<p>Modal con mapa interactivo Leaflet centrado en <strong>Popayán</strong> (2.4448, -76.6147).</p>
+<ul>
+  <li>Usa <strong>OpenStreetMap</strong> como proveedor de mapas</li>
+  <li><strong>Nominatim</strong> para búsqueda de lugares (ej: "Terraplaza Popayán")</li>
+  <li>Pin central indica la posición seleccionada</li>
+  <li>Al arrastrar el mapa, se actualiza el centro via <code>MapDragHandler</code></li>
+  <li>Al confirmar, devuelve <code>(lat, lng)</code></li>
+</ul>
+
+<h3 id="usershared">7.6 <code>UserShared.jsx</code> — Utilidades compartidas</h3>
+
+<p>Contiene 5 exportaciones:</p>
+
+<p><strong><code>getRolCfg(rol)</code>:</strong> Devuelve configuración de color e ícono para un rol específico. Usa <code>ROLES_CFG</code> de data.js con fallback a defaults.</p>
+
+<p><strong><code>RolBadge({ rol })</code>:</strong> Componente badge con color e ícono del rol. Ejemplo: Admin (azul), Usuario (verde), Aliado (naranja), Encargado (morado).</p>
+
+<p><strong><code>Toggle({ checked, onChange })</code>:</strong> Switch de activar/desactivar usando Bootstrap <code>form-check-input</code> con CSS personalizado.</p>
+
+<p><strong><code>ModalDetalle({ user, onClose, onSave, showToast, todosMateriales })</code>:</strong> Modal de edición genérico para cualquier rol. Características:</p>
+<ul>
+  <li>Muestra avatar con iniciales</li>
+  <li>Formulario con validación (nombre, email obligatorios)</li>
+  <li>Campos condicionales según rol: nombreEntidad (Aliado), puntoAsignado y pts (Encargado)</li>
+  <li>Selector de materiales (Aliado) con chips toggle</li>
+  <li>Toggle de estado activo/inactivo</li>
+  <li>Info solo lectura: fecha de alta, rol</li>
+</ul>
+
+<p><strong><code>TablaUsuarios({ lista, onToggle, onVer, onEliminar })</code>:</strong> Tabla genérica con columnas:</p>
+<ul>
+  <li>Avatar + nombre + fecha de alta</li>
+  <li>Email</li>
+  <li>Rol (RolBadge)</li>
+  <li>Zona</li>
+  <li>Puntos</li>
+  <li>Estado (Toggle + badge)</li>
+  <li>Acciones: editar, eliminar</li>
+</ul>
+
+<p>Muestra estado vacío con icono y mensaje cuando la lista está vacía.</p>
+
+<!-- ============================================================ -->
+<h2 id="pages">8. &#x1F4D6; Páginas Públicas — <code>paginas/</code></h2>
+
+<h3 id="login">8.1 <code>Login.jsx</code> (180 líneas)</h3>
+
+<p>Formulario de inicio de sesión con:</p>
+<ul>
+  <li>Campos: email, contraseña</li>
+  <li>Validación de campos obligatorios</li>
+  <li>Llama a <code>iniciarSesion(correo, password)</code></li>
+  <li><code>detectarRol()</code> y <code>esSuperAdminUsuario()</code> determinan el tipo de usuario</li>
+  <li>Guarda token en localStorage y usuario en sessionStorage</li>
+  <li>Llama a <code>onLogin(usuarioData)</code> del padre (App.jsx)</li>
+  <li>Redirige según <code>rolSeleccionado</code></li>
+</ul>
+
+<h3 id="registro">8.2 <code>Registro.jsx</code> (297 líneas)</h3>
+
+<p>Formulario de registro con:</p>
+<ul>
+  <li>Campos: nombre, username, email, contraseña, confirmar contraseña, términos y condiciones</li>
+  <li>Validación de coincidencia de contraseñas</li>
+  <li>Llama a <code>registrarse(datos)</code></li>
+  <li>Después del registro exitoso, muestra SweetAlert2 para seleccionar rol</li>
+  <li>Redirige al login</li>
+</ul>
+
+<h3 id="forgot">8.3 <code>RecuperarContraseña.jsx</code> (322 líneas)</h3>
+
+<p>Recuperación de contraseña en 2 pasos con Stepper:</p>
+<ol>
+  <li><strong>Enviar código:</strong> ingresa email, llama a <code>solicitarRecuperacion(correo)</code></li>
+  <li><strong>Restablecer:</strong> ingresa código + nueva contraseña, llama a <code>restablecerPassword(datos)</code></li>
+</ol>
+
+<h3 id="landing">8.4 <code>LandingPage.jsx</code> (177 líneas)</h3>
+
+<p>Página de marketing con:</p>
+<ul>
+  <li>Navbar con logo + Login/Registro</li>
+  <li>Hero section: "Únete al cambio" + imagen + CTA</li>
+  <li>Cómo funciona (3 pasos: Registra, Recicla, Gana)</li>
+  <li>Beneficios (4 tarjetas: puntos, sostenibilidad, descuentos, comunidad)</li>
+  <li>FAQ con acordeón interactivo</li>
+  <li>Footer con contactos</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="admin">9. &#x1F4BC; Panel Administrador — <code>paneles/administrador/</code></h2>
+
+<h3 id="dashboard">9.1 <code>Dashboard.jsx</code> — Panel principal</h3>
+
+<p>Muestra tarjetas de resumen (usuarios, entregas, puntos) y gráficos con Recharts. Recibe <code>{ state, dispatch, showToast, navigate, user }</code> como props.</p>
+
+<h3 id="usuarios">9.2 <code>Usuarios.jsx</code> — Gestión de usuarios</h3>
+<ul>
+  <li>CRUD completo: listar, crear, editar, eliminar, toggle activo/inactivo</li>
+  <li>Usa <code>TablaUsuarios</code> de UserShared.jsx</li>
+  <li>Modal de detalle para editar usuario</li>
+  <li>Toast: "Usuario creado correctamente" / "Cambios guardados correctamente"</li>
+</ul>
+
+<h3 id="admins">9.3 <code>Administradores.jsx</code> — Gestión de admins</h3>
+<ul>
+  <li>CRUD completo de administradores</li>
+  <li>Modal de creación/edición con formulario</li>
+  <li>Toggle para activar/desactivar</li>
+  <li>Toast: "Administrador creado correctamente" / "Cambios guardados correctamente"</li>
+</ul>
+
+<h3 id="aliados">9.4 <code>Aliados.jsx</code> — Gestión de supermercados aliados</h3>
+<p><strong>El panel más complejo.</strong></p>
+<ul>
+  <li>CRUD completo con modal de creación/edición</li>
+  <li>Campos: nombre, NIT, dirección, teléfono, correo, zona, lat/lng (con MapPicker)</li>
+  <li><strong>Materiales que acepta:</strong> selector de chips (toggle), <code>sincronizarMaterialesAliado()</code></li>
+  <li><strong>Puntos de reciclaje:</strong> CRUD anidado (agregar/editar puntos físicos dentro del aliado)</li>
+  <li>Clasificaciones: categorías de materiales por aliado</li>
+  <li>Toggle activo/inactivo</li>
+  <li>Toast: "Supermercado creado correctamente" / "Cambios guardados correctamente"</li>
+</ul>
+
+<h3 id="encargados">9.5 <code>Encargados.jsx</code> — Gestión de encargados</h3>
+<ul>
+  <li><strong>Superadmin:</strong> no ve botón "Nuevo encargado" (oculto con <code>{!user?.esSuperAdmin && (...)}</code>)</li>
+  <li>Superadmin SÍ ve la lista con editar/eliminar/toggle</li>
+  <li>Tabla personalizada <code>TablaEncargados</code>: nombre, correo, teléfono, zona, supermercado, punto, estado, acciones</li>
+  <li>Modal creación: nombre, teléfono, email, zona, supermercado, punto asignado, estado</li>
+  <li>Aliado seleccionable: superadmin puede elegir, admin normal tiene su aliado asignado (read-only)</li>
+  <li>Toast: "Encargado creado correctamente" / "Cambios guardados correctamente"</li>
+</ul>
+
+<h3 id="materiales">9.6 <code>Materiales.jsx</code> — Gestión de materiales</h3>
+<ul>
+  <li>Tabla con filtros por zona y categoría</li>
+  <li>Modal creación/edición: nombre, categoría, descripción, peso min/max, unidad, zona, puntos por kg, activo</li>
+  <li>Usa <code>showToastMsg</code> como wrapper local que delega en <code>showToast</code></li>
+  <li>Toast: "Material creado correctamente" / "Cambios guardados correctamente"</li>
+</ul>
+
+<h3 id="recompensas">9.7 <code>Recompensas.jsx</code> — Gestión de recompensas</h3>
+<ul>
+  <li>Tabla de recompensas con modal de creación/edición</li>
+  <li>Campos: nombre, descripción, puntos requeridos, tipo, aliado, imagen, stock, fechas</li>
+  <li>Toast: "Recompensa creada correctamente" / "Cambios guardados correctamente"</li>
+</ul>
+
+<h3 id="perfil">9.8 <code>Perfil.jsx</code> — Perfil del administrador</h3>
+<ul>
+  <li>Muestra datos del usuario logueado</li>
+  <li>Edita nombre, email, teléfono</li>
+  <li>Cambio de contraseña (actual + nueva)</li>
+  <li>Foto de perfil (dispara evento <code>perfilFoto</code> para actualizar Topbar)</li>
+  <li>Toast: "Cambios guardados correctamente"</li>
+</ul>
+
+<h3 id="catalogos">9.9 Catálogos — <code>CrudCatalogo.jsx</code></h3>
+
+<p><strong>Componente genérico CRUD</strong> que recibe:</p>
+<ul>
+  <li><code>titulo</code>: nombre del catálogo (ej: "Roles", "Estados de materiales")</li>
+  <li><code>campos</code>: definición de columnas: <code>{ key, label, type }</code></li>
+  <li><code>apiGet, apiCrear, apiActualizar, apiEliminar</code>: funciones del API</li>
+</ul>
+
+<p><strong>Qué maneja internamente:</strong></p>
+<ul>
+  <li>Carga de datos desde API</li>
+  <li>Tabla con columnas dinámicas</li>
+  <li>Modal de creación/edición con campos según <code>type</code> (text, number, textarea, select)</li>
+  <li>Confirmación de eliminación</li>
+  <li>Toast dinámico: <code>"${titulo.replace(/s$/, "")} creado correctamente"</code></li>
+</ul>
+
+<p>Los 9 catálogos que usan este componente:</p>
+<ul>
+  <li><code>CatRoles</code> — CRUD de roles de usuario</li>
+  <li><code>CatEstadosPuntos</code> — Estados de puntos</li>
+  <li><code>CatEstadosMateriales</code> — Estados de materiales</li>
+  <li><code>CatEstadosEntregas</code> — Estados de entregas</li>
+  <li><code>CatEstadosAliados</code> — Estados de aliados</li>
+  <li><code>CatEstadosCanjes</code> — Estados de canjes</li>
+  <li><code>CatEstadosUsuarios</code> — Estados de usuarios</li>
+  <li><code>CatEstadosRecompensas</code> — Estados de recompensas</li>
+  <li><code>CatTiposRecompensa</code> — Tipos de recompensa</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="encargado">10. &#x1F916; Panel Encargado — <code>paneles/encargado/</code></h2>
+
+<p>El panel más extenso con <strong>17 archivos</strong>. Tiene su propio reducer, layout y navegación.</p>
+
+<h3 id="panelenc">10.1 <code>PanelEncargado.jsx</code> — Layout principal</h3>
+
+<pre>
+export default function PanelEncargado({ user, onLogout, showToast }) {
+  const [state, dispatch] = useReducer(reducer, INITIAL_STATE);
+  const [view, setView] = useState("dashboard");
+
+  const compartido = { state, dispatch, showToast, navigate, user };
+
+  return (
+    &lt;div className="app-shell"&gt;
+      &lt;Sidebar view={view} setView={setView} onLogout={onLogout} /&gt;
+      &lt;div className="main-content"&gt;
+        &lt;Topbar /&gt;
+        &lt;div className="page-area"&gt;
+          {view === "dashboard" && &lt;VistaDashboard /&gt;}
+          {view === "registrar-entrega" && &lt;RegistrarEntrega /&gt;}
+          {view === "historial" && &lt;HistorialdeEntregas /&gt;}
+          {view === "canjes" && &lt;Canjes /&gt;}
+          {view === "calendario" && &lt;Calendario /&gt;}
+          {view === "notificaciones" && &lt;Notificaciones /&gt;}
+          {view === "reportes" && &lt;Reportes /&gt;}
+          {view === "perfil" && &lt;PerfilEncargado /&gt;}
+        &lt;/div&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+  );
+}
+</pre>
+
+<p><strong>No usa React Router.</strong> Usa un state <code>view</code> y renderizado condicional. Tiene su propio <code>useReducer</code> local independiente del admin.</p>
+
+<h3 id="sidebarc">10.2 <code>Sidebar.jsx</code> (Encargado)</h3>
+
+<p>Barra lateral con: Dashboard, Registrar entrega, Historial, Canjes, Calendario, Reportes, Notificaciones (con badge de no leídas), Perfil, Salir.</p>
+
+<p>Usa el state <code>view</code> para resaltar el ítem activo. Marca las notificaciones no leídas con un badge rojo.</p>
+
+<h3 id="dashboardc">10.3 <code>VistaDashboard.jsx</code> (559 líneas)</h3>
+
+<p><strong>Dashboard más completo del sistema.</strong></p>
+
+<p><strong>Estadísticas:</strong></p>
+<ul>
+  <li>Entregas del día, semana, mes, total (cards)</li>
+  <li>Canjes del mes</li>
+  <li>Puntos acumulados del día</li>
+  <li>Materiales más reciclados (gráfico)</li>
+  <li>Últimas entregas (tabla paginada)</li>
+</ul>
+
+<p><strong>Componentes internos:</strong></p>
+<ul>
+  <li><code>StatCard({ icon, label, value, color, bg })</code> — tarjeta de estadística reutilizable</li>
+  <li><code>TopMaterialsChart({ entregas })</code> — gráfico de materiales reciclados</li>
+  <li><code>RecentDeliveries({ entregas })</code> — tabla de últimas 5 entregas</li>
+  <li><code>DateFilter</code> — selector de rango de fechas</li>
+</ul>
+
+<p><strong>API calls:</strong> <code>getEntregasEncargado()</code>, <code>getCanjesEncargado()</code></p>
+
+<h3 id="registrar">10.4 <code>RegistrarEntrega.jsx</code> (411 líneas)</h3>
+
+<p><strong>Flujo de 3 pasos:</strong></p>
+
+<p><strong>Paso 1 — Buscar usuario:</strong></p>
+<ul>
+  <li>Campo de búsqueda que llama a <code>buscarUsuariosEncargado(q)</code></li>
+  <li>Muestra <code>ListaUsuariosDia({ usuarios, onSelect })</code></li>
+  <li>Al seleccionar, muestra perfil del usuario</li>
+</ul>
+
+<p><strong>Paso 2 — Registrar materiales:</strong></p>
+<ul>
+  <li>Tabla dinámica con filas: material (select) + kg (input) + estado (select)</li>
+  <li>Materiales de <code>getMaterialesEncargado()</code></li>
+  <li>Multiplicador por estado: Bueno=1.0, Regular=0.75, Malo=0.5</li>
+  <li>Muestra: "Base: X pts × Y" (puntos base × multiplicador)</li>
+  <li>Estado se persiste en localStorage (<code>_estadosMat</code>)</li>
+</ul>
+
+<p><strong>Paso 3 — Confirmar:</strong></p>
+<ul>
+  <li>Resumen con totales (kg, puntos)</li>
+  <li>Campo <code>fechaVencimientoPuntos</code> <strong>requerido</strong></li>
+  <li>Badge de multiplicador de estado</li>
+  <li>Botón "Registrar entrega" deshabilitado si falta fecha o no hay materiales</li>
+  <li>Llama a <code>registrarEntregaEncargado(datos)</code></li>
+</ul>
+
+<p><strong>Validaciones:</strong></p>
+<ul>
+  <li>Debe seleccionar un usuario</li>
+  <li>Debe tener al menos un material con kg > 0</li>
+  <li>Debe tener fecha de vencimiento de puntos</li>
+  <li>Botón submit deshabilitado + estilo gris cuando falta algo</li>
+</ul>
+
+<h3 id="historial">10.5 <code>HistorialdeEntregas.jsx</code> (696 líneas)</h3>
+
+<p>Lista completa de entregas registradas:</p>
+<ul>
+  <li><strong>Filtros:</strong> búsqueda por usuario, fecha, estado</li>
+  <li><strong>PuntosExpirationBadge:</strong> badge que indica cuándo expiran los puntos</li>
+  <li><strong>DetalleEntrega:</strong> modal expandible con información completa de la entrega</li>
+  <li><strong>Normalizador</strong> (<code>normalizar(entrega, idx)</code>): unifica datos de API + localStorage</li>
+  <li>Propagación de estado de material desde detalle a lista</li>
+</ul>
+
+<h3 id="canjes">10.6 <code>Canjes.jsx</code> (817 líneas)</h3>
+
+<ul>
+  <li>Lista de solicitudes de canje con filtros (estado, fecha)</li>
+  <li>Modal de detalle con información de recompensa y usuario</li>
+  <li>Cambio de estado (Aprobado/Rechazado)</li>
+  <li>Registro de canje: seleccionar usuario, recompensa, puntos a canjear</li>
+  <li><strong>Vencimiento removido</strong> — no hay campo de fecha de vencimiento</li>
+</ul>
+
+<h3 id="notif">10.7 <code>Notificaciones.jsx</code> (328 líneas)</h3>
+
+<ul>
+  <li>Lista de notificaciones con estado leída/no leída</li>
+  <li>Badge en sidebar con conteo de no leídas</li>
+  <li>Marcar individual como leída, o marcar todas</li>
+  <li>Skeleton loading mientras carga</li>
+  <li>API: <code>getNotificacionesEncargado()</code>, <code>marcarNotificacionLeida()</code>, <code>marcarTodasNotificacionesLeidas()</code></li>
+</ul>
+
+<h3 id="reportes">10.8 <code>Reportes.jsx</code> (224 líneas)</h3>
+
+<ul>
+  <li>Selector de período: "Este mes", "Últimos 30 días", etc.</li>
+  <li>Gráfico de entregas por día</li>
+  <li>Top materiales reciclados</li>
+  <li>Totales: kg, puntos, número de entregas</li>
+  <li>API: <code>getReportesEncargado(periodo)</code></li>
+</ul>
+
+<h3 id="calendario">10.9 <code>Calendario.jsx</code> (118 líneas)</h3>
+
+<p>Vista calendario simple con eventos de entregas (datos estáticos de ejemplo, no conectado a API real).</p>
+
+<h3 id="perfilc">10.10 <code>PerfilEncargado.jsx</code> (183 líneas)</h3>
+
+<p>Perfil del encargado: muestra y edita nombre, email, teléfono, contraseña. Incluye foto de perfil.</p>
+
+<p><strong>Componentes pequeños adicionales:</strong></p>
+<table>
+<tr><th>Componente</th><th>Líneas</th><th>Función</th></tr>
+<tr><td><code>Av.jsx</code></td><td>24</td><td>Avatar con iniciales del usuario</td></tr>
+<tr><td><code>Badge.jsx</code></td><td>18</td><td>Badge reutilizable para estados</td></tr>
+<tr><td><code>StatCard.jsx</code></td><td>30</td><td>Tarjeta con icono, label y valor</td></tr>
+<tr><td><code>ListaUsuariosDia.jsx</code></td><td>49</td><td>Lista de resultados de búsqueda de usuarios</td></tr>
+<tr><td><code>DetalleEntrega.jsx</code></td><td>314</td><td>Modal de detalle de entrega (info usuario, materiales, totales)</td></tr>
+<tr><td><code>encargadoTheme.jsx</code></td><td>391</td><td>Tema visual verde: colores, estilos inline, animaciones keyframes, estilos de tabla/botones/modal/toggle/input</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="superadmin">11. &#x1F451; Panel Superadmin — <code>paneles/superadmin/</code></h2>
+
+<p><strong><code>PanelSuperadmin.jsx</code></strong> — Reutiliza componentes del administrador:</p>
+
+<pre>
+import Dashboard from "../administrador/Dashboard";
+import Usuarios from "../administrador/Usuarios";
+import Aliados from "../administrador/Aliados";
+// ...etc (reutiliza todo del admin)
+</pre>
+
+<p><strong>Rutas del superadmin:</strong> dashboard, usuarios, administradores, aliados, encargados, materiales, perfil, y todos los catálogos.</p>
+
+<p><strong>NO tiene ruta para Recompensas</strong> — fue removida explícitamente.</p>
+
+<p><strong><code>Sidebar.jsx</code> (Superadmin)</strong> — Similar a la del administrador pero:</p>
+<ul>
+  <li>No tiene "Recompensas" en el menú principal</li>
+  <li>Los catálogos sí incluyen "Estados recompensas" y "Tipos de recompensa" (son CRUD de configuración, no gestión de recompensas)</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="estilos">12. &#x1F3A8; Estilos CSS</h2>
+
+<p><strong><code>styles/panel.css</code></strong> (305 líneas):</p>
+<ul>
+  <li>Variables CSS: <code>--verde: #2e7d32</code>, <code>--verde-claro: #e8f5e9</code>, <code>--gris-borde: #d1d5db</code>, etc.</li>
+  <li>.panel-page: layout de página del panel</li>
+  <li>.btn-panel: botones primary (verde), ghost (outline), danger</li>
+  <li>.chip: selector tipo pill para categorías</li>
+  <li>.panel-table: tabla con hover, filas inactivas opacas</li>
+  <li>.panel-modal: modal con animación slide-in</li>
+  <li>.search-box: input de búsqueda con icono</li>
+  <li>Animaciones: <code>rec-spin</code> (spinner), <code>rec-toast-in/out</code> (toast), slide-in (modal)</li>
+</ul>
+
+<p><strong><code>index.css</code></strong> — Estilos globales:</p>
+<ul>
+  <li>.app-shell: layout flex (sidebar + main)</li>
+  <li>.main-content: área de contenido</li>
+  <li>.page-area: padding y scroll</li>
+  <li>Cards, stats, landing page styles</li>
+  <li>Scrollbar personalizado</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2 id="flujo">13. &#x1F504; Flujo de Datos Completo</h2>
+
+<pre>
+index.js
+  └─ BrowserRouter
+      └─ App.jsx
+          ├─ [No logueado]
+          │   └─ LandingPage / Login / Registro / RecuperarContraseña
+          │
+          ├─ [rol === "encargado"]
+          │   └─ PanelEncargado.jsx
+          │       ├─ Sidebar (encargado)
+          │       ├─ Topbar
+          │       └─ Vista condicional (useState "view")
+          │           ├─ VistaDashboard → api.getEntregasEncargado()
+          │           ├─ RegistrarEntrega → api.buscarUsuariosEncargado() + api.registrarEntregaEncargado()
+          │           ├─ HistorialdeEntregas → api.getEntregasEncargado()
+          │           ├─ Canjes → api.getCanjesEncargado()
+          │           ├─ Notificaciones → api.getNotificacionesEncargado()
+          │           ├─ Reportes → api.getReportesEncargado()
+          │           └─ PerfilEncargado
+          │
+          ├─ [rol === "superadmin"]
+          │   └─ PanelSuperadmin.jsx (React Router /superadmin/*)
+          │       ├─ Sidebar (superadmin)
+          │       └─ Rutas: Dashboard, Usuarios, Admins, Aliados, Encargados, etc.
+          │
+          └─ [rol === "administrador"]
+              ├─ Sidebar (admin)
+              ├─ Topbar
+              └─ React Router /dashboard, /usuarios, /encargados, etc.
+</pre>
+
+<!-- ============================================================ -->
+<h2 id="tech">14. &#x1F4F1; Resumen de Tecnologías y Versiones</h2>
+
+<table>
+<tr><th>Tecnología</th><th>Versión</th><th>Uso</th></tr>
+<tr><td><strong>React</strong></td><td>18.3.1</td><td>Framework UI con hooks (useState, useEffect, useReducer, useCallback)</td></tr>
+<tr><td><strong>React Router</strong></td><td>7.15.0</td><td>Navegación SPA (Routes, Route, NavLink, useNavigate, useLocation)</td></tr>
+<tr><td><strong>Bootstrap</strong></td><td>5.3.8</td><td>Framework CSS (d-flex, btn, modal, table, form-control, form-switch)</td></tr>
+<tr><td><strong>Bootstrap Icons</strong></td><td>1.13.1</td><td>Iconos (bi-recycle, bi-person, bi-geo-alt, bi-gift, etc.)</td></tr>
+<tr><td><strong>Leaflet</strong></td><td>1.9.4</td><td>Mapas interactivos (MapPicker.jsx)</td></tr>
+<tr><td><strong>react-leaflet</strong></td><td>4.2.1</td><td>Wrapper React para Leaflet</td></tr>
+<tr><td><strong>Recharts</strong></td><td>3.8.1</td><td>Gráficos (Dashboard admin y encargado, Reportes)</td></tr>
+<tr><td><strong>SweetAlert2</strong></td><td>11.26.25</td><td>Alertas personalizadas (selección de rol en Registro)</td></tr>
+<tr><td><strong>Chart.js</strong></td><td>4.5.1</td><td>Gráficos adicionales</td></tr>
+<tr><td><strong>react-scripts</strong></td><td>5.0.1</td><td>Build tool (Create React App)</td></tr>
+<tr><td><strong>sessionStorage</strong></td><td>—</td><td>Almacenamiento de sesión del usuario</td></tr>
+<tr><td><strong>localStorage</strong></td><td>—</td><td>Token JWT, foto perfil, estado materiales, estado entrega</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="preguntas">15. &#x2753; Preguntas Clave para Entrevista</h2>
+
+<div class="resaltar">
+<p><strong>1. ¿Cómo se maneja el estado global?</strong></p>
+<p>Con <code>useReducer</code> en App.jsx. Define acciones tipo flux para CRUD de usuarios, admins, aliados, encargados, y estado de IA/puntos. El panel encargado tiene su propio reducer independiente dentro de PanelEncargado.jsx.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>2. ¿Cómo se maneja la autenticación?</strong></p>
+<p>Token JWT en localStorage, datos de usuario en sessionStorage. App.jsx lee sessionStorage al montar. handleLogin() guarda y redirige según rol. handleLogout() llama al API, limpia storage y redirige a /login.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>3. ¿Cómo se separan los roles?</strong></p>
+<p>Tres flujos condicionales en App.jsx según <code>user.rolSeleccionado</code>: encargado (ruta /encargado/*), superadmin (ruta /superadmin/*), administrador (ruta /dashboard, etc.). Cada uno con su propio layout y componentes.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>4. ¿Cómo se comunican los componentes?</strong></p>
+<p>Por props drilling. No hay Context API, Redux ni Zustand. Los datos fluyen de App.jsx hacia abajo. El panel encargado usa props <code>compartido</code> y el panel admin usa el objeto <code>shared</code>. El toast se pasa como prop <code>showToast</code>.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>5. ¿Cómo funciona el sistema de toasts?</strong></p>
+<p>Hook personalizado <code>useToast()</code> en App.jsx. Cada toast tiene id (timestamp), msg y type. Se auto-eliminan a los 3.2s con animaciones. ToastContainer los renderiza en posición fixed (esquina inferior derecha).</p>
+</div>
+
+<div class="resaltar">
+<p><strong>6. ¿Cómo se maneja la carga de datos inicial?</strong></p>
+<p>En el useEffect de App.jsx, cuando hay usuario (no encargado), carga usuarios y admins desde API y los transforma a formato interno. Los encargados cargan sus propios datos dentro de PanelEncargado.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>7. ¿Cómo se manejan los mapas?</strong></p>
+<p>Leaflet con OpenStreetMap. MapPicker.jsx muestra un modal con mapa centrado en Popayán. Usa Nominatim para buscar lugares. El pin central marca la ubicación. Al confirmar, devuelve lat/lng.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>8. ¿Cómo se calculan los puntos por estado del material?</strong></p>
+<p><code>ESTADO_MULTIPLIER</code>: Bueno=1.0, Regular=0.75, Malo=0.5. Cada fila en RegistrarEntrega aplica el multiplicador a los puntos base del material. Se muestra "Base: X pts × Y".</p>
+</div>
+
+<div class="resaltar">
+<p><strong>9. ¿Qué diferencia hay entre el panel administrador y superadmin?</strong></p>
+<p>El superadmin reutiliza los mismos componentes del administrador pero sin la ruta "Recompensas". Además, en Encargados.jsx no ve el botón "Nuevo encargado" (oculto con <code>{!user?.esSuperAdmin && (...)}</code>).</p>
+</div>
+
+<div class="resaltar">
+<p><strong>10. ¿Qué APIs consume el frontend?</strong></p>
+<p>Todas pasan por <code>services/api.js</code>. Los endpoints se organizan por módulo: auth (/api/auth), usuario (/api/usuario), aliado (/api/aliado), admin (/api/admin), encargado (/api/encargado). Cada función usa la función genérica <code>request()</code> que maneja headers, token JWT y errores.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>11. ¿Qué archivo contiene la lógica de servicios?</strong></p>
+<p>Solo <code>services/api.js</code>. No hay <code>auth.js</code> ni <code>entregas.js</code> separados. Todo está centralizado en un solo archivo de 429 líneas.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>12. ¿Cómo se estructura el formulario de registro de entrega (encargado)?</strong></p>
+<p>Tres pasos en RegistrarEntrega.jsx: (1) buscar y seleccionar usuario, (2) agregar materiales con kg y estado (con multiplicador de puntos), (3) confirmar con fecha de vencimiento de puntos requerida y ver resumen.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>13. ¿Cómo funciona el CRUD genérico de catálogos?</strong></p>
+<p>CrudCatalogo.jsx recibe título, definición de campos y funciones API. Renderiza tabla, modal de creación/edición y confirmación de eliminación de forma dinámica. Los 9 catálogos lo usan con diferentes configuraciones.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>14. ¿Qué almacenamiento se usa para cada cosa?</strong></p>
+<p>sessionStorage: datos del usuario (se borra al cerrar pestaña). localStorage: token JWT, foto de perfil, estado de materiales (_estadosMat), estado de entrega (_estadoEntregaActual). No hay cookies.</p>
+</div>
+
+<div class="resaltar">
+<p><strong>15. ¿Cómo se maneja el cierre de sesión?</strong></p>
+<p>handleLogout() en App.jsx: llama a cerrarSesion() (DELETE /api/auth/cerrar-sesion), limpia sessionStorage y localStorage, setea user a null, redirige con window.location.replace("/login") para recargar la app desde cero.</p>
+</div>
+
+</body>
+</html>

@@ -3,39 +3,64 @@ import { useState, useEffect } from "react";
 import { C, S } from "./encargadoTheme";
 import { getPerfil, actualizarPerfil } from "../../services/api";
 
-const PERFIL_DEFAULT = { nombre: "", email: "", telefono: "", punto: "", aliadoNombre: "", rol: "", fechaAlta: "", foto: "" };
+function cargarDeStorage() {
+  try {
+    const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+    const rol = typeof u.rol === "string" ? u.rol : "Encargado";
+    return {
+      nombre: u.nombre || "",
+      email: u.correo || "",
+      telefono: u.telefono || "",
+      punto: u.puntoACargo?.nombre || "",
+      aliadoNombre: u.aliado || u.aliadoNombre || "",
+      rol,
+      fechaAlta: u.fechaRegistro || "",
+      foto: localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || u.imagen || "",
+    };
+  } catch { return {}; }
+}
 
 export default function PerfilEncargado() {
   const [editMode, setEditMode] = useState(false);
   const [toast,    setToast]    = useState(null);
-  const [form,     setForm]     = useState(PERFIL_DEFAULT);
-  const [saved,    setSaved]    = useState(() => {
-    const foto = localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || "";
-    return { ...PERFIL_DEFAULT, foto };
-  });
+  const [form,     setForm]     = useState(cargarDeStorage);
+  const [saved,    setSaved]    = useState(cargarDeStorage);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type }); setTimeout(() => setToast(null), 3000);
   };
 
   useEffect(() => {
-    const cargar = async () => {
+    (async () => {
       try {
-        const usuario = JSON.parse(localStorage.getItem("usuario"));
-        if (!usuario?.idUsuario) return;
-        const data = await getPerfil(usuario.idUsuario);
-        const foto = localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || data?.foto || "";
-        const perfil = { nombre: data?.nombre || "", email: data?.correo || "", telefono: data?.telefono || "", punto: data?.punto || "", aliadoNombre: data?.aliadoNombre || "", rol: data?.rol || "Encargado", fechaAlta: data?.fechaAlta || "", foto };
+        const data = await getPerfil();
+        const u = data?.usuario || data || {};
+        const foto = localStorage.getItem("perfilFotoEncargado") || localStorage.getItem("perfilFoto") || u?.imagen || "";
+        const perfil = {
+          nombre: u?.nombre || "",
+          email: u?.correo || "",
+          telefono: u?.telefono || "",
+          punto: u?.puntoACargo?.nombre || "",
+          aliadoNombre: u?.aliado || u?.aliadoNombre || "",
+          rol: u?.rol || "Encargado",
+          fechaAlta: u?.fechaRegistro || "",
+          foto,
+        };
         setSaved(perfil); setForm(perfil);
-      } catch (e) { console.log("Error cargando perfil:", e); }
-    };
-    cargar();
+      } catch (e) {
+        console.warn("API perfil no disponible, usando datos locales:", e.message);
+      }
+    })();
   }, []);
 
   const guardar = async () => {
     if (!form.nombre.trim()) { showToast("El nombre es obligatorio", "error"); return; }
     try {
-      await actualizarPerfil(form);
+      await actualizarPerfil({
+        nombre: form.nombre,
+        telefono: form.telefono,
+        imagen: form.foto || null,
+      });
       setSaved({ ...form }); setEditMode(false);
       showToast("Perfil actualizado correctamente");
     } catch { showToast("Error actualizando perfil", "error"); }

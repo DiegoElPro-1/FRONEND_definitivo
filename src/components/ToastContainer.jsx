@@ -1,36 +1,72 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-// ── Toast individual ──────────────────────────────────────────────────────────
+const ICONS = {
+  success: "bi-check-circle-fill",
+  error:   "bi-x-circle-fill",
+  warning: "bi-exclamation-triangle-fill",
+  info:    "bi-info-circle-fill",
+};
+
+const COLORS = {
+  success: { bg: "#e8f5e9", border: "#a5d6a7", text: "#1b5e20", icon: "#2e7d32" },
+  error:   { bg: "#ffebee", border: "#ef9a9a", text: "#b71c1c", icon: "#c62828" },
+  warning: { bg: "#fff8e1", border: "#ffe082", text: "#795548", icon: "#f57f17" },
+  info:    { bg: "#e3f2fd", border: "#90caf9", text: "#0d47a1", icon: "#1565c0" },
+};
+
 function Toast({ msg, type, onDone }) {
+  const [exiting, setExiting] = useState(false);
+
   useEffect(() => {
-    const t = setTimeout(onDone, 3000);
-    return () => clearTimeout(t);
+    const t = setTimeout(() => setExiting(true), 2800);
+    const r = setTimeout(() => onDone(), 3200);
+    return () => { clearTimeout(t); clearTimeout(r); };
   }, [onDone]);
 
-  const bgClass =
-    type === "error"   ? "bg-danger"  :
-    type === "warning" ? "bg-warning" :
-    "bg-success";
-
-  const textClass = type === "warning" ? "text-dark" : "text-white";
+  const c = COLORS[type] || COLORS.success;
 
   return (
-    <div
-      className={`${bgClass} ${textClass} rounded-3 px-3 py-2 fw-bold shadow`}
-      style={{ fontSize: 13, maxWidth: 280 }}
-    >
-      {msg}
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      padding: "10px 16px",
+      borderRadius: 10,
+      backgroundColor: c.bg,
+      border: `1.5px solid ${c.border}`,
+      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+      fontSize: 13,
+      fontWeight: 600,
+      color: c.text,
+      minWidth: 240,
+      maxWidth: 360,
+      animation: exiting
+        ? "rec-toast-out 0.35s ease-in forwards"
+        : "rec-toast-in 0.35s ease-out",
+      pointerEvents: "auto",
+    }}>
+      <i className={`bi ${ICONS[type] || ICONS.success}`} style={{ fontSize: 18, color: c.icon, flexShrink: 0 }} />
+      <span style={{ flex: 1 }}>{msg}</span>
+      <button onClick={() => onDone()} style={{
+        background: "none", border: "none", cursor: "pointer",
+        fontSize: 16, color: c.text, opacity: 0.5, padding: 0, lineHeight: 1,
+      }}><i className="bi bi-x" /></button>
     </div>
   );
 }
 
-// ── Contenedor de toasts ──────────────────────────────────────────────────────
 export default function ToastContainer({ toasts, remove }) {
   return (
-    <div
-      className="position-fixed bottom-0 end-0 p-4 d-flex flex-column gap-2"
-      style={{ zIndex: 9999 }}
-    >
+    <div style={{
+      position: "fixed",
+      bottom: 24,
+      right: 24,
+      zIndex: 9999,
+      display: "flex",
+      flexDirection: "column",
+      gap: 10,
+      pointerEvents: "none",
+    }}>
       {toasts.map(t => (
         <Toast key={t.id} msg={t.msg} type={t.type} onDone={() => remove(t.id)} />
       ))}

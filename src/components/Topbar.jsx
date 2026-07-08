@@ -63,26 +63,6 @@ export default function Topbar({ pts, setView }) {
               )}
             </div>
 
-            {/* NOTIFICACIONES */}
-            <div className="position-relative">
-              <button
-                className="btn border rounded-circle"
-                style={{ color: "#16a34a", borderColor: "#16a34a" }}
-              >
-                <i className="bi bi-bell-fill"></i>
-              </button>
-
-              <span
-                className="position-absolute top-0 start-100 translate-middle badge rounded-pill border border-white"
-                style={{ background: "#facc15", color: "#111111", fontSize: 10 }}
-              >
-                3
-              </span>
-            </div>
-
-            {/* PERFIL (iniciales) */}
-           
-
           </div>
         </div>
 

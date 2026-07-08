@@ -1,6 +1,59 @@
 import { useState, useEffect } from "react";
+import LoadingSpinner from "../../components/LoadingSpinner";
 import { C, S, Av, BadgeCanje, getIniciales, getPtsUsuario, getPtsRecompensa, capitalizar } from "./encargadoTheme";
 import { buscarUsuariosEncargado, getEntregasEncargadoPorUsuario, getRecompensasEncargado, getCanjesEncargado, registrarCanjeEncargado, actualizarEstadoCanjeEncargado } from "../../services/api";
+
+function getRewardStatus(r) {
+  const hoy = new Date(new Date().toDateString());
+  const inicio = r.fechaInicio ? new Date(r.fechaInicio + "T00:00:00") : null;
+  const fin = r.fechaFin ? new Date(r.fechaFin + "T00:00:00") : null;
+  if (r.idEstadoRecompensa === 2) return "inactiva";
+  if (inicio && inicio > hoy) return "proximamente";
+  if (fin && fin < hoy) return "vencida";
+  return "activa";
+}
+
+function getDiasRestantes(fecha) {
+  if (!fecha) return null;
+  const hoy = new Date(new Date().toDateString());
+  const ven = new Date(new Date(fecha).toDateString());
+  return Math.ceil((ven - hoy) / (1000 * 60 * 60 * 24));
+}
+
+function StatusBadge({ r }) {
+  const status = getRewardStatus(r);
+  if (status === "activa" && r.fechaFin) {
+    const d = getDiasRestantes(r.fechaFin);
+    if (d !== null && d <= 7) {
+      return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#fef3c7", color: "#92400e" }}><i className="bi bi-clock me-1" />Vence en {d} día{d !== 1 ? "s" : ""}</span>;
+    }
+  }
+  if (status === "proximamente") {
+    return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#dbeafe", color: "#1e40af" }}><i className="bi bi-calendar me-1" />Desde {new Date(r.fechaInicio).toLocaleDateString("es-CO")}</span>;
+  }
+  if (status === "vencida") {
+    return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#fecaca", color: "#991b1b" }}><i className="bi bi-x-circle me-1" />Vencida</span>;
+  }
+  if (status === "inactiva") {
+    return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#e5e7eb", color: "#6b7280" }}><i className="bi bi-pause-circle me-1" />Inactiva</span>;
+  }
+  return null;
+}
+
+function PuntosExpirationBadge({ fechaVencimiento, showEmpty = false }) {
+  const d = getDiasRestantes(fechaVencimiento);
+  if (d === null) {
+    if (!showEmpty) return null;
+    return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#e5e7eb", color: "#6b7280" }}><i className="bi bi-dash-circle me-1" />Sin vencimiento</span>;
+  }
+  if (d <= 0) {
+    return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#fecaca", color: "#991b1b" }}><i className="bi bi-x-circle me-1" />Vencidos</span>;
+  }
+  if (d <= 7) {
+    return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#fef3c7", color: "#92400e" }}><i className="bi bi-clock me-1" />Vencen en {d} día{d !== 1 ? "s" : ""}</span>;
+  }
+  return <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#d1fae5", color: "#065f46" }}><i className="bi bi-check-circle me-1" />Vencen en {d} día{d !== 1 ? "s" : ""}</span>;
+}
 
 const MATERIAL_ICON = {
   Papel:    { icon: "bi-file-earmark",  bg: "#fff3cd",   color: "#856404"      },
@@ -9,15 +62,16 @@ const MATERIAL_ICON = {
   Plástico: { icon: "bi-bag",           bg: "#f3e5f5",   color: "#6a1b9a"      },
 };
 
-export default function Canjes() {
+export default function Canjes({ showToast }) {
   const [tab,           setTab]           = useState("canjear");
-  const [busqueda,      setBusqueda]      = useState("");
+  const [cedula,        setCedula]        = useState("");
   const [usuarioSel,    setUsuarioSel]    = useState(null);
   const [recompSel,     setRecompSel]     = useState(null);
   const [comprobante,   setComprobante]   = useState(null);
-  const [mostrarDrop,   setMostrarDrop]   = useState(false);
+  const [buscandoUser,  setBuscandoUser]  = useState(false);
+  const [noEncontrado,  setNoEncontrado]  = useState(false);
+  const [listaUsuarios, setListaUsuarios] = useState([]);
 
-  const [usuarios,      setUsuarios]      = useState([]);
   const [entregas,      setEntregas]      = useState([]);
   const [recompensas,   setRecompensas]   = useState([]);
   const [historial,     setHistorial]     = useState([]);
@@ -27,15 +81,15 @@ export default function Canjes() {
   useEffect(() => {
     cargarRecompensas();
     cargarHistorial();
+    buscarPorCedula('');
   }, []);
 
   useEffect(() => {
-    if (busqueda.trim().length > 0) {
-      const t = setTimeout(() => cargarUsuarios(busqueda), 300);
-      return () => clearTimeout(t);
-    }
-    setUsuarios([]);
-  }, [busqueda]);
+    setNoEncontrado(false);
+    setUsuarioSel(null);
+    const t = setTimeout(() => buscarPorCedula(cedula.trim()), 400);
+    return () => clearTimeout(t);
+  }, [cedula]);
 
   useEffect(() => {
     if (usuarioSel) {
@@ -69,17 +123,28 @@ export default function Canjes() {
     }
   };
 
-  const cargarUsuarios = async (q) => {
-    setCargando((p) => ({ ...p, usuarios: true }));
+  const buscarPorCedula = async (c) => {
+    setBuscandoUser(true);
+    setNoEncontrado(false);
     try {
-      const data = await buscarUsuariosEncargado(q);
-      setUsuarios(data.usuarios ?? []);
-    } catch (err) {
-      setUsuarios([]);
-      setError(err.message);
-      setTimeout(() => setError(null), 4000);
+      const data = await buscarUsuariosEncargado(c);
+      const usuarios = data.usuarios ?? [];
+      setListaUsuarios(usuarios);
+      if (usuarios.length === 1) {
+        setUsuarioSel(usuarios[0]);
+        setRecompSel(null);
+        setListaUsuarios([]);
+      } else if (usuarios.length > 1) {
+        setUsuarioSel(null);
+      } else {
+        setUsuarioSel(null);
+        setNoEncontrado(true);
+      }
+    } catch {
+      setUsuarioSel(null);
+      setNoEncontrado(true);
     } finally {
-      setCargando((p) => ({ ...p, usuarios: false }));
+      setBuscandoUser(false);
     }
   };
 
@@ -87,7 +152,8 @@ export default function Canjes() {
     setCargando((p) => ({ ...p, entregas: true }));
     try {
       const data = await getEntregasEncargadoPorUsuario(id);
-      setEntregas(data.entregas ?? []);
+      const lista = Array.isArray(data) ? data : (data.entregas ?? []);
+      setEntregas(lista);
     } catch {
       setEntregas([]);
     } finally {
@@ -95,18 +161,14 @@ export default function Canjes() {
     }
   };
 
-  const usuariosFiltrados = busqueda.trim().length > 0 && !usuarioSel ? usuarios : [];
-
-  const seleccionarUsuario = (u) => {
-    setUsuarioSel(u);
-    setBusqueda(u.nombre);
-    setMostrarDrop(false);
-    setRecompSel(null);
+  const limpiar = () => {
+    setCedula(""); setUsuarioSel(null);
+    setRecompSel(null); setNoEncontrado(false); setListaUsuarios([]);
   };
 
-  const limpiar = () => {
-    setBusqueda(""); setUsuarioSel(null);
-    setRecompSel(null); setMostrarDrop(false);
+  const getFvp = (obj) => {
+    if (!obj) return null;
+    return obj.fechaVencimientoPuntos ?? obj.fecha_vencimiento_puntos ?? obj.fechaVencimiento ?? obj.fecha_vencimiento ?? null;
   };
 
   const entregasFlat = entregas.flatMap((e) => {
@@ -118,6 +180,7 @@ export default function Canjes() {
         kg: d.peso ?? 0,
         puntos: d.puntosGenerados ?? 0,
         fecha,
+        fechaVencimientoPuntos: getFvp(d) ?? getFvp(e),
       }));
     }
     return [{
@@ -126,13 +189,24 @@ export default function Canjes() {
       kg: e.pesoTotal ?? 0,
       puntos: e.puntosTotales ?? 0,
       fecha,
+      fechaVencimientoPuntos: getFvp(e),
     }];
   });
 
   const ptsEntregas = entregasFlat.reduce((a, e) => a + e.puntos, 0);
   const ptsUsuario  = usuarioSel ? getPtsUsuario(usuarioSel) : 0;
-  const recompensasDisponibles = recompensas.filter((r) => !usuarioSel || ptsUsuario >= getPtsRecompensa(r));
-  const recompensasNoDisponibles = recompensas.filter((r) => usuarioSel && ptsUsuario < getPtsRecompensa(r));
+
+  const recompensasActivas    = recompensas.filter(r => getRewardStatus(r) === "activa");
+  const recompensasProximas   = recompensas.filter(r => getRewardStatus(r) === "proximamente");
+  const recompensasVencidas   = recompensas.filter(r => getRewardStatus(r) === "vencida");
+  const recompensasInactivas  = recompensas.filter(r => getRewardStatus(r) === "inactiva");
+
+  const recompensasDisponibles    = recompensasActivas.filter((r) => (!usuarioSel || ptsUsuario >= getPtsRecompensa(r)) && (r.stock === null || r.stock > 0));
+  const recompensasNoDisponibles  = recompensasActivas.filter((r) => usuarioSel && ptsUsuario < getPtsRecompensa(r) && (r.stock === null || r.stock > 0));
+  const recompensasAgotadas       = recompensasActivas.filter((r) => r.stock !== null && r.stock <= 0);
+
+  const puntosExpirando = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) <= 7 && getDiasRestantes(e.fechaVencimientoPuntos) >= 0);
+  const puntosVencidos = entregasFlat.filter(e => e.fechaVencimientoPuntos && getDiasRestantes(e.fechaVencimientoPuntos) !== null && getDiasRestantes(e.fechaVencimientoPuntos) < 0);
 
   const handleCanjear = async () => {
     if (!usuarioSel || !recompSel) return;
@@ -150,8 +224,10 @@ export default function Canjes() {
       });
       limpiar();
       cargarHistorial();
+      showToast?.(`${recompSel.nombre} canjeado por ${usuarioSel.nombre}`);
     } catch (err) {
       setError(err.message);
+      showToast?.(err.message, "error");
       setTimeout(() => setError(null), 4000);
     }
   };
@@ -195,59 +271,59 @@ export default function Canjes() {
             <div className="card mb-3" style={S.card}>
               <div className="card-body p-3">
                 <div className="fw-bold mb-1 d-flex align-items-center gap-2" style={{ fontSize: 14, color: C.negro }}>
-                  <i className="bi bi-person" style={{ color: C.verde }} />Buscar usuario
+                  <i className="bi bi-person" style={{ color: C.verde }} />Verificar identidad
                 </div>
-                <div className="fw-semibold mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Escribe el nombre del reciclador</div>
+                <div className="fw-semibold mb-3" style={{ fontSize: 12, color: C.grisTexto }}>Solicita el documento de identidad al reciclador</div>
 
                 <div className="position-relative">
                   <div className="input-group">
                     <span className="input-group-text bg-white" style={{ border: `1.5px solid ${C.verdeBorde}` }}>
-                      <i className="bi bi-search text-secondary" />
+                      <i className="bi bi-credit-card text-secondary" />
                     </span>
-                    <input type="text" className="form-control" placeholder="Ej: Diego Ramírez"
-                      value={busqueda}
+                    <input type="text" className="form-control" placeholder="Nombre o cédula"
+                      value={cedula}
                       style={{ ...S.input, fontSize: 13 }}
-                      onChange={(e) => { setBusqueda(e.target.value); setUsuarioSel(null); setMostrarDrop(true); }}
+                      onChange={(e) => { setCedula(e.target.value); }}
+                      inputMode="numeric"
                     />
-                    {busqueda && (
+                    {cedula && (
                       <button className="btn btn-outline-secondary" style={{ border: `1.5px solid ${C.verdeBorde}` }} onClick={limpiar}>
                         <i className="bi bi-x-lg" />
                       </button>
                     )}
                   </div>
 
-                  {mostrarDrop && usuariosFiltrados.length > 0 && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1" style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}` }}>
-                      {usuariosFiltrados.map((u) => (
-                        <button key={u.idUsuario}
-                          className="btn w-100 d-flex align-items-center gap-3 px-3 py-2 text-start border-0 rounded-0"
-                          onClick={() => seleccionarUsuario(u)} style={{ fontSize: 13 }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = C.verdeClaro}
-                          onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                          <Av text={getIniciales(u.nombre)} size={34} />
+                  {buscandoUser && (
+                    <div className="mt-1 d-flex justify-content-center px-3 py-2">
+                      <LoadingSpinner size="sm" text="Buscando" />
+                    </div>
+                  )}
+
+                  {noEncontrado && !buscandoUser && cedula.trim().length >= 1 && (
+                    <div className="mt-1 px-3 py-2 rounded-2"
+                      style={{ fontSize: 13, color: "#991b1b", backgroundColor: "#fef2f2", border: "1px solid #fecaca" }}>
+                      <i className="bi bi-exclamation-circle me-2" />No se encontró ningún usuario
+                    </div>
+                  )}
+
+                  {listaUsuarios.length > 0 && (
+                    <div className="mt-1 rounded-2" style={{ maxHeight: 200, overflowY: "auto", border: "1px solid #e5e7eb" }}>
+                      {listaUsuarios.map((u) => (
+                        <div key={u.idUsuario}
+                          className="d-flex align-items-center gap-2 px-3 py-2"
+                          style={{ cursor: "pointer", fontSize: 13, borderBottom: "1px solid #f3f4f6" }}
+                          onClick={() => { setUsuarioSel(u); setRecompSel(null); setListaUsuarios([]); }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#f9fafb"}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = ""}
+                        >
+                          <Av text={getIniciales(u.nombre)} size={32} />
                           <div>
-                            <div className="fw-bold" style={{ color: C.negro }}>{u.nombre}</div>
-                            <div style={{ fontSize: 11, color: C.grisTexto }}>
-                              <i className="bi bi-star-fill me-1" style={{ color: C.verde }} />
-                              {u.puntosDisponibles} puntos disponibles
-                            </div>
+                            <div className="fw-semibold" style={{ color: C.negro }}>{u.nombre}</div>
+                            <div style={{ fontSize: 11, color: C.grisTexto }}>{u.correo}</div>
                           </div>
-                        </button>
+                          <div className="ms-auto fw-bold" style={{ fontSize: 13, color: C.verdeOscuro }}>{u.puntosDisponibles} pts</div>
+                        </div>
                       ))}
-                    </div>
-                  )}
-
-                  {mostrarDrop && busqueda.trim().length > 0 && usuariosFiltrados.length === 0 && !cargando.usuarios && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1 px-3 py-2"
-                      style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}`, fontSize: 13, color: C.grisTexto }}>
-                      Sin resultados para "{busqueda}"
-                    </div>
-                  )}
-
-                  {mostrarDrop && cargando.usuarios && (
-                    <div className="position-absolute w-100 bg-white rounded-3 shadow mt-1 px-3 py-2 text-center"
-                      style={{ zIndex: 99, border: `1.5px solid ${C.verdeBorde}`, fontSize: 13, color: C.grisTexto }}>
-                      <div className="spinner-border spinner-border-sm me-2" role="status" />Buscando...
                     </div>
                   )}
                 </div>
@@ -258,6 +334,23 @@ export default function Canjes() {
                     <div className="flex-grow-1">
                       <div className="fw-bold" style={{ fontSize: 14, color: C.negro }}>{usuarioSel.nombre}</div>
                       <div style={{ fontSize: 12, color: C.grisTexto }}>Usuario reciclador</div>
+                      <div className="d-flex flex-wrap gap-1 mt-1">
+                        {puntosExpirando.length > 0 && (
+                          <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#fef3c7", color: "#92400e" }}>
+                            <i className="bi bi-clock me-1" />{puntosExpirando.reduce((a, e) => a + e.puntos, 0)} pts por vencer
+                          </span>
+                        )}
+                        {puntosVencidos.length > 0 && (
+                          <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#fecaca", color: "#991b1b" }}>
+                            <i className="bi bi-x-circle me-1" />{puntosVencidos.reduce((a, e) => a + e.puntos, 0)} pts vencidos
+                          </span>
+                        )}
+                        {puntosExpirando.length === 0 && puntosVencidos.length === 0 && (
+                          <span className="badge rounded-pill fw-semibold" style={{ fontSize: 9, backgroundColor: "#d1fae5", color: "#065f46" }}>
+                            <i className="bi bi-check-circle me-1" />Puntos sin vencimiento
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="text-center">
                       <div className="fw-bold lh-1" style={{ fontSize: 22, color: C.verdeOscuro }}>{ptsUsuario}</div>
@@ -268,6 +361,26 @@ export default function Canjes() {
               </div>
             </div>
 
+            {usuarioSel && (puntosExpirando.length > 0 || puntosVencidos.length > 0) && (
+              <div className={`card mb-3 border-2 ${puntosVencidos.length > 0 ? "border-danger" : "border-warning"}`} style={{ backgroundColor: puntosVencidos.length > 0 ? "#fef2f2" : "#fffbeb" }}>
+                <div className="card-body p-3 d-flex align-items-center gap-2">
+                  <i className={`bi ${puntosVencidos.length > 0 ? "bi-exclamation-triangle-fill text-danger" : "bi-clock-fill text-warning"}`} style={{ fontSize: 20 }} />
+                  <div>
+                    <div className="fw-bold" style={{ fontSize: 12, color: C.negro }}>
+                      {puntosVencidos.length > 0
+                        ? `${puntosVencidos.reduce((a, e) => a + e.puntos, 0)} pts vencidos — Se recomienda regularizar`
+                        : `${puntosExpirando.reduce((a, e) => a + e.puntos, 0)} pts próximos a vencer`}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.grisTexto }}>
+                      {puntosVencidos.length > 0
+                        ? `${puntosVencidos.length} entrega${puntosVencidos.length !== 1 ? "s" : ""} con puntos vencidos`
+                        : `${puntosExpirando.length} entrega${puntosExpirando.length !== 1 ? "s" : ""} con puntos por expirar pronto`}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {usuarioSel && entregasFlat.length > 0 && (
               <div className="card mb-3" style={S.card}>
                 <div className="card-body p-3">
@@ -277,18 +390,27 @@ export default function Canjes() {
                   </div>
                   {entregasFlat.map((e) => {
                     const m = MATERIAL_ICON[e.material] ?? { icon: "bi-recycle", bg: C.verdeClaro, color: C.verdeOscuro };
+                    const diasRest = e.fechaVencimientoPuntos ? getDiasRestantes(e.fechaVencimientoPuntos) : null;
+                    const ptsVencidos = diasRest !== null && diasRest <= 0;
                     return (
                       <div key={e.id} className="d-flex align-items-center gap-3 py-2"
-                        style={{ borderBottom: `1px solid ${C.verdeClaro}` }}>
+                        style={{
+                          borderBottom: `1px solid ${C.verdeClaro}`,
+                          opacity: ptsVencidos ? 0.45 : 1,
+                          filter: ptsVencidos ? "grayscale(1)" : "none",
+                        }}>
                         <div className="d-flex align-items-center justify-content-center rounded-2 flex-shrink-0"
                           style={{ width: 36, height: 36, backgroundColor: m.bg, color: m.color }}>
                           <i className={`bi ${m.icon}`} style={{ fontSize: 16 }} />
                         </div>
                         <div className="flex-grow-1">
-                          <div className="fw-bold" style={{ fontSize: 13, color: C.negro }}>{e.material}</div>
-                          <div style={{ fontSize: 11, color: C.grisTexto }}>{e.fecha} · {e.kg} kg</div>
+                          <div className="fw-bold" style={{ fontSize: 13, color: ptsVencidos ? C.grisTexto : C.negro }}>{e.material}{ptsVencidos && <span className="ms-2" style={{ fontSize: 10, color: "#991b1b" }}><i className="bi bi-x-circle me-1" />Vencido</span>}</div>
+                          <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <span style={{ fontSize: 11, color: C.grisTexto }}>{e.fecha} · {e.kg} kg</span>
+                            <PuntosExpirationBadge fechaVencimiento={e.fechaVencimientoPuntos} showEmpty />
+                          </div>
                         </div>
-                        <span style={S.badgePuntos}>+{e.puntos} pts</span>
+                        <span style={{ ...S.badgePuntos, ...(ptsVencidos ? { backgroundColor: "#f3f4f6", color: "#9ca3af", border: "1px solid #d1d5db" } : {}) }}>{ptsVencidos ? "" : "+"}{e.puntos} pts</span>
                       </div>
                     );
                   })}
@@ -316,8 +438,7 @@ export default function Canjes() {
             {usuarioSel && cargando.entregas && (
               <div className="card mb-3" style={S.card}>
                 <div className="card-body p-3 text-center py-3">
-                  <div className="spinner-border spinner-border-sm me-2" role="status" style={{ color: C.verde }} />
-                  <span style={{ fontSize: 13, color: C.grisTexto }}>Cargando entregas...</span>
+                  <LoadingSpinner size="sm" text="Cargando entregas" />
                 </div>
               </div>
             )}
@@ -331,30 +452,46 @@ export default function Canjes() {
 
                 {cargando.recompensas ? (
                   <div className="text-center py-4">
-                    <div className="spinner-border spinner-border-sm me-2" role="status" style={{ color: C.verde }} />
-                    <span style={{ fontSize: 13, color: C.grisTexto }}>Cargando recompensas...</span>
+                    <LoadingSpinner size="sm" text="Cargando recompensas" />
                   </div>
                 ) : !usuarioSel && (
                   <div className="row g-2 mt-2">
-                    {recompensas.map((r) => (
-                      <div className="col-6" key={r.idRecompensa}>
-                        <div className="p-3 rounded-2 d-flex flex-column gap-1"
-                          style={{ border: `1.5px solid ${C.verdeBorde}`, backgroundColor: C.grisFondo }}>
-                          <div className="d-flex align-items-center gap-2">
-                            <i className="bi bi-gift" style={{ color: C.verdeMedio, fontSize: 15 }} />
-                            <span className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{r.nombre}</span>
+                    {[...recompensasActivas, ...recompensasProximas, ...recompensasVencidas, ...recompensasInactivas].map((r) => {
+                      const st = getRewardStatus(r);
+                      const agotado = r.stock !== null && r.stock <= 0;
+                      const disabled = st === "vencida" || st === "inactiva" || agotado;
+                      return (
+                        <div className="col-6" key={r.idRecompensa}>
+                          <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                            style={{
+                              border: disabled ? `1.5px solid ${C.grisBorde}` : `1.5px solid ${C.verdeBorde}`,
+                              backgroundColor: disabled ? "#f9fafb" : (st === "proximamente" ? "#f0fdf4" : C.grisFondo),
+                              opacity: disabled ? 0.45 : 1,
+                            }}>
+                            <div className="d-flex align-items-center gap-2">
+                              <i className={`bi ${disabled ? "bi-archive" : "bi-gift"}`} style={{ color: disabled ? C.grisBorde : (st === "proximamente" ? "#fbbf24" : C.verdeMedio), fontSize: 15 }} />
+                              <span className="fw-bold" style={{ fontSize: 12, color: disabled ? C.grisTexto : C.negro }}>{r.nombre}</span>
+                            </div>
+                            <div className="d-flex align-items-center justify-content-between mt-1">
+                              <span style={{
+                                ...S.badgePuntos,
+                                ...(disabled ? { backgroundColor: "#f3f4f6", color: "#9ca3af", border: "1px solid #d1d5db" } : {}),
+                              }}>
+                                <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
+                              </span>
+                              <span style={{ fontSize: 10, color: C.grisTexto }}>
+                                {agotado ? <span className="text-danger fw-bold">Agotado</span> : `Stock: ${r.stock ?? "∞"}`}
+                              </span>
+                            </div>
+                            {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
+                            <div className="mt-1"><StatusBadge r={r} /></div>
                           </div>
-                          <div className="d-flex align-items-center justify-content-between mt-1">
-                            <span style={S.badgePuntos}><i className="bi bi-star me-1" />{r.puntosRequeridos} pts</span>
-                            <span style={{ fontSize: 10, color: C.grisTexto }}>Stock: {r.stock ?? "∞"}</span>
-                          </div>
-                          {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
                         </div>
-                      </div>
-                    ))}
-                    {recompensas.length === 0 && (
+                      );
+                    })}
+                    {recompensasActivas.length === 0 && recompensasProximas.length === 0 && recompensasVencidas.length === 0 && recompensasInactivas.length === 0 && (
                       <div className="text-center py-3" style={{ fontSize: 13, color: C.grisTexto }}>
-                        <i className="bi bi-inbox d-block mb-1" style={{ fontSize: 22 }} />No hay recompensas disponibles
+                        <i className="bi bi-inbox d-block mb-1" style={{ fontSize: 22 }}>No hay recompensas disponibles</i>
                       </div>
                     )}
                   </div>
@@ -376,6 +513,7 @@ export default function Canjes() {
                         <div className="row g-2 mb-3">
                           {recompensasDisponibles.map((r) => {
                             const activa = recompSel?.idRecompensa === r.idRecompensa;
+                            const st = getRewardStatus(r);
                             return (
                               <div className="col-6" key={r.idRecompensa}>
                                 <button type="button" onClick={() => setRecompSel(activa ? null : r)}
@@ -396,6 +534,7 @@ export default function Canjes() {
                                   {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto, marginTop: 4 }}>
                                     <i className="bi bi-shop me-1" />{r.aliado}
                                   </div>}
+                                  <div className="mt-1"><StatusBadge r={r} /></div>
                                 </button>
                               </div>
                             );
@@ -409,7 +548,7 @@ export default function Canjes() {
                         <div className="fw-bold mb-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.grisTexto }}>
                           <i className="bi bi-lock-fill" />Sin puntos suficientes ({recompensasNoDisponibles.length})
                         </div>
-                        <div className="row g-2">
+                        <div className="row g-2 mb-3">
                           {recompensasNoDisponibles.map((r) => (
                             <div className="col-6" key={r.idRecompensa}>
                               <div className="p-3 rounded-2 d-flex flex-column gap-1"
@@ -427,6 +566,92 @@ export default function Canjes() {
                                   </span>
                                 </div>
                                 {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {recompensasAgotadas.length > 0 && (
+                      <>
+                        <div className="fw-bold mb-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.rojo }}>
+                          <i className="bi bi-x-circle-fill" />Agotadas ({recompensasAgotadas.length})
+                        </div>
+                        <div className="row g-2 mb-3">
+                          {recompensasAgotadas.map((r) => (
+                            <div className="col-6" key={r.idRecompensa}>
+                              <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                                style={{ border: `1.5px solid ${C.grisBorde}`, backgroundColor: "#fef2f2", opacity: 0.6 }}>
+                                <div className="d-flex align-items-center gap-2">
+                                  <i className="bi bi-archive" style={{ color: C.grisBorde, fontSize: 13 }} />
+                                  <span className="fw-bold" style={{ fontSize: 12, color: C.grisTexto }}>{r.nombre}</span>
+                                </div>
+                                <div className="d-flex align-items-center justify-content-between mt-1">
+                                  <span style={{ ...S.badgePuntos, backgroundColor: "#fef2f2", color: C.rojo, border: `1px solid #fecaca` }}>
+                                    <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
+                                  </span>
+                                  <span className="text-danger fw-bold" style={{ fontSize: 10 }}>Agotado</span>
+                                </div>
+                                {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {recompensasProximas.length > 0 && (
+                      <>
+                        <div className="fw-bold mb-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: "#1e40af" }}>
+                          <i className="bi bi-calendar-event-fill" />Próximamente ({recompensasProximas.length})
+                        </div>
+                        <div className="row g-2 mb-3">
+                          {recompensasProximas.map((r) => (
+                            <div className="col-6" key={r.idRecompensa}>
+                              <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                                style={{ border: `1.5px solid ${C.grisBorde}`, backgroundColor: "#f0fdf4", opacity: 0.7 }}>
+                                <div className="d-flex align-items-center gap-2">
+                                  <i className="bi bi-calendar" style={{ color: "#fbbf24", fontSize: 13 }} />
+                                  <span className="fw-bold" style={{ fontSize: 12, color: C.negro }}>{r.nombre}</span>
+                                </div>
+                                <div className="d-flex align-items-center justify-content-between mt-1">
+                                  <span style={{ ...S.badgePuntos, backgroundColor: "#dbeafe", color: "#1e40af", border: `1px solid #93c5fd` }}>
+                                    <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
+                                  </span>
+                                  <span style={{ fontSize: 10, color: C.grisTexto }}>Stock: {r.stock ?? "∞"}</span>
+                                </div>
+                                {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
+                                <div className="mt-1"><StatusBadge r={r} /></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {[...recompensasVencidas, ...recompensasInactivas].length > 0 && (
+                      <>
+                        <div className="fw-bold mb-2 d-flex align-items-center gap-1" style={{ fontSize: 11, color: C.grisTexto }}>
+                          <i className="bi bi-archive-fill" />No disponibles ({recompensasVencidas.length + recompensasInactivas.length})
+                        </div>
+                        <div className="row g-2">
+                          {[...recompensasVencidas, ...recompensasInactivas].map((r) => (
+                            <div className="col-6" key={r.idRecompensa}>
+                              <div className="p-3 rounded-2 d-flex flex-column gap-1"
+                                style={{ border: `1.5px solid ${C.grisBorde}`, backgroundColor: "#f9fafb", opacity: 0.5 }}>
+                                <div className="d-flex align-items-center gap-2">
+                                  <i className="bi bi-archive" style={{ color: C.grisBorde, fontSize: 13 }} />
+                                  <span className="fw-bold" style={{ fontSize: 12, color: C.grisTexto }}>{r.nombre}</span>
+                                </div>
+                                <div className="d-flex align-items-center justify-content-between mt-1">
+                                  <span style={{ ...S.badgePuntos, backgroundColor: "#f3f4f6", color: "#9ca3af", border: `1px solid #d1d5db` }}>
+                                    <i className="bi bi-star me-1" />{r.puntosRequeridos} pts
+                                  </span>
+                                  <span style={{ fontSize: 10, color: C.grisTexto }}>Stock: {r.stock ?? "∞"}</span>
+                                </div>
+                                {r.aliado && <div style={{ fontSize: 10, color: C.grisTexto }}><i className="bi bi-shop me-1" />{r.aliado}</div>}
+                                <div className="mt-1"><StatusBadge r={r} /></div>
                               </div>
                             </div>
                           ))}
@@ -495,11 +720,30 @@ export default function Canjes() {
                       </div>
                     );
                   })()}
+
+                  {usuarioSel && (puntosExpirando.length > 0 || puntosVencidos.length > 0) && (
+                    <div className="mt-2 d-flex flex-column gap-1">
+                      {puntosExpirando.length > 0 && (
+                        <div className="p-1 rounded-2 d-flex align-items-center gap-1" style={{ fontSize: 11, backgroundColor: "#fffbeb", border: "1px solid #fde68a", color: "#92400e" }}>
+                          <i className="bi bi-clock-fill" style={{ fontSize: 12 }} />
+                          <span className="fw-semibold">{puntosExpirando.reduce((a, e) => a + e.puntos, 0)} pts</span>
+                          <span>por vencer en ≤7 días</span>
+                        </div>
+                      )}
+                      {puntosVencidos.length > 0 && (
+                        <div className="p-1 rounded-2 d-flex align-items-center gap-1" style={{ fontSize: 11, backgroundColor: "#fef2f2", border: "1px solid #fecaca", color: "#991b1b" }}>
+                          <i className="bi bi-x-circle-fill" style={{ fontSize: 12 }} />
+                          <span className="fw-semibold">{puntosVencidos.reduce((a, e) => a + e.puntos, 0)} pts</span>
+                          <span>vencidos</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="d-grid">
                   <button onClick={handleCanjear}
-                    disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0)}
+                    disabled={!usuarioSel || !recompSel || ptsUsuario < (recompSel ? getPtsRecompensa(recompSel) : 0) || (recompSel?.stock !== null && recompSel?.stock <= 0)}
                     className="btn fw-bold py-2 d-flex align-items-center justify-content-center gap-2"
                     style={S.btnPrimario}>
                     <i className="bi bi-gift" /> Canjear recompensa
@@ -520,8 +764,7 @@ export default function Canjes() {
 
             {cargando.historial ? (
               <div className="text-center py-5">
-                <div className="spinner-border spinner-border-sm me-2" role="status" style={{ color: C.verde }} />
-                <span style={{ fontSize: 13, color: C.grisTexto }}>Cargando historial...</span>
+                <LoadingSpinner size="sm" text="Cargando historial" />
               </div>
             ) : historial.length === 0 ? (
               <div className="text-center py-5" style={{ fontSize: 13, color: C.grisTexto }}>
