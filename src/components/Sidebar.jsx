@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import logo from "./imagenes/logo.png";
 
 const USUARIOS_SUB = [
   { path: "/usuarios",        icon: "bi-recycle",           title: "Usuarios" },
@@ -49,10 +50,14 @@ export default function Sidebar({ user, onLogout }) {
       {/* Logo */}
       <div className="d-flex align-items-center gap-2 px-3 py-3 border-bottom" style={{ borderBottom: "1px solid #e5e7eb" }}>
         <div
-          className="rounded-2 d-flex align-items-center justify-content-center text-white flex-shrink-0"
-          style={{ width: 36, height: 36, fontSize: 18, background: "#16a34a" }}
+          className="rounded-2 d-flex align-items-center justify-content-center flex-shrink-0"
+          style={{ width: 36, height: 36, background: "#16a34a", overflow: "hidden" }}
         >
-          <i className="bi bi-recycle" />
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          />
         </div>
         <span className="fw-bold fs-6" style={{ color: "#16a34a" }}>Recycling Points</span>
       </div>

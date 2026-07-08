@@ -1,5 +1,6 @@
 // src/paneles/encargado/Sidebar.jsx
 import { useNavigate, useLocation } from "react-router-dom";
+import logo from "../../components/imagenes/logo.png";
 
 const C = {
   verde:       "#2e7d32",
@@ -105,8 +106,14 @@ export default function Sidebar() {
           background: C.verdeClaro,
           border: `1.5px solid ${C.verdeMedio}`,
           display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 22,
-        }}>♻️</div>
+          overflow: "hidden",
+        }}>
+          <img
+            src={logo}
+            alt="Logo"
+            style={{ width: "100%", height: "100%", objectFit: "contain" }}
+          />
+        </div>
         <div>
           <div style={{ color: C.negro, fontWeight: 900, fontSize: 13, lineHeight: 1.2 }}>Recycling Points</div>
           <div style={{ color: C.verde, fontSize: 11, fontWeight: 700 }}>Panel Encargado</div>
