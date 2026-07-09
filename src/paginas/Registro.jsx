@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { solicitarRegistro, getAliadosPublicos } from "../services/api";
-import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png'
+import fondoRegistro from '../components/imagenes/registro_bg.png'
 
 function Registro() {
   const [nombre, setNombre] = useState("");
@@ -67,61 +67,69 @@ function Registro() {
     <div className="container-fluid">
       <div className="row min-vh-100">
 
-        <div className="col-md-6 bg-light d-flex justify-content-center align-items-center p-5">
-          <img
-            src={fondoReciclaje}
-            alt="EcoRecicla"
-            className="img-fluid"
-          />
-        </div>
+        <div
+          className="col-md-6 p-0 d-none d-md-block"
+          style={{
+            backgroundImage: `url(${fondoRegistro})`,
+            backgroundSize: "contain",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat",
+            minHeight: "100vh",
+            backgroundColor: "#f0fdf4",
+          }}
+        />
 
-        <div className="col-md-6 d-flex justify-content-center align-items-center">
+        <div className="col-12 col-md-6 d-flex justify-content-center align-items-center bg-white">
+          <div className="w-100 px-4" style={{ maxWidth: 480 }}>
+            <form className="py-4" onSubmit={validar} noValidate>
 
-          <div className="w-100 p-4">
-
-            <ul className="bg-white text-dark p-3 rounded list-unstyled">
-
-              <div className="text-center mb-2">
+              <div className="text-center mb-3">
+                <h1 className="fw-bold text-dark fs-3 mb-1">
+                  Solicitar registro <i className="bi bi-person-plus-fill text-success" />
+                </h1>
+                <p className="text-success fw-semibold mb-0" style={{ fontSize: 13 }}>
+                  Para administradores y encargados
+                </p>
               </div>
 
-              <h1 className="text-center text-dark">Solicitar registro</h1>
-
-              <h2 className="text-center fw-light text-success fs-5">
-                Para administradores y encargados
-              </h2>
-
-              <br />
-
               {error && (
-                <div className="alert alert-danger py-2 text-center">{error}</div>
+                <div className="alert alert-danger border border-danger d-flex align-items-center gap-2 py-2 mb-3" style={{ fontSize: 13 }}>
+                  <i className="bi bi-exclamation-circle-fill text-danger" />
+                  {error}
+                </div>
               )}
 
               {success && (
-                <div className="alert alert-success py-2 text-center">{success}</div>
+                <div className="alert alert-success border border-success d-flex align-items-center gap-2 py-2 mb-3" style={{ fontSize: 13 }}>
+                  <i className="bi bi-check-circle-fill text-success" />
+                  {success}
+                </div>
               )}
 
-              <div className="d-flex justify-content-center gap-2">
-
-                <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Nombre completo</label>
+              <div className="row">
+                <div className="col-6 mb-2">
+                  <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                    Nombre completo
+                  </label>
                   <div className="input-group">
-                    <span className="input-group-text">
-                      <i className="bi bi-person"></i>
+                    <span className="input-group-text bg-white">
+                      <i className="bi bi-person text-success" />
                     </span>
                     <input
                       className="form-control"
-                      placeholder="Ingresa tu nombre completo"
+                      placeholder="Nombre completo"
                       value={nombre}
                       onChange={(e) => setNombre(e.target.value)}
                     />
                   </div>
-                </li>
-
-                <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Cédula</label>
+                </div>
+                <div className="col-6 mb-2">
+                  <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                    Cédula
+                  </label>
                   <div className="input-group">
-                    <span className="input-group-text">
-                      <i className="bi bi-credit-card"></i>
+                    <span className="input-group-text bg-white">
+                      <i className="bi bi-credit-card text-success" />
                     </span>
                     <input
                       className="form-control"
@@ -130,34 +138,33 @@ function Registro() {
                       onChange={(e) => setCedula(e.target.value.replace(/\D/g, ""))}
                     />
                   </div>
-                </li>
-
+                </div>
               </div>
 
-              <div className="d-flex justify-content-center gap-2">
-
-                <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Teléfono</label>
-                  <div className="input-group">
-                    <span className="input-group-text">
-                      <i className="bi bi-telephone"></i>
-                    </span>
-                    <input
-                      className="form-control"
-                      placeholder="Opcional"
-                      value={telefono}
-                      onChange={(e) => setTelefono(e.target.value)}
-                    />
-                  </div>
-                </li>
-
-              </div>
-
-              <li className="mb-2">
-                <label className="form-label text-dark">Correo electrónico</label>
+              <div className="mb-2">
+                <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                  Teléfono
+                </label>
                 <div className="input-group">
-                  <span className="input-group-text">
-                    <i className="bi bi-envelope"></i>
+                  <span className="input-group-text bg-white">
+                    <i className="bi bi-telephone text-success" />
+                  </span>
+                  <input
+                    className="form-control"
+                    placeholder="Opcional"
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="mb-2">
+                <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                  Correo electrónico
+                </label>
+                <div className="input-group">
+                  <span className="input-group-text bg-white">
+                    <i className="bi bi-envelope text-success" />
                   </span>
                   <input
                     className="form-control"
@@ -166,15 +173,16 @@ function Registro() {
                     onChange={(e) => setCorreo(e.target.value)}
                   />
                 </div>
-              </li>
+              </div>
 
-              <div className="d-flex justify-content-center gap-2">
-
-                <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Contraseña</label>
+              <div className="row">
+                <div className="col-6 mb-2">
+                  <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                    Contraseña
+                  </label>
                   <div className="input-group">
-                    <span className="input-group-text">
-                      <i className="bi bi-lock"></i>
+                    <span className="input-group-text bg-white">
+                      <i className="bi bi-lock text-success" />
                     </span>
                     <input
                       className="form-control"
@@ -184,13 +192,14 @@ function Registro() {
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
-                </li>
-
-                <li className="mb-2 w-50">
-                  <label className="form-label text-dark">Confirmar contraseña</label>
+                </div>
+                <div className="col-6 mb-2">
+                  <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                    Confirmar contraseña
+                  </label>
                   <div className="input-group">
-                    <span className="input-group-text">
-                      <i className="bi bi-lock"></i>
+                    <span className="input-group-text bg-white">
+                      <i className="bi bi-lock text-success" />
                     </span>
                     <input
                       className="form-control"
@@ -200,49 +209,42 @@ function Registro() {
                       onChange={(e) => setConfirmar(e.target.value)}
                     />
                   </div>
-                </li>
-
+                </div>
               </div>
 
-              <li className="mb-2">
-                <label className="form-label text-dark">Rol solicitado</label>
-                <div className="d-flex gap-3">
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="rol"
-                      id="rolEncargado"
-                      value="encargado"
-                      checked={rolSolicitado === "encargado"}
-                      onChange={(e) => setRolSolicitado(e.target.value)}
-                    />
-                    <label className="form-check-label text-dark" htmlFor="rolEncargado">
-                      <i className="bi bi-person-badge me-1"></i>Encargado
-                    </label>
-                  </div>
-                  <div className="form-check">
-                    <input
-                      className="form-check-input"
-                      type="radio"
-                      name="rol"
-                      id="rolAdmin"
-                      value="admin"
-                      checked={rolSolicitado === "admin"}
-                      onChange={(e) => setRolSolicitado(e.target.value)}
-                    />
-                    <label className="form-check-label text-dark" htmlFor="rolAdmin">
-                      <i className="bi bi-shield-lock me-1"></i>Administrador
-                    </label>
-                  </div>
+              <div className="mb-2">
+                <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                  Rol solicitado
+                </label>
+                <div className="d-flex gap-2">
+                  {["encargado", "admin"].map((rol) => (
+                    <div
+                      key={rol}
+                      onClick={() => setRolSolicitado(rol)}
+                      style={{
+                        flex: 1, padding: "12px 16px", borderRadius: 12,
+                        border: `2px solid ${rolSolicitado === rol ? "#16a34a" : "#e5e7eb"}`,
+                        background: rolSolicitado === rol ? "#f0fdf4" : "#fff",
+                        cursor: "pointer", textAlign: "center",
+                        transition: "all 0.2s"
+                      }}
+                    >
+                      <i className={`bi ${rol === "encargado" ? "bi-person-badge" : "bi-shield-lock"} text-success d-block`} style={{ fontSize: 24 }}></i>
+                      <span className="d-block mt-1 fw-semibold text-dark" style={{ fontSize: 13 }}>
+                        {rol === "encargado" ? "Encargado" : "Administrador"}
+                      </span>
+                    </div>
+                  ))}
                 </div>
-              </li>
+              </div>
 
-              <li className="mb-2">
-                <label className="form-label text-dark">Supermercado</label>
+              <div className="mb-3">
+                <label className="form-label fw-semibold text-dark" style={{ fontSize: 13 }}>
+                  Supermercado
+                </label>
                 <div className="input-group">
-                  <span className="input-group-text">
-                    <i className="bi bi-shop"></i>
+                  <span className="input-group-text bg-white">
+                    <i className="bi bi-shop text-success" />
                   </span>
                   <select
                     className="form-select"
@@ -257,80 +259,45 @@ function Registro() {
                     ))}
                   </select>
                 </div>
-              </li>
-
-              <li className="mb-2">
-                <label className="form-label text-dark">Mensaje (opcional)</label>
-                <div className="input-group">
-                  <span className="input-group-text">
-                    <i className="bi bi-chat-text"></i>
-                  </span>
-                  <textarea
-                    className="form-control"
-                    rows="2"
-                    placeholder="Cuéntanos por qué quieres ser {rolSolicitado} de este supermercado..."
-                    value={mensaje}
-                    onChange={(e) => setMensaje(e.target.value)}
-                  />
-                </div>
-              </li>
-
-            </ul>
-
-            <div className="d-flex flex-column align-items-center">
+              </div>
 
               <button
-                className="btn btn-warning text-white rounded-pill px-5 py-2 w-50"
+                className="btn text-white rounded-pill px-5 py-2 w-100 fw-semibold"
                 onClick={validar}
                 disabled={loading || success}
+                style={{ border: "none", background: "#127235" }}
               >
-
                 {loading ? (
                   <>
-                    <span
-                      className="spinner-border spinner-border-sm me-2"
-                      role="status"
-                    ></span>
-                    Enviando...
+                    <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                    Registrando...
                   </>
                 ) : (
                   <>
-                    ENVIAR SOLICITUD
-                    <i className="bi bi-send-fill ms-2 text-white"></i>
+                    REGISTRARSE <i className="bi bi-person-plus-fill ms-2"></i>
                   </>
                 )}
-
               </button>
 
-              <br />
-
-            </div>
-
-            <div className="d-flex justify-content-center align-items-center gap-2">
-
-              <span className="fw-light text-secondary">
-                ¿Ya tienes cuenta?
-              </span>
-
-              <a
-                href="/login"
-                className="text-decoration-none fw-bold text-success"
-              >
-                Inicia sesión
-              </a>
-
-            </div>
-
-            <div className="text-center mt-3">
-              <small className="text-muted">
-                ¿Eres un usuario particular?{' '}
-                <a href="/login" className="text-success text-decoration-none fw-bold">
+              <div className="d-flex justify-content-center align-items-center gap-2 mt-3">
+                <span className="fw-light text-secondary" style={{ fontSize: 13 }}>
+                  ¿Ya tienes cuenta?
+                </span>
+                <a href="/login" className="text-decoration-none fw-bold text-success" style={{ fontSize: 13 }}>
                   Inicia sesión
                 </a>
-                {' '}desde la app móvil.
-              </small>
-            </div>
+              </div>
 
+              <div className="text-center mt-2">
+                <small className="text-muted" style={{ fontSize: 12 }}>
+                  ¿Eres un usuario particular?{' '}
+                  <a href="/login" className="text-success text-decoration-none fw-bold">
+                    Inicia sesión
+                  </a> desde la app móvil.
+                </small>
+              </div>
+
+            </form>
           </div>
         </div>
       </div>
