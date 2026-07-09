@@ -90,8 +90,8 @@ export default function PanelControl() {
       }).length;
 
       const procesadas = listaEntregas.filter(e => e.idEstadoEntrega === 2).length;
-      const kgTotal = listaEntregas.reduce((s, e) => s + (e.pesoTotal ?? e.peso ?? e.cantidadKg ?? 0), 0);
-      const ptsTotal = listaEntregas.reduce((s, e) => s + (e.puntosTotales ?? e.puntos ?? e.puntosOtorgados ?? 0), 0);
+      const kgTotal = listaEntregas.reduce((s, e) => s + Number(e.pesoTotal ?? e.peso ?? e.cantidadKg ?? 0), 0);
+      const ptsTotal = listaEntregas.reduce((s, e) => s + Number(e.puntosTotales ?? e.puntos ?? e.puntosOtorgados ?? 0), 0);
 
       setKpiData({
         usuarios: reporte?.kpis?.usuariosActivos ?? 0,
@@ -121,7 +121,7 @@ export default function PanelControl() {
             id: `stock-${r.idRecompensa}`,
             icon: "bi-exclamation-triangle-fill",
             color: C.rojo,
-            msg: `Stock de '${r.nombre ?? r.titulo}' bajo (${r.stock} unidades)`,
+            msg: `Stock de '${(r.nombre || r.titulo || 'desconocido')}' bajo (${r.stock} unidades)`,
           });
         }
       }

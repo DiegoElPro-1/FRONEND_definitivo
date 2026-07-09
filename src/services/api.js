@@ -96,9 +96,11 @@ export async function restablecerPassword(datos) {
 // ============================================================
 
 function esEncargado() {
-  const u = JSON.parse(localStorage.getItem("usuario") || "{}");
-  const rolStr = (u?.rol ?? "").toString().toLowerCase();
-  return u?.idRol === 4 || u?.id_rol === 4 || rolStr === "encargado";
+  try {
+    const u = JSON.parse(localStorage.getItem("usuario") || "{}");
+    const rolStr = (u?.rol ?? "").toString().toLowerCase();
+    return u?.idRol === 4 || u?.id_rol === 4 || rolStr === "encargado";
+  } catch { return false; }
 }
 
 export async function getPerfil() {
@@ -117,7 +119,8 @@ export async function actualizarPerfil(datos) {
 }
 
 export async function cambiarPassword(passwordActual, passwordNuevo) {
-  const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
+  let usuario = {};
+  try { usuario = JSON.parse(localStorage.getItem("usuario") || "{}"); } catch {}
   const basePath = (usuario?.idRol === 4 || usuario?.id_rol === 4)
     ? '/api/encargado'
     : '/api/usuario';

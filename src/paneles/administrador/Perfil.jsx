@@ -10,6 +10,7 @@ function desdeStorage() {
       nombre: u.nombre || "",
       email: u.correo || "",
       telefono: u.telefono || "",
+      cedula: u.cedula || "",
       punto: u.puntoACargo?.nombre || "",
       aliadoNombre: u.aliado || u.aliadoNombre || "",
       rol: typeof u.rol === "string" ? u.rol : "",
@@ -35,6 +36,7 @@ export default function Perfil({ state, showToast }) {
           nombre: u?.nombre || "",
           email: u?.correo || "",
           telefono: u?.telefono || "",
+          cedula: u?.cedula || "",
           punto: u?.puntoACargo?.nombre || "",
           aliadoNombre: u?.aliado || u?.aliadoNombre || "",
           rol: u?.rol || "",
@@ -86,7 +88,7 @@ export default function Perfil({ state, showToast }) {
 
     try {
 
-      const usuario = JSON.parse(localStorage.getItem("usuario"));
+      const usuario = JSON.parse(localStorage.getItem("usuario") || "{}");
 
       await actualizarPerfil(form);
 
@@ -180,6 +182,7 @@ export default function Perfil({ state, showToast }) {
 
                 {[
                   ["bi-building", "Supermercado", saved.aliadoNombre || "No asignado"],
+                  ["bi-credit-card", "Cédula", saved.cedula || "No registrada"],
                   ["bi-telephone-fill", "Telefono", saved.telefono || "No registrado"],
                   ["bi-shop", "Punto", saved.punto || "No registrado"],
                   ["bi-calendar-check", "Miembro desde", saved.fechaAlta || "No registrado"],
@@ -294,6 +297,7 @@ export default function Perfil({ state, showToast }) {
                   {[
                     ["Nombre completo", saved.nombre || "No registrado"],
                     ["Correo", saved.email || "No registrado"],
+                    ["Cédula", saved.cedula || "No registrada"],
                     ["Telefono", saved.telefono || "No registrado"],
                     ["Supermercado", saved.aliadoNombre || "No asignado"],
                     ["Punto asignado", saved.punto || "No registrado"],
