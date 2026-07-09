@@ -80,10 +80,11 @@ export default function Login({ onLogin }) {
           className="col-md-6 p-0 d-none d-md-block"
           style={{
             backgroundImage: `url(${fondoReciclaje})`,
-            backgroundSize: "cover",
+            backgroundSize: "contain",
             backgroundPosition: "center",
             backgroundRepeat: "no-repeat",
             minHeight: "100vh",
+            backgroundColor: "#f0fdf4",
           }}
         />
 

@@ -358,7 +358,7 @@ export function TablaUsuarios({ lista, onToggle, onVer, onEliminar, extraColumns
     <div className="card shadow-sm overflow-hidden p-0">
       <div className="table-responsive">
         <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
-          <thead className="table-light">
+          <thead style={{ background: "var(--verde-claro)" }}>
             <tr>
               {[
                 ["bi-person",        "Usuario"],
@@ -371,8 +371,8 @@ export function TablaUsuarios({ lista, onToggle, onVer, onEliminar, extraColumns
                 ["bi-gear",          "Acciones"],
               ].filter(Boolean).map(([ic, h]) => (
                 <th key={h}
-                  className="text-uppercase text-muted fw-semibold border-0"
-                  style={{ padding: "10px 16px", fontSize: 11 }}
+                  className="text-uppercase fw-semibold border-0"
+                  style={{ padding: "10px 16px", fontSize: 11, color: "var(--verde)" }}
                 >
                   <i className={`bi ${ic} me-1`}></i>{h}
                 </th>

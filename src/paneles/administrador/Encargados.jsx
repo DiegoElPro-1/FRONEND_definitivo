@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import {
   getEncargados,
@@ -122,10 +123,15 @@ function TablaEncargados({ lista, onToggle, onVer, onEliminar }) {
   }
   return (
       <table className="panel-table">
-      <thead>
+      <thead style={{ background: "var(--verde-claro)" }}>
         <tr>
-          <th>Encargado</th><th>Correo</th><th>Teléfono</th>
-          <th>Zona</th><th>Supermercado</th><th>Estado</th><th>Acciones</th>
+          <th style={{ color: "var(--verde)" }}>Encargado</th>
+          <th style={{ color: "var(--verde)" }}>Correo</th>
+          <th style={{ color: "var(--verde)" }}>Teléfono</th>
+          <th style={{ color: "var(--verde)" }}>Zona</th>
+          <th style={{ color: "var(--verde)" }}>Supermercado</th>
+          <th style={{ color: "var(--verde)" }}>Estado</th>
+          <th style={{ color: "var(--verde)" }}>Acciones</th>
         </tr>
       </thead>
       <tbody>
@@ -339,16 +345,16 @@ export default function Encargados({ state, dispatch, showToast, user }) {
 
   if (loading) {
     return (
-      <div className="panel-page">
+      <motion.div className="panel-page" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
         <div className="text-center py-3">
           <LoadingSpinner size="sm" text="Cargando encargados" />
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="panel-page">
+    <motion.div className="panel-page" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
         <div>
           <h4 className="panel-title">
@@ -487,6 +493,6 @@ export default function Encargados({ state, dispatch, showToast, user }) {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

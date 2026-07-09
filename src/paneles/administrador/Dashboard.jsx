@@ -1,5 +1,6 @@
 // Dashboard.jsx
 import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
 import { Chart, registerables } from "chart.js";
 import { CHART_DATA } from "../../constants/data";
 
@@ -141,11 +142,20 @@ export default function Dashboard({ state }) {
     };
   }, [state]);
 
+  const container = {
+    initial: {},
+    animate: { transition: { staggerChildren: 0.08 } }
+  };
+  const item = {
+    initial: { opacity: 0, y: 30 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
+
   return (
-    <div className="row g-3">
+    <motion.div className="row g-3" variants={container} initial="initial" animate="animate">
 
       {/* ── Métricas principales ── */}
-      <div className="col-6 col-md-3">
+      <motion.div className="col-6 col-md-3" variants={item} whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #16a34a" }}>
           <div className="card-body">
             <div className="text-muted small mb-1">
@@ -159,9 +169,9 @@ export default function Dashboard({ state }) {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="col-6 col-md-3">
+      <motion.div className="col-6 col-md-3" variants={item} whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #2563eb" }}>
           <div className="card-body">
             <div className="text-muted small mb-1">
@@ -173,9 +183,9 @@ export default function Dashboard({ state }) {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="col-6 col-md-3">
+      <motion.div className="col-6 col-md-3" variants={item} whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #ca8a04" }}>
           <div className="card-body">
             <div className="text-muted small mb-1">
@@ -187,9 +197,9 @@ export default function Dashboard({ state }) {
             <div className="text-muted small mt-1">Total plataforma</div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      <div className="col-6 col-md-3">
+      <motion.div className="col-6 col-md-3" variants={item} whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #7c3aed" }}>
           <div className="card-body">
             <div className="text-muted small mb-1">
@@ -201,10 +211,10 @@ export default function Dashboard({ state }) {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Gráfica de barras ── */}
-      <div className="col-md-6">
+      <motion.div className="col-md-6" variants={item} whileHover={{ y: -6 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #16a34a" }}>
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-2">
@@ -246,10 +256,10 @@ export default function Dashboard({ state }) {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Gráfica de pie ── */}
-      <div className="col-md-6">
+      <motion.div className="col-md-6" variants={item} whileHover={{ y: -6 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #ca8a04" }}>
           <div className="card-body">
             <div className="fw-bold mb-3 text-dark">
@@ -270,10 +280,10 @@ export default function Dashboard({ state }) {
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Impacto ambiental ── */}
-      <div className="col-md-6">
+      <motion.div className="col-md-6" variants={item} whileHover={{ y: -6 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #16a34a" }}>
           <div className="card-body">
             <div className="fw-bold mb-3 text-dark">
@@ -297,10 +307,10 @@ export default function Dashboard({ state }) {
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Actividad reciente ── */}
-      <div className="col-md-6">
+      <motion.div className="col-md-6" variants={item} whileHover={{ y: -6 }} transition={{ type: "spring", stiffness: 300 }}>
         <div className="card shadow-sm border-0 h-100" style={{ borderLeft: "4px solid #facc15" }}>
           <div className="card-body">
             <div className="fw-bold mb-3 text-dark">
@@ -325,8 +335,8 @@ export default function Dashboard({ state }) {
             ))}
           </div>
         </div>
-      </div>
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 }
