@@ -16,7 +16,7 @@ const COLORS = [C.verde, C.verdeOscuro, C.negro, C.verdeMedio, "#0d6efd", "#6f42
 
 const ESTADOS_MATERIAL = [
   { id: 1, label: "Bueno",   icon: "bi-check-circle-fill", bg: C.verde,       text: "#fff",          descBg: C.verdeClaro  },
-  { id: 2, label: "Regular", icon: "bi-dash-circle-fill",  bg: "#f9a825",     text: C.negro,         descBg: "#fff8e1"     },
+  { id: 2, label: "Regular", icon: "bi-dash-circle-fill",  bg: C.amarillo,    text: C.negro,         descBg: C.amarilloClaro },
   { id: 3, label: "Malo",    icon: "bi-x-circle-fill",     bg: C.negro,       text: C.verde,         descBg: C.grisFondo   },
 ];
 
@@ -137,8 +137,8 @@ export default function RegistrarEntrega({ showToast }) {
     const codigoEntrega = `ENT-${resumen.idEntrega}`;
     return (
       <div className="card text-center p-5" style={S.card}>
-        <div className="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style={{ width: 72, height: 72, backgroundColor: C.verde }}>
-          <i className="bi bi-check-lg text-white" style={{ fontSize: 36 }} />
+        <div className="d-flex align-items-center justify-content-center rounded-circle mx-auto mb-3" style={{ width: 72, height: 72, backgroundColor: C.verdeClaro, border: `2px solid ${C.verdeBorde}` }}>
+          <i className="bi bi-check-lg" style={{ fontSize: 36, color: C.verde }} />
         </div>
         <h4 className="fw-bold text-dark mb-1">¡Entrega registrada!</h4>
         <p className="text-secondary mb-4" style={{ fontSize: 14 }}>La entrega de <strong>{resumen.usuario}</strong> fue guardada correctamente.</p>
@@ -213,8 +213,8 @@ export default function RegistrarEntrega({ showToast }) {
         <div className="card" style={S.card}>
           <div className="card-body p-4">
             <div className="d-flex align-items-center gap-2 mb-4">
-              <div className="d-flex align-items-center justify-content-center rounded-2" style={{ width: 40, height: 40, backgroundColor: C.verde }}>
-                <i className="bi bi-plus-circle-fill text-white fs-5" />
+              <div className="d-flex align-items-center justify-content-center rounded-2" style={{ width: 40, height: 40, backgroundColor: C.verdeClaro, border: `1.5px solid ${C.verdeBorde}` }}>
+                <i className="bi bi-plus-circle-fill" style={{ fontSize: 18, color: C.verde }} />
               </div>
               <div>
                 <div className="fw-bold text-dark" style={{ fontSize: 16 }}>Nueva entrega</div>
@@ -274,11 +274,11 @@ export default function RegistrarEntrega({ showToast }) {
                   )}
                 </div>
                 {usuarioSeleccionado && (
-                  <div className="mt-2 d-inline-flex align-items-center gap-2 px-3 py-1 rounded-2" style={{ backgroundColor: C.verde }}>
-                    <i className="bi bi-check-circle-fill text-white" style={{ fontSize: 12 }} />
-                    <span className="fw-bold text-white" style={{ fontSize: 12 }}>{usuarioSeleccionado.nombre}</span>
+                  <div className="mt-2 d-inline-flex align-items-center gap-2 px-3 py-1 rounded-2" style={{ backgroundColor: C.verdeClaro, border: `1px solid ${C.verdeBorde}` }}>
+                    <i className="bi bi-check-circle-fill" style={{ fontSize: 12, color: C.verde }} />
+                    <span className="fw-bold" style={{ fontSize: 12, color: C.verdeOscuro }}>{usuarioSeleccionado.nombre}</span>
                     {usuarioSeleccionado.puntosDisponibles !== undefined && (
-                      <span className="text-white opacity-75" style={{ fontSize: 11 }}>· {usuarioSeleccionado.puntosDisponibles} pts</span>
+                      <span style={{ fontSize: 11, color: C.verdeOscuro }}>· {usuarioSeleccionado.puntosDisponibles} pts</span>
                     )}
                   </div>
                 )}

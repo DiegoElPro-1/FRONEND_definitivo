@@ -4,23 +4,23 @@
 
 // ── COLORES ──────────────────────────────────────────────
 export const C = {
-  verde:        "#2e7d32",
-  verdeClaro:   "#e8f5e9",
-  verdeMedio:   "#a5d6a7",
-  verdeBorde:   "#c8e6c9",
-  verdeHover:   "#f1f8e9",
-  verdeOscuro:  "#1b5e20",
-  verde2:       "#388e3c",
+  verde:        "#5fa862",
+  verdeClaro:   "#f0f8f1",
+  verdeMedio:   "#b8e0ba",
+  verdeBorde:   "#e2f2e3",
+  verdeHover:   "#f5fbf3",
+  verdeOscuro:  "#3a7d3e",
+  verde2:       "#6da870",
   blanco:       "#ffffff",
   negro:        "#1a1a1a",
   grisTexto:    "#555555",
   grisFondo:    "#fafafa",
-  grisBorde:    "#e0e0e0",
+  grisBorde:    "#eeeeee",
   rojo:         "#c62828",
   rojoclaro:    "#ffebee",
-  rojoBorde:    "#ef9a9a",
-  amarillo:     "#f9a825",
-  amarilloClaro:"#fff9c4",
+  rojoBorde:    "#f3c4c4",
+  amarillo:     "#ddc06a",
+  amarilloClaro:"#fffbd4",
 };
 
 // ── ESTILOS BASE ─────────────────────────────────────────

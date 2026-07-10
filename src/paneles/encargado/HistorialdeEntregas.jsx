@@ -73,7 +73,7 @@ function BadgePrioridad({ prioridad }) {
   if (!prioridad) return null;
   const cfg = PRIO_CONFIG[prioridad?.toLowerCase()] ?? PRIO_CONFIG.normal;
   return (
-    <span className="badge border border-dark fw-bold" style={{ background: cfg.bg, color: cfg.text, fontSize: 10 }}>
+    <span className="badge border fw-bold" style={{ background: cfg.bg, color: cfg.text, fontSize: 10, borderColor: C.verdeBorde }}>
       <i className="bi bi-flag-fill me-1" />{cfg.label}
     </span>
   );
@@ -84,7 +84,7 @@ function BadgeEstadoMat({ estadoMaterial }) {
   const cfg = ESTADO_MAT_CONFIG[estadoMaterial];
   if (!cfg) return null;
   return (
-    <span className="badge border border-dark fw-bold" style={{ background: cfg.bg, color: cfg.text, fontSize: 10 }}>
+    <span className="badge border fw-bold" style={{ background: cfg.bg, color: cfg.text, fontSize: 10, borderColor: C.verdeBorde }}>
       <i className={`bi ${cfg.icon} me-1`} />{cfg.label}
     </span>
   );
@@ -140,7 +140,7 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
       style={SH.overlayModal}
       onClick={onCerrar}
     >
-      <div className="card border border-2 border-dark rounded-3 shadow-lg" style={SH.cardModal} onClick={e => e.stopPropagation()}>
+      <div className="card border border-2 rounded-3 shadow-lg" style={{ ...SH.cardModal, borderColor: C.verdeBorde }} onClick={e => e.stopPropagation()}>
         <div className="card-body p-4">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <div className="fw-black text-dark" style={{ fontSize: 16 }}>
@@ -151,7 +151,7 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
             </button>
           </div>
 
-          <div className="p-2 rounded-2 border border-dark mb-3 d-flex align-items-center gap-2" style={SH.headerAmarillo}>
+          <div className="p-2 rounded-2 border mb-3 d-flex align-items-center gap-2" style={{ ...SH.headerAmarillo, borderColor: C.verdeBorde }}>
             <Av text={entrega.av} size={32} bg={C.negro} color={C.amarillo} />
             <div>
               <div className="fw-bold text-dark" style={{ fontSize: 13 }}>{entrega.nombre}</div>
@@ -168,8 +168,8 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
             <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Nuevos puntos</label>
             <input
               type="number" min="0"
-              className="form-control border-2 border-dark fw-bold"
-              style={{ fontSize: 18 }}
+              className="form-control border-2 fw-bold"
+              style={{ fontSize: 18, borderColor: C.verdeBorde }}
               value={nuevosPts}
               onChange={e => setNuevosPts(e.target.value)}
             />
@@ -178,19 +178,19 @@ function ModalCorregirPts({ entrega, onGuardar, onCerrar }) {
           <div className="mb-4">
             <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Motivo de corrección</label>
             <textarea
-              className="form-control border-2 border-dark"
+              className="form-control border-2"
               rows={2}
               placeholder="Ej: Error de pesaje, corrección manual..."
               value={motivo}
               onChange={e => setMotivo(e.target.value)}
-              style={{ fontSize: 13, resize: "none" }}
+              style={{ fontSize: 13, resize: "none", borderColor: C.verdeBorde }}
             />
           </div>
           //un comentario para render 
 
           <div className="d-flex gap-2">
             <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">Cancelar</button>
-            <button onClick={guardar} className="btn fw-bold flex-fill border border-2 border-dark" style={SH.btnGuardar}>
+            <button onClick={guardar} className="btn fw-bold flex-fill border border-2" style={{ ...SH.btnGuardar, borderColor: C.verdeBorde }}>
               <i className="bi bi-check-circle-fill me-1" /> Guardar
             </button>
           </div>
@@ -224,7 +224,7 @@ function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
       style={SH.overlayModal}
       onClick={onCerrar}
     >
-      <div className="card border border-2 border-dark rounded-3 shadow-lg" style={SH.cardModalEditar} onClick={e => e.stopPropagation()}>
+      <div className="card border border-2 rounded-3 shadow-lg" style={{ ...SH.cardModalEditar, borderColor: C.verdeBorde }} onClick={e => e.stopPropagation()}>
         <div className="card-body p-4">
           <div className="d-flex align-items-center justify-content-between mb-3">
             <div className="fw-black text-dark" style={{ fontSize: 16 }}>
@@ -235,31 +235,31 @@ function ModalEditar({ entrega, materiales, onGuardar, onCerrar }) {
             </button>
           </div>
 
-          <div className="p-2 rounded-2 border border-dark mb-3 d-flex align-items-center gap-2" style={SH.headerAmarillo}>
+          <div className="p-2 rounded-2 border mb-3 d-flex align-items-center gap-2" style={{ ...SH.headerAmarillo, borderColor: C.verdeBorde }}>
             <Av text={entrega.av} size={32} bg={C.negro} color={C.amarillo} />
             <div className="fw-bold text-dark" style={{ fontSize: 13 }}>{entrega.nombre}</div>
           </div>
 
           <div className="mb-3">
             <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Material</label>
-            <select className="form-select border-2 border-dark fw-semibold" value={material} onChange={e => setMaterial(e.target.value)} style={{ fontSize: 13 }}>
+            <select className="form-select border-2 fw-semibold" value={material} onChange={e => setMaterial(e.target.value)} style={{ fontSize: 13, borderColor: C.verdeBorde }}>
               {listaMateriales.map(m => <option key={m}>{m}</option>)}
             </select>
           </div>
 
           <div className="mb-3">
             <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Peso (kg)</label>
-            <input type="number" min="0" step="0.1" className="form-control border-2 border-dark fw-bold" style={{ fontSize: 16 }} value={peso} onChange={e => setPeso(e.target.value)} />
+            <input type="number" min="0" step="0.1" className="form-control border-2 fw-bold" style={{ fontSize: 16, borderColor: C.verdeBorde }} value={peso} onChange={e => setPeso(e.target.value)} />
           </div>
 
           <div className="mb-4">
             <label className="fw-bold text-secondary text-uppercase mb-1 d-block" style={{ fontSize: 10, letterSpacing: 1 }}>Fecha</label>
-            <input type="date" className="form-control border-2 border-dark fw-semibold" value={fecha} onChange={e => setFecha(e.target.value)} style={{ fontSize: 13 }} />
+            <input type="date" className="form-control border-2 fw-semibold" value={fecha} onChange={e => setFecha(e.target.value)} style={{ fontSize: 13, borderColor: C.verdeBorde }} />
           </div>
 
           <div className="d-flex gap-2">
             <button onClick={onCerrar} className="btn btn-outline-dark border-2 fw-bold flex-fill">Cancelar</button>
-            <button onClick={guardar} className="btn fw-bold flex-fill border border-2 border-dark" style={SH.btnGuardarVerde}>
+            <button onClick={guardar} className="btn fw-bold flex-fill border border-2" style={{ ...SH.btnGuardarVerde, borderColor: C.verdeBorde }}>
               <i className="bi bi-check-circle-fill me-1" /> Guardar cambios
             </button>
           </div>
@@ -300,12 +300,12 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
       <div className="row g-3">
         {/* Card info reciclador */}
         <div className="col-md-6">
-          <div className="card border border-2 border-dark rounded-3 shadow-sm h-100">
+          <div className="card border border-2 rounded-3 shadow-sm h-100" style={{ borderColor: C.verdeBorde }}>
             <div className="card-body p-4">
               <div className="fw-bold text-secondary text-uppercase mb-3" style={{ fontSize: 10, letterSpacing: 1 }}>
                 Información del reciclador
               </div>
-              <div className="d-flex align-items-center gap-3 mb-4 p-3 rounded-2 border border-dark" style={SH.perfilAmarillo}>
+              <div className="d-flex align-items-center gap-3 mb-4 p-3 rounded-2 border" style={{ ...SH.perfilAmarillo, borderColor: C.verdeBorde }}>
                 <Av text={entrega.av} size={52} bg={C.negro} color={C.amarillo} />
                 <div>
                   <div className="fw-black text-dark" style={{ fontSize: 16 }}>{entrega.nombre}</div>
@@ -324,7 +324,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
                   ["bi-speedometer2", "Peso",     `${entrega.peso} kg`],
                   ["bi-calendar3",    "Fecha",    entrega.fecha],
                 ].map(([icon, label, val]) => (
-                  <div key={label} className="d-flex align-items-center gap-2 p-2 rounded-2 border border-dark" style={SH.infoBox}>
+                  <div key={label} className="d-flex align-items-center gap-2 p-2 rounded-2 border" style={{ ...SH.infoBox, borderColor: C.verdeBorde }}>
                     <i className={`bi ${icon}`} style={SH.iconVerde} />
                     <span className="text-secondary fw-semibold" style={{ fontSize: 12 }}>{label}:</span>
                     <span className="fw-bold text-dark" style={{ fontSize: 13 }}>{val}</span>
@@ -332,7 +332,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
                 ))}
 
                 {prioConf && (
-                  <div className="d-flex align-items-center gap-2 p-2 rounded-2 border border-dark" style={SH.infoBox}>
+                  <div className="d-flex align-items-center gap-2 p-2 rounded-2 border" style={{ ...SH.infoBox, borderColor: C.verdeBorde }}>
                     <i className="bi bi-flag-fill" style={{ fontSize: 15, width: 18, color: C.amarillo }} />
                     <span className="text-secondary fw-semibold" style={{ fontSize: 12 }}>Prioridad:</span>
                     <BadgePrioridad prioridad={entrega.prioridad} />
@@ -340,7 +340,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
                 )}
 
                 {estMatConf && (
-                  <div className="d-flex align-items-center gap-2 p-2 rounded-2 border border-dark" style={SH.infoBox}>
+                  <div className="d-flex align-items-center gap-2 p-2 rounded-2 border" style={{ ...SH.infoBox, borderColor: C.verdeBorde }}>
                     <i className={`bi ${estMatConf.icon}`} style={{ fontSize: 15, width: 18, color: estMatConf.bg }} />
                     <span className="text-secondary fw-semibold" style={{ fontSize: 12 }}>Estado material:</span>
                     <BadgeEstadoMat estadoMaterial={entrega.estadoMaterial} />
@@ -350,8 +350,8 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
 
               <button
                 onClick={() => onCambiarEstado(entrega.id, siguienteEstado)}
-                className="btn fw-bold w-100 d-flex align-items-center justify-content-center gap-2 border border-2 border-dark"
-                style={SH.btnCambiarEstado(entrega.estado === "Completada")}
+                className="btn fw-bold w-100 d-flex align-items-center justify-content-center gap-2 border border-2"
+                style={{ ...SH.btnCambiarEstado(entrega.estado === "Completada"), borderColor: C.verdeBorde }}
               >
                 <i className={`bi ${entrega.estado === "Completada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
                 {entrega.estado === "Completada" ? "Marcar como Pendiente" : "Marcar como Completada"}
@@ -362,9 +362,9 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
 
         {/* Card puntos */}
         <div className="col-md-6">
-          <div className="card border border-2 border-dark rounded-3 shadow-sm h-100">
+          <div className="card border border-2 rounded-3 shadow-sm h-100" style={{ borderColor: C.verdeBorde }}>
             <div className="card-body p-4 d-flex flex-column align-items-center justify-content-center text-center">
-              <div className="d-flex align-items-center justify-content-center rounded-3 border border-dark mb-3" style={SH.iconRec}>
+              <div className="d-flex align-items-center justify-content-center rounded-3 border mb-3" style={{ ...SH.iconRec, borderColor: C.verdeBorde }}>
                 <i className="bi bi-recycle text-white" style={SH.iconVerde28} />
               </div>
               <div className="text-secondary fw-semibold mb-1" style={{ fontSize: 13 }}>Puntos otorgados</div>
@@ -374,7 +374,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
                 <button onClick={() => onEditar(entrega)} className="btn btn-outline-dark border-2 fw-bold flex-fill btn-sm">
                   <i className="bi bi-pencil me-1" /> Editar
                 </button>
-                <button onClick={() => onCorregirPts(entrega)} className="btn fw-bold flex-fill btn-sm border border-2 border-dark" style={SH.btnCorregirPts}>
+                <button onClick={() => onCorregirPts(entrega)} className="btn fw-bold flex-fill btn-sm border border-2" style={{ ...SH.btnCorregirPts, borderColor: C.verdeBorde }}>
                   <i className="bi bi-arrow-repeat me-1" /> Corregir pts
                 </button>
               </div>
@@ -384,7 +384,7 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
 
         {/* Observaciones */}
         <div className="col-12">
-          <div className="card border border-2 border-dark rounded-3 shadow-sm">
+          <div className="card border border-2 rounded-3 shadow-sm" style={{ borderColor: C.verdeBorde }}>
             <div className="card-body p-4">
               <div className="d-flex align-items-center justify-content-between mb-2">
                 <div className="fw-bold text-secondary text-uppercase" style={{ fontSize: 10, letterSpacing: 1 }}>
@@ -400,23 +400,23 @@ function DetalleEntrega({ entrega, onVolver, onCambiarEstado, onCorregirPts, onE
               {editandoObs ? (
                 <>
                   <textarea
-                    className="form-control border-2 border-dark mb-2"
+                    className="form-control border-2 mb-2"
                     rows={3}
                     value={obsEdit}
                     onChange={e => setObsEdit(e.target.value)}
                     placeholder="Escribe una observación..."
-                    style={{ fontSize: 13, resize: "none" }}
+                    style={{ fontSize: 13, resize: "none", borderColor: C.verdeBorde }}
                   />
                   <button
                     onClick={() => { setObsSaved(obsEdit); setEditandoObs(false); }}
-                    className="btn fw-bold btn-sm border border-2 border-dark"
-                    style={SH.btnGuardarVerde}
+                    className="btn fw-bold btn-sm border border-2"
+                    style={{ ...SH.btnGuardarVerde, borderColor: C.verdeBorde }}
                   >
                     <i className="bi bi-floppy me-1" /> Guardar observación
                   </button>
                 </>
               ) : (
-                <div className="rounded-2 p-3 border border-dark text-secondary fst-italic" style={SH.obsBox}>
+                <div className="rounded-2 p-3 border text-secondary fst-italic" style={{ ...SH.obsBox, borderColor: C.verdeBorde }}>
                   {obsSaved || "Sin observaciones registradas."}
                 </div>
               )}
@@ -542,7 +542,7 @@ export default function HistorialdeEntregas({ showToast }) {
 
       <div>
         {error && (
-          <div className="d-flex align-items-center gap-2 rounded-2 border border-2 border-dark mb-3 px-3 py-2" style={SH.errorBar}>
+          <div className="d-flex align-items-center gap-2 rounded-2 border border-2 mb-3 px-3 py-2" style={{ ...SH.errorBar, borderColor: C.verdeBorde }}>
             <i className="bi bi-exclamation-triangle-fill" />
             <span>{error}</span>
           </div>
@@ -551,28 +551,28 @@ export default function HistorialdeEntregas({ showToast }) {
         {/* Filtros */}
         <div className="d-flex flex-wrap align-items-center gap-2 mb-3">
           <div className="input-group" style={{ maxWidth: 240 }}>
-            <span className="input-group-text border-2 border-dark bg-white">
+            <span className="input-group-text border-2 bg-white" style={{ borderColor: C.verdeBorde }}>
               <i className="bi bi-search text-dark" />
             </span>
             <input
               type="text"
-              className="form-control border-2 border-dark fw-semibold"
+              className="form-control border-2 fw-semibold"
               placeholder="Buscar reciclador..."
               value={busqueda}
               onChange={e => setBusqueda(e.target.value)}
-              style={{ fontSize: 13 }}
+              style={{ fontSize: 13, borderColor: C.verdeBorde }}
             />
           </div>
 
-          <select className="form-select border-2 border-dark fw-semibold" style={{ maxWidth: 160, fontSize: 13 }} value={filtroMat} onChange={e => setFiltroMat(e.target.value)}>
+          <select className="form-select border-2 fw-semibold" style={{ maxWidth: 160, fontSize: 13, borderColor: C.verdeBorde }} value={filtroMat} onChange={e => setFiltroMat(e.target.value)}>
             {materialesUnicos.map(m => <option key={m}>{m}</option>)}
           </select>
 
-          <select className="form-select border-2 border-dark fw-semibold" style={{ maxWidth: 145, fontSize: 13 }} value={filtroEst} onChange={e => setFiltroEst(e.target.value)}>
+          <select className="form-select border-2 fw-semibold" style={{ maxWidth: 145, fontSize: 13, borderColor: C.verdeBorde }} value={filtroEst} onChange={e => setFiltroEst(e.target.value)}>
             {ESTADOS.map(s => <option key={s}>{s}</option>)}
           </select>
 
-          <select className="form-select border-2 border-dark fw-semibold" style={{ maxWidth: 145, fontSize: 13 }} value={filtroPrio} onChange={e => setFiltroPrio(e.target.value)}>
+          <select className="form-select border-2 fw-semibold" style={{ maxWidth: 145, fontSize: 13, borderColor: C.verdeBorde }} value={filtroPrio} onChange={e => setFiltroPrio(e.target.value)}>
             <option value="Todos">Prioridad</option>
             <option value="alta">Alta</option>
             <option value="normal">Normal</option>
@@ -587,19 +587,19 @@ export default function HistorialdeEntregas({ showToast }) {
         {/* KPIs */}
         <div className="row g-2 mb-3">
           <div className="col-4">
-            <div className="card border border-2 border-dark rounded-3 text-center py-2 bg-white shadow-sm">
+            <div className="card border border-2 rounded-3 text-center py-2 bg-white shadow-sm" style={{ borderColor: C.verdeBorde }}>
               <div className="fw-black text-dark" style={SH.kpiEntregas}>{filtradas.length}</div>
               <div className="text-secondary fw-semibold" style={{ fontSize: 11 }}>Entregas</div>
             </div>
           </div>
           <div className="col-4">
-            <div className="card border border-2 border-dark rounded-3 text-center py-2 shadow-sm" style={SH.kpiVerde}>
+            <div className="card border border-2 rounded-3 text-center py-2 shadow-sm" style={{ ...SH.kpiVerde, borderColor: C.verdeBorde }}>
               <div className="fw-black text-white" style={SH.kpiEntregas}>{totalKg} kg</div>
               <div className="text-white fw-semibold" style={{ fontSize: 11 }}>Total reciclado</div>
             </div>
           </div>
           <div className="col-4">
-            <div className="card border border-2 border-dark rounded-3 text-center py-2 shadow-sm" style={SH.kpiAmarillo}>
+            <div className="card border border-2 rounded-3 text-center py-2 shadow-sm" style={{ ...SH.kpiAmarillo, borderColor: C.verdeBorde }}>
               <div className="fw-black text-dark" style={SH.kpiEntregas}>{totalPts}</div>
               <div className="text-dark fw-semibold" style={{ fontSize: 11 }}>Puntos otorgados</div>
             </div>
@@ -607,7 +607,7 @@ export default function HistorialdeEntregas({ showToast }) {
         </div>
 
         {/* Tabla */}
-        <div className="card border border-2 border-dark rounded-3 shadow-sm overflow-hidden">
+        <div className="card border border-2 rounded-3 shadow-sm overflow-hidden" style={{ borderColor: C.verdeBorde }}>
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0" style={{ fontSize: 13 }}>
               <thead style={SH.tableHead}>
@@ -660,15 +660,15 @@ export default function HistorialdeEntregas({ showToast }) {
                         <div className="d-flex gap-1">
                           <button
                             onClick={() => verDetalle(e)}
-                            className="btn btn-sm fw-bold d-flex align-items-center gap-1 border border-dark"
-                            style={SH.btnVer}
+                            className="btn btn-sm fw-bold d-flex align-items-center gap-1 border"
+                            style={{ ...SH.btnVer, borderColor: C.verdeBorde }}
                           >
                             <i className="bi bi-eye" /> Ver
                           </button>
                           <button
                             onClick={() => handleCambiarEstado(e.id, e.estado === "Completada" ? "Pendiente" : "Completada")}
-                            className="btn btn-sm fw-bold d-flex align-items-center gap-1 border border-2 border-dark"
-                            style={SH.btnAccion(e.estado === "Completada")}
+                            className="btn btn-sm fw-bold d-flex align-items-center gap-1 border border-2"
+                            style={{ ...SH.btnAccion(e.estado === "Completada"), borderColor: C.verdeBorde }}
                             title={e.estado === "Completada" ? "Marcar Pendiente" : "Marcar Completada"}
                           >
                             <i className={`bi ${e.estado === "Completada" ? "bi-arrow-counterclockwise" : "bi-check-circle-fill"}`} />
