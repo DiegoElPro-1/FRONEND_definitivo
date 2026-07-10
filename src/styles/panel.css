@@ -53,54 +53,64 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 14px;
+  padding: 7px 16px;
   font-size: 0.8rem;
   font-weight: 600;
-  border-radius: 6px;
+  border-radius: 8px;
   border: none;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: all 0.2s;
 }
-.btn-panel:hover { opacity: 0.85; }
-.btn-panel:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-panel:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.btn-panel:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 
 .btn-panel.primary   { background-color: var(--verde);  color: #fff; }
-.btn-panel.secondary { background-color: #fff; color: var(--verde); border: 1px solid var(--verde); }
-.btn-panel.ghost     { background-color: #fff; color: var(--gris-texto); border: 1px solid var(--gris-borde); }
+.btn-panel.secondary { background-color: #fff; color: var(--verde); border: 1.5px solid var(--verde); }
+.btn-panel.ghost     { background-color: #fff; color: var(--gris-texto); border: 1.5px solid var(--gris-borde); }
 .btn-panel.danger    { background-color: var(--rojo); color: #fff; }
 
 .btn-icon {
   background: transparent;
   border: 1px solid var(--gris-borde);
-  border-radius: 5px;
-  padding: 3px 8px;
+  border-radius: 6px;
+  padding: 4px 10px;
   font-size: 0.8rem;
   cursor: pointer;
   color: #444;
-  transition: border-color 0.15s;
+  transition: all 0.2s;
 }
-.btn-icon:hover        { border-color: var(--verde); color: var(--verde); }
-.btn-icon.del:hover    { border-color: var(--rojo);  color: var(--rojo); }
+.btn-icon:hover        { border-color: var(--verde); color: var(--verde); background: var(--verde-claro); }
+.btn-icon.del:hover    { border-color: var(--rojo);  color: var(--rojo);  background: #fef2f2; }
 
 /* ── CHIPS DE FILTRO ─────────────────────────────── */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 20px;
-  border: 1px solid var(--gris-borde);
+  border: 1.5px solid var(--gris-borde);
   background-color: #fff;
   color: #444;
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
+}
+.chip:hover {
+  border-color: var(--verde);
+  color: var(--verde);
 }
 .chip.active {
   background-color: var(--verde);
   border-color: var(--verde);
   color: #fff;
+}
+.chip.active:hover {
+  opacity: 0.9;
 }
 .chip .chip-count {
   background-color: var(--mostaza);
@@ -114,19 +124,20 @@
 /* ── INPUTS / SELECTS ────────────────────────────── */
 .panel-input,
 .panel-select {
-  border: 1px solid var(--gris-borde);
-  border-radius: 6px;
-  padding: 6px 10px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
+  padding: 7px 12px;
   font-size: 0.82rem;
   outline: none;
   width: 100%;
   background-color: #fff;
   color: var(--negro);
-  transition: border-color 0.15s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .panel-input:focus,
 .panel-select:focus {
   border-color: var(--verde);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.08);
 }
 
 .panel-label {
@@ -143,31 +154,37 @@
   border-collapse: collapse;
   font-size: 0.82rem;
 }
+.panel-table thead {
+  background: var(--verde-claro);
+}
 .panel-table th {
-  padding: 9px 12px;
+  padding: 10px 14px;
   text-align: left;
   font-size: 0.7rem;
   font-weight: 700;
-  color: #888;
+  color: var(--verde);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid #c8e6c9;
 }
 .panel-table td {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid #f5f5f5;
   vertical-align: middle;
   color: #222;
 }
+.panel-table tbody tr {
+  transition: background-color 0.15s;
+}
 .panel-table tbody tr:hover {
-  background-color: #fafafa;
+  background-color: #f0fdf4;
 }
 
 /* ── BADGE ───────────────────────────────────────── */
 .panel-badge {
   display: inline-block;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 3px 10px;
+  border-radius: 6px;
   font-size: 0.72rem;
   font-weight: 600;
 }
@@ -181,8 +198,8 @@
   font-weight: 600;
 }
 .estado-dot .dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   display: inline-block;
 }
@@ -195,8 +212,12 @@
 .panel-table-wrap {
   background-color: #fff;
   border: 1px solid #efefef;
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.panel-table-wrap:hover {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
 }
 
 /* ── MODAL ───────────────────────────────────────── */
@@ -208,19 +229,21 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: fadeIn 0.15s ease;
 }
 .panel-modal {
   background-color: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
   width: 100%;
   max-width: 580px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.15);
   overflow: hidden;
+  animation: slideUp 0.25s ease;
 }
 .panel-modal.sm { max-width: 380px; }
 
 .panel-modal-head {
-  padding: 16px 20px;
+  padding: 18px 24px;
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
@@ -230,87 +253,100 @@
   color: var(--negro);
 }
 .panel-modal-body {
-  padding: 20px;
+  padding: 24px;
 }
 .panel-modal-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 16px;
 }
 .panel-modal-grid .full { grid-column: 1 / -1; }
 
 .panel-modal-foot {
-  padding: 14px 20px;
+  padding: 16px 24px;
   border-top: 1px solid #f0f0f0;
   display: flex;
   justify-content: flex-end;
   gap: 8px;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ── TOAST ───────────────────────────────────────── */
 .panel-toast {
   position: fixed;
-  bottom: 20px;
-  right: 20px;
+  bottom: 24px;
+  right: 24px;
   z-index: 9999;
   background-color: #1a1a1a;
   color: #fff;
-  padding: 10px 16px;
-  border-radius: 8px;
+  padding: 12px 20px;
+  border-radius: 10px;
   font-size: 0.82rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  animation: rec-toast-in 0.3s ease;
 }
 
 /* ── BÚSQUEDA CON ÍCONO ──────────────────────────── */
 .search-box {
   display: flex;
   align-items: center;
-  border: 1px solid var(--gris-borde);
-  border-radius: 6px;
+  border: 1.5px solid var(--gris-borde);
+  border-radius: 8px;
   overflow: hidden;
   background-color: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-box:focus-within {
+  border-color: var(--verde);
+  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.08);
 }
 .search-box i {
-  padding: 0 8px;
+  padding: 0 10px;
   color: #aaa;
   font-size: 0.85rem;
 }
 .search-box input {
   border: none;
   outline: none;
-  padding: 6px 8px;
+  padding: 7px 10px 7px 0;
   font-size: 0.82rem;
-  width: 180px;
+  width: 200px;
 }
 
-/* ── LOADING SPINNER ──────────────────────────── */
+/* ── ANIMACIONES GENERALES ───────────────────────── */
 @keyframes rec-spin {
   to { transform: rotate(360deg); }
 }
 
-/* ── TOAST ANIMACIONES ────────────────────────── */
 @keyframes rec-toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(60px) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
+  from { opacity: 0; transform: translateX(60px) scale(0.9); }
+  to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes rec-toast-out {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to   { opacity: 0; transform: translateX(60px) scale(0.9); }
 }
 
-@keyframes rec-toast-out {
-  from {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateX(60px) scale(0.9);
-  }
+/* ── CARD MODERNA ────────────────────────────────── */
+.card-moderno {
+  background: #fff;
+  border: 1px solid #efefef;
+  border-radius: 12px;
+  transition: box-shadow 0.25s, transform 0.25s;
+}
+.card-moderno:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  transform: translateY(-1px);
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import { motion } from "framer-motion";
 import { Toggle, ModalDetalle, TablaUsuarios } from "../../components/UserShared";
 import {
   getAdmins,
@@ -229,7 +230,7 @@ export default function Administradores({
   const avatarPreview = form.nombre.trim().split(" ").slice(0, 2).map((w) => w[0]?.toUpperCase() || "").join("") || "?";
 
   return (
-    <div className="panel-page">
+    <motion.div className="panel-page" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
         <div>
           <h4 className="panel-title">
@@ -369,6 +370,6 @@ export default function Administradores({
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
