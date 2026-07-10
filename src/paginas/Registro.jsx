@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { solicitarRegistro, getAliadosPublicos } from "../services/api";
-<<<<<<< HEAD
-import fondoRegistro from '../components/imagenes/registro_bg.png'
-=======
 import LoadingSpinner from "../components/LoadingSpinner";
 import fondoReciclaje from '../components/imagenes/fondo_reciclaje.png'
->>>>>>> 46011eb79400eeca9d7ac3bd72469194e0c2320c
 
 function Registro() {
   const [nombre, setNombre] = useState("");
