@@ -78,13 +78,13 @@ export default function Canjes({ showToast }) {
   const [cargando,      setCargando]      = useState({});
   const [error,         setError]         = useState(null);
 
-  useEffect(() => {
+    useEffect(() => {
     cargarRecompensas();
     cargarHistorial();
-    buscarPorCedula('');
   }, []);
 
   useEffect(() => {
+    if (!cedula.trim()) { setListaUsuarios([]); setNoEncontrado(false); return; }
     setNoEncontrado(false);
     setUsuarioSel(null);
     const t = setTimeout(() => buscarPorCedula(cedula.trim()), 400);
@@ -130,11 +130,7 @@ export default function Canjes({ showToast }) {
       const data = await buscarUsuariosEncargado(c);
       const usuarios = data.usuarios ?? [];
       setListaUsuarios(usuarios);
-      if (usuarios.length === 1) {
-        setUsuarioSel(usuarios[0]);
-        setRecompSel(null);
-        setListaUsuarios([]);
-      } else if (usuarios.length > 1) {
+      if (usuarios.length > 0) {
         setUsuarioSel(null);
       } else {
         setUsuarioSel(null);
@@ -284,7 +280,6 @@ export default function Canjes({ showToast }) {
                       value={cedula}
                       style={{ ...S.input, fontSize: 13 }}
                       onChange={(e) => { setCedula(e.target.value); }}
-                      inputMode="numeric"
                     />
                     {cedula && (
                       <button className="btn btn-outline-secondary" style={{ border: `1.5px solid ${C.verdeBorde}` }} onClick={limpiar}>

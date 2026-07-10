@@ -119,6 +119,9 @@ export default function Administradores({
     } else if (!/^\d{10}$/.test(form.telefono.trim())) {
       e.telefono = "El teléfono debe tener exactamente 10 dígitos";
     }
+    if (form.cedula.trim() && form.cedula.trim().length < 5) {
+      e.cedula = "La cédula debe tener al menos 5 dígitos";
+    }
     if (esSuperAdmin && !form.idAliado) {
       e.idAliado = "Debes seleccionar un supermercado";
     }
@@ -303,7 +306,8 @@ export default function Administradores({
 
                 <div>
                   <label className="panel-label">Cédula</label>
-                  <input className="panel-input" value={form.cedula} onChange={(e) => set("cedula", e.target.value.replace(/\D/g, ""))} placeholder="Número de cédula" />
+                  <input className="panel-input" value={form.cedula} onChange={(e) => set("cedula", e.target.value.replace(/\D/g, "").slice(0, 15))} placeholder="Número de cédula" style={errors.cedula ? { borderColor: "var(--rojo)" } : {}} />
+                  {errors.cedula && <span style={{ fontSize: "0.72rem", color: "var(--rojo)" }}>{errors.cedula}</span>}
                 </div>
 
                 <div>

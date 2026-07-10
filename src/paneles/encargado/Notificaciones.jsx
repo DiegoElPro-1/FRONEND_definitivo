@@ -210,7 +210,7 @@ export default function Notificaciones() {
         </div>
       )}
       <button onClick={handleAbrir}
-        className="btn d-flex align-items-center justify-content-center p-0 position-relative"
+        className="btn btn-notif d-flex align-items-center justify-content-center p-0 position-relative"
         style={{ width: 40, height: 40, borderRadius: 8, border: `1.5px solid ${C.grisBorde}`, backgroundColor: C.blanco, color: C.negro }}
         aria-label="Notificaciones">
         <i className="bi bi-bell-fill" style={{ fontSize: 16 }} />

@@ -11,6 +11,7 @@ function cargarDeStorage() {
       nombre: u.nombre || "",
       email: u.correo || "",
       telefono: u.telefono || "",
+      cedula: u.cedula || "",
       punto: u.puntoACargo?.nombre || "",
       aliadoNombre: u.aliado || u.aliadoNombre || "",
       rol,
@@ -40,6 +41,7 @@ export default function PerfilEncargado() {
           nombre: u?.nombre || "",
           email: u?.correo || "",
           telefono: u?.telefono || "",
+          cedula: u?.cedula || "",
           punto: u?.puntoACargo?.nombre || "",
           aliadoNombre: u?.aliado || u?.aliadoNombre || "",
           rol: u?.rol || "Encargado",
@@ -107,6 +109,7 @@ export default function PerfilEncargado() {
             <ul className="list-group list-group-flush text-start mb-4">
               {[
                 ["bi-building",       "Supermercado",  saved.aliadoNombre || "No asignado"],
+                ["bi-credit-card",    "Cédula",        saved.cedula  || "No registrada"],
                 ["bi-telephone-fill", "Teléfono",      saved.telefono  || "No registrado"],
                 ["bi-shop",           "Punto",         saved.punto     || "No registrado"],
                 ["bi-calendar-check", "Miembro desde", saved.fechaAlta || "No registrado"],
@@ -158,6 +161,7 @@ export default function PerfilEncargado() {
                     ["Nombre completo", saved.nombre || "No registrado"],
                     ["Correo",          saved.email  || "No registrado"],
                     ["Teléfono",        saved.telefono || "No registrado"],
+                    ["Cédula",          saved.cedula || "No registrada"],
                     ["Supermercado",    saved.aliadoNombre || "No asignado"],
                     ["Punto de recolección", saved.punto || "No registrado"],
                     ["Rol",             saved.rol    || "No registrado"],

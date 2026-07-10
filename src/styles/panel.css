@@ -36,6 +36,18 @@
   font-weight: 600;
 }
 
+/* ── NOTIFICACION BELL ──────────────────────────── */
+.btn-notif:hover {
+  background-color: var(--verde-claro) !important;
+  border-color: var(--verde) !important;
+  color: var(--verde) !important;
+}
+.btn-notif:active {
+  background-color: var(--verde) !important;
+  border-color: var(--verde) !important;
+  color: #fff !important;
+}
+
 /* ── BOTONES ─────────────────────────────────────── */
 .btn-panel {
   display: inline-flex;

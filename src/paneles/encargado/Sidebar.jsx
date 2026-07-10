@@ -26,7 +26,7 @@ function getFoto() {
 
 function getDatosEncargado() {
   try {
-    const u = JSON.parse(localStorage.getItem("usuario")) || {};
+    const u = JSON.parse(localStorage.getItem("usuario") || "{}");
     const foto = getFoto();
     const initials = u.nombre
       ? u.nombre.trim().split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
